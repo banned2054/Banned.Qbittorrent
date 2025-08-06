@@ -42,7 +42,7 @@ public class TorrentInfo
     public long             Size                   { get; set; }
     public EnumTorrentState State                  { get; set; } // 新增的枚举字段
     public bool             SuperSeeding           { get; set; }
-    public List<string>     TagList                { get; set; } = new();
+    public List<string>     TagList                { get; set; } = [];
     public TimeSpan         TimeActive             { get; set; }
     public long             TotalSize              { get; set; }
     public string?          Tracker                { get; set; }

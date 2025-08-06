@@ -107,8 +107,9 @@ public class NetUtils
     /// <summary>
     /// 通用 POST 文件上传（同步）
     /// </summary>
-    public (HttpStatusCode, string) PostWithFiles(string       subPath, Dictionary<string, string> parameters,
-                                                  List<string> filePaths)
+    public (HttpStatusCode, string) PostWithFiles(string                     subPath,
+                                                  Dictionary<string, string> parameters,
+                                                  List<string>               filePaths)
     {
         EnsureLoggedIn();
 

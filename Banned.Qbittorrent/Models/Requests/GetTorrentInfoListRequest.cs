@@ -11,7 +11,7 @@ public class GetTorrentInfoListRequest
     public bool              Reverse  { get; set; }
     public int               Limit    { get; set; }
     public int               Offset   { get; set; }
-    public List<string>?     HashList { get; set; } = new();
+    public List<string>?     HashList { get; set; } = [];
 
     public override string ToString()
     {
@@ -49,8 +49,7 @@ public class GetTorrentInfoListRequest
             parameters.Add($"offset={Offset}");
         }
 
-        if (HashList == null) return string.Join("&", parameters);
-        if (!HashList.Any()) return string.Join("&", parameters);
+        if (HashList == null || !HashList.Any()) return string.Join("&", parameters);
         var hashes = string.Join("|", HashList.Select(Uri.EscapeDataString));
         parameters.Add($"hashes={hashes}");
 
