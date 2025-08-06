@@ -112,7 +112,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
         }
 
         var response = await netUtils.PostAsync($"{BaseUrl}/info", parameters);
-        return response.Item1 == HttpStatusCode.OK ? StringToTorrentInfoList(response.Item2) : new List<TorrentInfo>();
+        return response.Item1 == HttpStatusCode.OK ? StringToTorrentInfoList(response.Item2) : [];
     }
 
     private List<TorrentInfo> StringToTorrentInfoList(string jsonString)
@@ -127,8 +127,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
             options.Converters.Add(new TorrentInfoConverterV5());
         }
 
-        var torrentInfos = JsonSerializer.Deserialize<List<TorrentInfo>>(jsonString, options) ??
-                           new List<TorrentInfo>();
+        var torrentInfos = JsonSerializer.Deserialize<List<TorrentInfo>>(jsonString, options) ?? [];
         return torrentInfos;
     }
 
@@ -367,7 +366,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
 
         if (response.Item1 == HttpStatusCode.NotFound)
         {
-            return new List<TorrentFileInfo>();
+            return [];
         }
 
         var fileList = JsonSerializer.Deserialize<List<TorrentFileInfo>>(response.Item2, new JsonSerializerOptions
@@ -375,7 +374,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         });
 
-        return fileList ?? new List<TorrentFileInfo>();
+        return fileList ?? [];
     }
 
     /// <summary>
@@ -642,5 +641,35 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
 
         var response = await netUtils.PostAsync($"{BaseUrl}/filePrio", parameters);
         return response.Item1 == HttpStatusCode.OK;
+    }
+
+    public async Task SetLocationAsync(List<string> hashList, string newLocation)
+        => await SetLocationAsync(string.Join('|', hashList), newLocation);
+
+    public async Task SetLocationAsync(string hash, string newLocation)
+    {
+        if (string.IsNullOrWhiteSpace(hash)
+         || hash.Split('|').All(string.IsNullOrWhiteSpace))
+        {
+            throw new ArgumentException("Torrent hash cannot be null or empty", nameof(hash));
+        }
+
+        var parameters = new Dictionary<string, string>
+        {
+            { "hashes", hash },
+            { "location", newLocation },
+        };
+        var response = await netUtils.PostAsync($"{BaseUrl}/setLocation", parameters);
+        switch (response.Item1)
+        {
+            case HttpStatusCode.OK :
+                return;
+            case HttpStatusCode.BadRequest : // 400
+                throw new HttpRequestException("Save path is empty");
+            case HttpStatusCode.Forbidden : // 403
+                throw new HttpRequestException("User does not have write access to directory");
+            case HttpStatusCode.Conflict : // 409
+                throw new HttpRequestException("Unable to create save path directory");
+        }
     }
 }
