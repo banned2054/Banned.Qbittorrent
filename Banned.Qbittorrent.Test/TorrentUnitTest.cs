@@ -66,4 +66,14 @@ public class TorrentUnitTest
     {
         var trackers = await _client.Torrent.GetTorrentInfoAsync(hash : "0f9323316a62a4a6b66a5568893a52c3a342501d");
     }
+
+    [Test]
+    public async Task SetTorrentLocation()
+    {
+        var torrent = await _client.Torrent.GetTorrentInfoAsync(hash : "436f9a9ac50e513b9b046c2f04958aafae24d175");
+        foreach (var t in torrent)
+        {
+            Console.WriteLine($"{t.Name}\n\t{t.Hash}\n\t{t.SavePath}\n\t{t.ContentPath}");
+        }
+    }
 }
