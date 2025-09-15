@@ -18,7 +18,7 @@ dotnet add package Banned.Qbittorrent
 using Banned.Qbittorrent;
 
 // Create a client instance with authentication
-var client = new QbittorrentClient("http://localhost:8080", "username", "password");
+var client = await QbittorrentClient.CreateAsync("http://localhost:8080", "username", "password");
 
 // Get torrent list
 var torrents = await client.GetTorrentInfosAsync();
