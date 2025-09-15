@@ -8,13 +8,20 @@ public class QBittorrentClient
     public ApplicationService Application;
     public TorrentService     Torrent;
 
-    public QBittorrentClient(string url, string userName, string password)
+    // 私有构造：只做字段赋值，不执行任何异步/网络操作
+    private QBittorrentClient(ApplicationService app, TorrentService torrent)
     {
-        var netUtils = new NetUtils(url, userName, password);
+        Application = app;
+        Torrent     = torrent;
+    }
 
-        Application = new ApplicationService(netUtils);
-        var apiVersion = Application.GetApiVersionAsync().Result;
-
-        Torrent = new TorrentService(netUtils, apiVersion);
+    // ✅ 推荐入口：异步工厂，避免在构造函数里 .Result
+    public static async Task<QBittorrentClient> CreateAsync(string url, string userName, string password)
+    {
+        var netUtils    = new NetUtils(url, userName, password);
+        var application = new ApplicationService(netUtils);
+        var apiVersion  = await application.GetApiVersionAsync().ConfigureAwait(false); // 不捕获同步上下文
+        var torrent     = new TorrentService(netUtils, apiVersion);
+        return new QBittorrentClient(application, torrent);
     }
 }
