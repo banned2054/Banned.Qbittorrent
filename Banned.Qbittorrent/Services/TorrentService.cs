@@ -1,9 +1,9 @@
+using Banned.Qbittorrent.Exceptions;
 using Banned.Qbittorrent.Models.Application;
 using Banned.Qbittorrent.Models.Enums;
 using Banned.Qbittorrent.Models.Requests;
 using Banned.Qbittorrent.Models.Torrent;
 using Banned.Qbittorrent.Utils;
-using System.Net;
 using System.Text.Json;
 
 namespace Banned.Qbittorrent.Services;
@@ -84,7 +84,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
         }
 
         var response = await netUtils.PostAsync($"{BaseUrl}/info", parameters);
-        return response.Item1 == HttpStatusCode.OK ? StringToTorrentInfoList(response.Item2) : new List<TorrentInfo>();
+        return StringToTorrentInfoList(response);
     }
 
     /// <summary>
@@ -112,7 +112,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
         }
 
         var response = await netUtils.PostAsync($"{BaseUrl}/info", parameters);
-        return response.Item1 == HttpStatusCode.OK ? StringToTorrentInfoList(response.Item2) : [];
+        return StringToTorrentInfoList(response);
     }
 
     private List<TorrentInfo> StringToTorrentInfoList(string jsonString)
@@ -253,13 +253,13 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
         if (request.FilePaths is { Count: > 0 })
         {
             var result = await netUtils.PostWithFilesAsync($"{BaseUrl}/add", parameters, request.FilePaths);
-            return result.Item2;
+            return result;
         }
 
         if (request.Urls is { Count: > 0 })
         {
             var result = await netUtils.PostAsync($"{BaseUrl}/add", parameters);
-            return result.Item2;
+            return result;
         }
 
         return "No torrent file or URL provided.";
@@ -362,19 +362,20 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
             parameters["indexes"] = string.Join("|", indexes);
         }
 
-        var response = await netUtils.PostAsync(requestUrl, parameters);
+        try
+        {
+            var response = await netUtils.PostAsync(requestUrl, parameters);
+            var fileList = JsonSerializer.Deserialize<List<TorrentFileInfo>>(response, new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            });
 
-        if (response.Item1 == HttpStatusCode.NotFound)
+            return fileList ?? [];
+        }
+        catch (QbittorrentNotFoundException)
         {
             return [];
         }
-
-        var fileList = JsonSerializer.Deserialize<List<TorrentFileInfo>>(response.Item2, new JsonSerializerOptions
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-        });
-
-        return fileList ?? [];
     }
 
     /// <summary>
@@ -424,22 +425,14 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
             { "oldPath", oldPath },
             { "newPath", newPath }
         };
-
-        var response = await netUtils.PostAsync($"{BaseUrl}/renameFile", parameters);
-
-        switch (response.Item1)
+        try
         {
-            case HttpStatusCode.OK :
-                return true;
-            case HttpStatusCode.BadRequest :
-                Console.WriteLine("Error: Missing newPath parameter.");
-                return false;
-            case HttpStatusCode.Conflict :
-                Console.WriteLine("Error: Invalid newPath, oldPath, or newPath is already in use.");
-                return false;
-            default :
-                Console.WriteLine($"Unexpected error: {response.Item1}");
-                return false;
+            await netUtils.PostAsync($"{BaseUrl}/renameFile", parameters);
+            return true;
+        }
+        catch (Exception)
+        {
+            return false;
         }
     }
 
@@ -482,21 +475,14 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
             { "newPath", newPath }
         };
 
-        var response = await netUtils.PostAsync($"{BaseUrl}/renameFile", parameters);
-
-        switch (response.Item1)
+        try
         {
-            case HttpStatusCode.OK :
-                return true;
-            case HttpStatusCode.BadRequest :
-                Console.WriteLine("Error: Missing newPath parameter.");
-                return false;
-            case HttpStatusCode.Conflict :
-                Console.WriteLine("Error: Invalid newPath, oldPath, or newPath is already in use.");
-                return false;
-            default :
-                Console.WriteLine($"Unexpected error: {response.Item1}");
-                return false;
+            await netUtils.PostAsync($"{BaseUrl}/renameFile", parameters);
+            return true;
+        }
+        catch (Exception)
+        {
+            return false;
         }
     }
 
@@ -533,21 +519,14 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
             { "newPath", newPath }
         };
 
-        var response = await netUtils.PostAsync($"{BaseUrl}/renameFolder", parameters);
-
-        switch (response.Item1)
+        try
         {
-            case HttpStatusCode.OK :
-                return true;
-            case HttpStatusCode.BadRequest :
-                Console.WriteLine("Error: Missing newPath parameter.");
-                return false;
-            case HttpStatusCode.Conflict :
-                Console.WriteLine("Error: Invalid newPath, oldPath, or newPath is already in use.");
-                return false;
-            default :
-                Console.WriteLine($"Unexpected error: {response.Item1}");
-                return false;
+            await netUtils.PostAsync($"{BaseUrl}/renameFolder", parameters);
+            return true;
+        }
+        catch (Exception)
+        {
+            return false;
         }
     }
 
@@ -607,8 +586,15 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
             { "priority", ((int)priority).ToString() }
         };
 
-        var response = await netUtils.PostAsync($"{BaseUrl}/filePrio", parameters);
-        return response.Item1 == HttpStatusCode.OK;
+        try
+        {
+            await netUtils.PostAsync($"{BaseUrl}/filePrio", parameters);
+            return true;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
     }
 
     /// <summary>
@@ -639,8 +625,15 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
             { "priority", ((int)priority).ToString() }
         };
 
-        var response = await netUtils.PostAsync($"{BaseUrl}/filePrio", parameters);
-        return response.Item1 == HttpStatusCode.OK;
+        try
+        {
+            await netUtils.PostAsync($"{BaseUrl}/filePrio", parameters);
+            return true;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
     }
 
     public async Task SetLocationAsync(List<string> hashList, string newLocation)
@@ -659,17 +652,6 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
             { "hashes", hash },
             { "location", newLocation },
         };
-        var response = await netUtils.PostAsync($"{BaseUrl}/setLocation", parameters);
-        switch (response.Item1)
-        {
-            case HttpStatusCode.OK :
-                return;
-            case HttpStatusCode.BadRequest : // 400
-                throw new HttpRequestException("Save path is empty");
-            case HttpStatusCode.Forbidden : // 403
-                throw new HttpRequestException("User does not have write access to directory");
-            case HttpStatusCode.Conflict : // 409
-                throw new HttpRequestException("Unable to create save path directory");
-        }
+        await netUtils.PostAsync($"{BaseUrl}/setLocation", parameters);
     }
 }
