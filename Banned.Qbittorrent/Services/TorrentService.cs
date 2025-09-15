@@ -84,7 +84,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
         }
 
         var response = await netUtils.PostAsync($"{BaseUrl}/info", parameters);
-        return StringToTorrentInfoList(response);
+        return JsonSerializer.Deserialize<List<TorrentInfo>>(response) ?? [];
     }
 
     /// <summary>
@@ -112,23 +112,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
         }
 
         var response = await netUtils.PostAsync($"{BaseUrl}/info", parameters);
-        return StringToTorrentInfoList(response);
-    }
-
-    private List<TorrentInfo> StringToTorrentInfoList(string jsonString)
-    {
-        var options = new JsonSerializerOptions();
-        if (apiVersion < _apiVersion5)
-        {
-            options.Converters.Add(new TorrentInfoConverterV4());
-        }
-        else
-        {
-            options.Converters.Add(new TorrentInfoConverterV5());
-        }
-
-        var torrentInfos = JsonSerializer.Deserialize<List<TorrentInfo>>(jsonString, options) ?? [];
-        return torrentInfos;
+        return JsonSerializer.Deserialize<List<TorrentInfo>>(response) ?? [];
     }
 
     /// <summary>
@@ -365,10 +349,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
         try
         {
             var response = await netUtils.PostAsync(requestUrl, parameters);
-            var fileList = JsonSerializer.Deserialize<List<TorrentFileInfo>>(response, new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            });
+            var fileList = JsonSerializer.Deserialize<List<TorrentFileInfo>>(response);
 
             return fileList ?? [];
         }
@@ -653,5 +634,19 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
             { "location", newLocation },
         };
         await netUtils.PostAsync($"{BaseUrl}/setLocation", parameters);
+    }
+
+    public async Task GetTorrentGenericPropertiesAsync(string hash)
+    {
+        if (string.IsNullOrWhiteSpace(hash))
+        {
+            throw new ArgumentException("Torrent hash cannot be null or empty", nameof(hash));
+        }
+
+        var parameters = new Dictionary<string, string>
+        {
+            { "hash", hash },
+        };
+        await netUtils.PostAsync($"{BaseUrl}/properties", parameters);
     }
 }
