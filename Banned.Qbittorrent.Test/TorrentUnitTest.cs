@@ -5,10 +5,12 @@ public class TorrentUnitTest
     private QBittorrentClient _client;
 
     [SetUp]
-    public void SetUp()
+    public async Task SetUp()
     {
         // 从 JSON 文件中读取配置
-        _client = new QBittorrentClient(StaticConfig.BaseUrl, StaticConfig.Username, StaticConfig.Password);
+        _client = await QBittorrentClient.CreateAsync(StaticConfig.BaseUrl,
+                                                      StaticConfig.Username,
+                                                      StaticConfig.Password);
     }
 
     [Test]
