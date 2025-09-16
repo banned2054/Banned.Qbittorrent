@@ -169,13 +169,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// </summary>
     /// <param name="hash">种子哈希值<br/>Torrent hash value</param>
     public async Task RecheckTorrentAsync(string hash)
-    {
-        var parameters = new Dictionary<string, string>
-        {
-            { "hashes", hash },
-        };
-        await netUtils.PostAsync($"{BaseUrl}/recheck", parameters);
-    }
+        => await PutHashes("recheck", hash);
 
     /// <summary>
     /// 重新校验多个种子的进度<br/>
@@ -190,31 +184,8 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// Pause specified torrent
     /// </summary>
     /// <param name="hash">种子哈希值<br/>Torrent hash value</param>
-    public async Task StopTorrentAsync(string hash) => await PauseTorrentAsync(hash);
-
-    /// <summary>
-    /// 暂停指定种子<br/>
-    /// Pause specified torrent
-    /// </summary>
-    /// <param name="hash">种子哈希值<br/>Torrent hash value</param>
     public async Task PauseTorrentAsync(string hash)
-    {
-        var parameters = new Dictionary<string, string>
-        {
-            { "hashes", hash },
-        };
-        if (apiVersion < _apiVersion5)
-            await netUtils.PostAsync($"{BaseUrl}/pause", parameters);
-        else
-            await netUtils.PostAsync($"{BaseUrl}/stop", parameters);
-    }
-
-    /// <summary>
-    /// 暂停多个种子<br/>
-    /// Pause multiple torrents
-    /// </summary>
-    /// <param name="hashList">种子哈希值列表<br/>List of torrent hash values</param>
-    public async Task StopTorrentAsync(List<string> hashList) => await PauseTorrentAsync(hashList);
+        => await PutHashes(apiVersion < _apiVersion5 ? "pause" : "stop", hash);
 
     /// <summary>
     /// 暂停多个种子<br/>
@@ -518,17 +489,13 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// <param name="hash">种子哈希值<br/>Torrent hash value</param>
     public async Task ReannounceTorrentAsync(string hash)
     {
-        if (apiVersion < new ApiVersion("2.0.2"))
+        var require = new ApiVersion("2.0.2");
+        if (apiVersion < require)
         {
-            throw new Exception("This method was introduced with qBittorrent v4.1.2 (Web API v2.0.2).");
+            throw new QbittorrentNotSupportedException("Reannounce", require, apiVersion);
         }
 
-        var parameters = new Dictionary<string, string>
-        {
-            { "hashes", hash },
-        };
-
-        await netUtils.PostAsync($"{BaseUrl}/reannounce", parameters);
+        await PutHashes("reannounce", hash);
     }
 
     /// <summary>
@@ -636,7 +603,14 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
         await netUtils.PostAsync($"{BaseUrl}/setLocation", parameters);
     }
 
-    public async Task GetTorrentGenericPropertiesAsync(string hash)
+    public async Task<TorrentProperties?> GetTorrentGenericPropertiesAsync(string hash) =>
+        JsonSerializer.Deserialize<TorrentProperties>(await Put(hash, "properties"));
+
+
+    public async Task<List<TrackerInfo>> GetTorrentTrackers(string hash) =>
+        JsonSerializer.Deserialize<List<TrackerInfo>>(await Put(hash, "trackers")) ?? [];
+
+    private async Task<string> Put(string subPath, string hash)
     {
         if (string.IsNullOrWhiteSpace(hash))
         {
@@ -647,6 +621,21 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
         {
             { "hash", hash },
         };
-        await netUtils.PostAsync($"{BaseUrl}/properties", parameters);
+        return await netUtils.PostAsync($"{BaseUrl}/{subPath}", parameters);
+    }
+
+    private async Task PutHashes(string subPath, string hash)
+    {
+        if (string.IsNullOrWhiteSpace(hash)
+         || hash.Split('|').All(string.IsNullOrWhiteSpace))
+        {
+            throw new ArgumentException("Torrent hash cannot be null or empty", nameof(hash));
+        }
+
+        var parameters = new Dictionary<string, string>
+        {
+            { "hashes", hash },
+        };
+        await netUtils.PostAsync($"{BaseUrl}/{subPath}", parameters);
     }
 }
