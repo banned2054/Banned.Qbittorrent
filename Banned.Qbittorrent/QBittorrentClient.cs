@@ -16,11 +16,11 @@ public class QBittorrentClient
     }
 
     // ✅ 推荐入口：异步工厂，避免在构造函数里 .Result
-    public static async Task<QBittorrentClient> CreateAsync(string url, string userName, string password)
+    public static async Task<QBittorrentClient> Create(string url, string userName, string password)
     {
         var netUtils    = new NetUtils(url, userName, password);
         var application = new ApplicationService(netUtils);
-        var apiVersion  = await application.GetApiVersionAsync().ConfigureAwait(false); // 不捕获同步上下文
+        var apiVersion  = await application.GetApiVersion().ConfigureAwait(false); // 不捕获同步上下文
         var torrent     = new TorrentService(netUtils, apiVersion);
         return new QBittorrentClient(application, torrent);
     }

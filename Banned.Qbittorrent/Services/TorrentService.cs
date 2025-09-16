@@ -30,17 +30,17 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// <param name="offset">结果偏移量<br/>Result offset</param>
     /// <param name="hash">单个种子的哈希值<br/>Hash value of a single torrent</param>
     /// <returns>种子信息列表<br/>List of torrent information</returns>
-    public async Task<List<TorrentInfo>> GetTorrentInfoAsync(EnumTorrentFilter filter   = EnumTorrentFilter.All,
-                                                             string?           category = null,
-                                                             string?           tag      = null,
-                                                             string?           sort     = null,
-                                                             bool              reverse  = false,
-                                                             int               limit    = 0,
-                                                             int               offset   = 0,
-                                                             string            hash     = "")
+    public async Task<List<TorrentInfo>> GetTorrentInfo(EnumTorrentFilter filter   = EnumTorrentFilter.All,
+                                                        string?           category = null,
+                                                        string?           tag      = null,
+                                                        string?           sort     = null,
+                                                        bool              reverse  = false,
+                                                        int               limit    = 0,
+                                                        int               offset   = 0,
+                                                        string            hash     = "")
     {
         var hashList = hash == "" ? null : new List<string> { hash };
-        return await GetTorrentInfosAsync(filter, category, tag, sort, reverse, limit, offset, hashList);
+        return await GetTorrentInfos(filter, category, tag, sort, reverse, limit, offset, hashList);
     }
 
     /// <summary>
@@ -56,14 +56,14 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// <param name="offset">结果偏移量<br/>Result offset</param>
     /// <param name="hashList">种子哈希值列表<br/>List of torrent hash values</param>
     /// <returns>种子信息列表<br/>List of torrent information</returns>
-    public async Task<List<TorrentInfo>> GetTorrentInfosAsync(EnumTorrentFilter filter   = EnumTorrentFilter.All,
-                                                              string?           category = null,
-                                                              string?           tag      = null,
-                                                              string?           sort     = null,
-                                                              bool              reverse  = false,
-                                                              int               limit    = 0,
-                                                              int               offset   = 0,
-                                                              List<string>?     hashList = null)
+    public async Task<List<TorrentInfo>> GetTorrentInfos(EnumTorrentFilter filter   = EnumTorrentFilter.All,
+                                                         string?           category = null,
+                                                         string?           tag      = null,
+                                                         string?           sort     = null,
+                                                         bool              reverse  = false,
+                                                         int               limit    = 0,
+                                                         int               offset   = 0,
+                                                         List<string>?     hashList = null)
     {
         var parameters = new Dictionary<string, string>();
 
@@ -93,7 +93,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// </summary>
     /// <param name="request">获取种子信息列表的请求参数<br/>Request parameters for getting torrent information list</param>
     /// <returns>种子信息列表<br/>List of torrent information</returns>
-    public async Task<List<TorrentInfo>> GetTorrentInfosAsync(GetTorrentInfoListRequest request)
+    public async Task<List<TorrentInfo>> GetTorrentInfos(GetTorrentInfoListRequest request)
     {
         var parameters = new Dictionary<string, string>
         {
@@ -121,7 +121,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// </summary>
     /// <param name="hash">种子哈希值<br/>Torrent hash value</param>
     /// <param name="deleteFile">是否同时删除文件<br/>Whether to delete files as well</param>
-    public async Task DeleteTorrentAsync(string hash, bool deleteFile = false)
+    public async Task DeleteTorrent(string hash, bool deleteFile = false)
     {
         var parameters = new Dictionary<string, string>
         {
@@ -132,15 +132,15 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
         await netUtils.PostAsync($"{BaseUrl}/delete", parameters);
     }
 
-    public async Task DeleteTorrentAsync(List<string> hashList, bool deleteFile = false) =>
-        await DeleteTorrentAsync(string.Join('|', hashList.ToArray()), deleteFile);
+    public async Task DeleteTorrent(List<string> hashList, bool deleteFile = false) =>
+        await DeleteTorrent(string.Join('|', hashList.ToArray()), deleteFile);
 
     /// <summary>
     /// 继续下载/做种指定种子<br/>
     /// Resume specified torrent
     /// </summary>
     /// <param name="hash">种子哈希值<br/>Torrent hash value</param>
-    public async Task ResumeTorrentAsync(string hash)
+    public async Task ResumeTorrent(string hash)
     {
         var parameters = new Dictionary<string, string>
         {
@@ -157,10 +157,10 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// Resume multiple torrents
     /// </summary>
     /// <param name="hashList">种子哈希值列表<br/>List of torrent hash values</param>
-    public async Task ResumeTorrentAsync(List<string> hashList)
+    public async Task ResumeTorrent(List<string> hashList)
     {
         var hash = string.Join('|', hashList.ToArray());
-        await ResumeTorrentAsync(hash);
+        await ResumeTorrent(hash);
     }
 
     /// <summary>
@@ -168,7 +168,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// Recheck specified torrent progress
     /// </summary>
     /// <param name="hash">种子哈希值<br/>Torrent hash value</param>
-    public async Task RecheckTorrentAsync(string hash)
+    public async Task RecheckTorrent(string hash)
         => await PutHashes("recheck", hash);
 
     /// <summary>
@@ -176,15 +176,15 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// Recheck multiple torrents progress
     /// </summary>
     /// <param name="hashList">种子哈希值列表<br/>List of torrent hash values</param>
-    public async Task RecheckTorrentAsync(List<string> hashList) =>
-        await RecheckTorrentAsync(string.Join('|', hashList.ToArray()));
+    public async Task RecheckTorrent(List<string> hashList) =>
+        await RecheckTorrent(string.Join('|', hashList.ToArray()));
 
     /// <summary>
     /// 暂停指定种子<br/>
     /// Pause specified torrent
     /// </summary>
     /// <param name="hash">种子哈希值<br/>Torrent hash value</param>
-    public async Task PauseTorrentAsync(string hash)
+    public async Task PauseTorrent(string hash)
         => await PutHashes(apiVersion < _apiVersion5 ? "pause" : "stop", hash);
 
     /// <summary>
@@ -192,8 +192,8 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// Pause multiple torrents
     /// </summary>
     /// <param name="hashList">种子哈希值列表<br/>List of torrent hash values</param>
-    public async Task PauseTorrentAsync(List<string> hashList) =>
-        await PauseTorrentAsync(string.Join('|', hashList.ToArray()));
+    public async Task PauseTorrent(List<string> hashList) =>
+        await PauseTorrent(string.Join('|', hashList.ToArray()));
 
     /// <summary>
     /// 添加种子文件或 URL<br/>
@@ -201,7 +201,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// </summary>
     /// <param name="request">添加种子的请求参数<br/>Request parameters for adding torrent</param>
     /// <returns>操作结果信息<br/>Operation result information</returns>
-    public async Task<string> AddTorrentAsync(AddTorrentRequest request)
+    public async Task<string> AddTorrent(AddTorrentRequest request)
     {
         var parameters = request.ToDictionary();
 
@@ -242,7 +242,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// <param name="sequentialDownload">是否顺序下载<br/>Whether to download sequentially</param>
     /// <param name="firstLastPiecePriority">是否优先下载首尾块<br/>Whether to prioritize first and last pieces</param>
     /// <returns>操作结果信息<br/>Operation result information</returns>
-    public async Task<string> AddTorrentAsync(
+    public async Task<string> AddTorrent(
         List<string>? filePaths              = null,
         List<string>? urls                   = null,
         string?       savePath               = "/download",
@@ -288,7 +288,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
             request.Stopped = stopped ?? paused;
         }
 
-        return await AddTorrentAsync(request);
+        return await AddTorrent(request);
     }
 
     /// <summary>
@@ -299,7 +299,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// <param name="indexes">文件索引列表<br/>List of file indexes</param>
     /// <returns>种子文件信息列表<br/>List of torrent file information</returns>
     /// <exception cref="ArgumentException">当种子哈希值为空时抛出<br/>Thrown when torrent hash is empty</exception>
-    public async Task<List<TorrentFileInfo>> GetTorrentContentsAsync(string hash, List<int>? indexes = null)
+    public async Task<List<TorrentFileInfo>> GetTorrentContents(string hash, List<int>? indexes = null)
     {
         if (string.IsNullOrEmpty(hash))
         {
@@ -339,7 +339,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// <param name="newPath">新文件路径<br/>New file path</param>
     /// <returns>操作是否成功<br/>Whether the operation was successful</returns>
     /// <exception cref="ArgumentException">当参数无效时抛出<br/>Thrown when parameters are invalid</exception>
-    public async Task<bool> RenameTorrentFileAsync(string hash, string oldPath, string newPath)
+    public async Task<bool> RenameTorrentFile(string hash, string oldPath, string newPath)
     {
         if (string.IsNullOrWhiteSpace(hash))
         {
@@ -359,12 +359,12 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
 
         if (apiVersion < new ApiVersion(2, 7))
         {
-            var fileList = await GetTorrentContentsAsync(hash);
+            var fileList = await GetTorrentContents(hash);
             for (var i = 0; i < fileList.Count; i++)
             {
                 if (fileList[i].Name == oldPath)
                 {
-                    return await RenameTorrentFileAsync(hash, i, newPath);
+                    return await RenameTorrentFile(hash, i, newPath);
                 }
             }
 
@@ -397,7 +397,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// <param name="newPath">新文件路径<br/>New file path</param>
     /// <returns>操作是否成功<br/>Whether the operation was successful</returns>
     /// <exception cref="ArgumentException">当参数无效时抛出<br/>Thrown when parameters are invalid</exception>
-    public async Task<bool> RenameTorrentFileAsync(string hash, int index, string newPath)
+    public async Task<bool> RenameTorrentFile(string hash, int index, string newPath)
     {
         if (string.IsNullOrWhiteSpace(hash))
         {
@@ -416,8 +416,8 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
 
         if (apiVersion >= new ApiVersion(2, 7))
         {
-            var fileList = await GetTorrentContentsAsync(hash);
-            return await RenameTorrentFileAsync(hash, fileList[index].Name, newPath);
+            var fileList = await GetTorrentContents(hash);
+            return await RenameTorrentFile(hash, fileList[index].Name, newPath);
         }
 
         var parameters = new Dictionary<string, string>
@@ -447,7 +447,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// <param name="newPath">新文件夹路径<br/>New folder path</param>
     /// <returns>操作是否成功<br/>Whether the operation was successful</returns>
     /// <exception cref="ArgumentException">当参数无效时抛出<br/>Thrown when parameters are invalid</exception>
-    public async Task<bool> RenameTorrentFolderAsync(string hash, string oldPath, string newPath)
+    public async Task<bool> RenameTorrentFolder(string hash, string oldPath, string newPath)
     {
         if (string.IsNullOrWhiteSpace(hash))
         {
@@ -487,7 +487,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// Reannounce specified torrent to tracker
     /// </summary>
     /// <param name="hash">种子哈希值<br/>Torrent hash value</param>
-    public async Task ReannounceTorrentAsync(string hash)
+    public async Task ReannounceTorrent(string hash)
     {
         var require = new ApiVersion("2.0.2");
         if (apiVersion < require)
@@ -503,8 +503,8 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// Reannounce multiple torrents to tracker
     /// </summary>
     /// <param name="hashList">种子哈希值列表<br/>List of torrent hash values</param>
-    public async Task ReannounceTorrentAsync(List<string> hashList) =>
-        await ReannounceTorrentAsync(string.Join('|', hashList.ToArray()));
+    public async Task ReannounceTorrent(List<string> hashList) =>
+        await ReannounceTorrent(string.Join('|', hashList.ToArray()));
 
     /// <summary>
     /// 设置种子中文件的优先度<br/>
@@ -515,7 +515,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// <param name="priority">文件优先度<br/>File priority</param>
     /// <returns>操作是否成功<br/>Whether the operation was successful</returns>
     /// <exception cref="ArgumentException">当参数无效时抛出<br/>Thrown when parameters are invalid</exception>
-    public async Task<bool> SetFilePriorityAsync(string hash, int fileIndex, EnumTorrentFilePriority priority)
+    public async Task<bool> SetFilePriority(string hash, int fileIndex, EnumTorrentFilePriority priority)
     {
         if (string.IsNullOrWhiteSpace(hash))
         {
@@ -554,7 +554,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// <param name="priority">文件优先度<br/>File priority</param>
     /// <returns>操作是否成功<br/>Whether the operation was successful</returns>
     /// <exception cref="ArgumentException">当参数无效时抛出<br/>Thrown when parameters are invalid</exception>
-    public async Task<bool> SetFilePriorityAsync(string hash, List<int> fileIndexes, EnumTorrentFilePriority priority)
+    public async Task<bool> SetFilePriority(string hash, List<int> fileIndexes, EnumTorrentFilePriority priority)
     {
         if (string.IsNullOrWhiteSpace(hash))
         {
@@ -584,10 +584,10 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
         }
     }
 
-    public async Task SetLocationAsync(List<string> hashList, string newLocation)
-        => await SetLocationAsync(string.Join('|', hashList), newLocation);
+    public async Task SetLocation(List<string> hashList, string newLocation)
+        => await SetLocation(string.Join('|', hashList), newLocation);
 
-    public async Task SetLocationAsync(string hash, string newLocation)
+    public async Task SetLocation(string hash, string newLocation)
     {
         if (string.IsNullOrWhiteSpace(hash)
          || hash.Split('|').All(string.IsNullOrWhiteSpace))
@@ -603,12 +603,17 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
         await netUtils.PostAsync($"{BaseUrl}/setLocation", parameters);
     }
 
-    public async Task<TorrentProperties?> GetTorrentGenericPropertiesAsync(string hash) =>
+    public async Task<TorrentProperties?> GetTorrentGenericProperties(string hash) =>
         JsonSerializer.Deserialize<TorrentProperties>(await Put(hash, "properties"));
 
 
     public async Task<List<TrackerInfo>> GetTorrentTrackers(string hash) =>
         JsonSerializer.Deserialize<List<TrackerInfo>>(await Put(hash, "trackers")) ?? [];
+
+    public async Task<bool> SetTracker(string hash, string originUrl, string newUrl)
+    {
+        return false;
+    }
 
     private async Task<string> Put(string subPath, string hash)
     {

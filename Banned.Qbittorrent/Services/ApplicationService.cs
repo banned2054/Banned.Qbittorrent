@@ -16,7 +16,7 @@ public class ApplicationService(NetUtils netUtils)
     /// Get Web API version
     /// </summary>
     /// <returns>Web API 版本信息<br/>Web API version information</returns>
-    public async Task<ApiVersion> GetApiVersionAsync()
+    public async Task<ApiVersion> GetApiVersion()
     {
         var result = await netUtils.GetAsync($"{BaseUrl}/webapiVersion");
         return new ApiVersion(result);
@@ -27,7 +27,7 @@ public class ApplicationService(NetUtils netUtils)
     /// Get qBittorrent version
     /// </summary>
     /// <returns>qBittorrent 版本号<br/>qBittorrent version number</returns>
-    public async Task<string> GetVersionAsync()
+    public async Task<string> GetVersion()
     {
         var result = await netUtils.GetAsync($"{BaseUrl}/version");
         return result;
@@ -38,7 +38,7 @@ public class ApplicationService(NetUtils netUtils)
     /// Get build information
     /// </summary>
     /// <returns>构建信息<br/>Build information</returns>
-    public async Task<string> GetBuildInfoAsync()
+    public async Task<string> GetBuildInfo()
     {
         var result = await netUtils.GetAsync($"{BaseUrl}/buildInfo");
         return result;
