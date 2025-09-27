@@ -89,7 +89,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
             parameters.Add("hashes", string.Join("|", hashList));
         }
 
-        var response = await netUtils.PostAsync($"{BaseUrl}/info", parameters);
+        var response = await netUtils.Post($"{BaseUrl}/info", parameters);
         return JsonSerializer.Deserialize<List<TorrentInfo>>(response) ?? [];
     }
 
@@ -120,7 +120,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
             parameters.Add("hashes", string.Join("|", request.HashList));
         }
 
-        var response = await netUtils.PostAsync($"{BaseUrl}/info", parameters);
+        var response = await netUtils.Post($"{BaseUrl}/info", parameters);
         return JsonSerializer.Deserialize<List<TorrentInfo>>(response) ?? [];
     }
 
@@ -138,7 +138,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
             { "deleteFiles", deleteFile.ToString().ToLower() }
         };
 
-        await netUtils.PostAsync($"{BaseUrl}/delete", parameters);
+        await netUtils.Post($"{BaseUrl}/delete", parameters);
     }
 
     /// <summary>
@@ -162,9 +162,9 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
             { "hashes", hash },
         };
         if (apiVersion < _apiVersion5)
-            await netUtils.PostAsync($"{BaseUrl}/resume", parameters);
+            await netUtils.Post($"{BaseUrl}/resume", parameters);
         else
-            await netUtils.PostAsync($"{BaseUrl}/start", parameters);
+            await netUtils.Post($"{BaseUrl}/start", parameters);
     }
 
     /// <summary>
@@ -222,13 +222,13 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
 
         if (request.FilePaths is { Count: > 0 })
         {
-            var result = await netUtils.PostWithFilesAsync($"{BaseUrl}/add", parameters, request.FilePaths);
+            var result = await netUtils.PostWithFiles($"{BaseUrl}/add", parameters, request.FilePaths);
             return result;
         }
 
         if (request.Urls is { Count: > 0 })
         {
-            var result = await netUtils.PostAsync($"{BaseUrl}/add", parameters);
+            var result = await netUtils.Post($"{BaseUrl}/add", parameters);
             return result;
         }
 
@@ -339,7 +339,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
 
         try
         {
-            var response = await netUtils.PostAsync(requestUrl, parameters);
+            var response = await netUtils.Post(requestUrl, parameters);
             var fileList = JsonSerializer.Deserialize<List<TorrentFileInfo>>(response);
 
             return fileList ?? [];
@@ -390,7 +390,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
             { "oldPath", oldPath },
             { "newPath", newPath }
         };
-        await netUtils.PostAsync($"{BaseUrl}/renameFile", parameters);
+        await netUtils.Post($"{BaseUrl}/renameFile", parameters);
     }
 
     /// <summary>
@@ -430,7 +430,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
             { "newPath", newPath }
         };
 
-        await netUtils.PostAsync($"{BaseUrl}/renameFile", parameters);
+        await netUtils.Post($"{BaseUrl}/renameFile", parameters);
     }
 
     /// <summary>
@@ -464,7 +464,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
             { "newPath", newPath }
         };
 
-        await netUtils.PostAsync($"{BaseUrl}/renameFolder", parameters);
+        await netUtils.Post($"{BaseUrl}/renameFolder", parameters);
     }
 
     /// <summary>
@@ -509,7 +509,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
             { "priority", ((int)priority).ToString() }
         };
 
-        await netUtils.PostAsync($"{BaseUrl}/filePrio", parameters);
+        await netUtils.Post($"{BaseUrl}/filePrio", parameters);
     }
 
     /// <summary>
@@ -538,7 +538,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
             { "priority", ((int)priority).ToString() }
         };
 
-        await netUtils.PostAsync($"{BaseUrl}/filePrio", parameters);
+        await netUtils.Post($"{BaseUrl}/filePrio", parameters);
     }
 
     /// <summary>
@@ -572,7 +572,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
             { "hashes", hash },
             { "location", newLocation },
         };
-        await netUtils.PostAsync($"{BaseUrl}/setLocation", parameters);
+        await netUtils.Post($"{BaseUrl}/setLocation", parameters);
     }
 
     /// <summary>
@@ -629,7 +629,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
         };
         try
         {
-            await netUtils.PostAsync($"{BaseUrl}/editTracker", parameters);
+            await netUtils.Post($"{BaseUrl}/editTracker", parameters);
         }
         catch (QbittorrentConflictException)
         {
@@ -682,7 +682,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
         };
         try
         {
-            await netUtils.PostAsync($"{BaseUrl}/removeTrackers", parameters);
+            await netUtils.Post($"{BaseUrl}/removeTrackers", parameters);
         }
         catch (QbittorrentConflictException)
         {
@@ -701,7 +701,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
         {
             { "hash", hash },
         };
-        return await netUtils.PostAsync($"{BaseUrl}/{subPath}", parameters, targetVersion);
+        return await netUtils.Post($"{BaseUrl}/{subPath}", parameters, targetVersion);
     }
 
     private async Task PutHashes(string subPath, string hash, ApiVersion? targetVersion = null)
@@ -716,6 +716,6 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
         {
             { "hashes", hash },
         };
-        await netUtils.PostAsync($"{BaseUrl}/{subPath}", parameters, targetVersion);
+        await netUtils.Post($"{BaseUrl}/{subPath}", parameters, targetVersion);
     }
 }

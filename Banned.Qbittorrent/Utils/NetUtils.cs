@@ -62,17 +62,17 @@ public class NetUtils
     /// <summary>
     /// 通用 GET 请求（异步）
     /// </summary>
-    public async Task<string> GetAsync(string            subPath,
-                                       ApiVersion?       targetVersion = null,
-                                       string?           opName        = null,
-                                       CancellationToken ct            = default)
+    public async Task<string> Get(string            subPath,
+                                  ApiVersion?       targetVersion = null,
+                                  string?           opName        = null,
+                                  CancellationToken ct            = default)
     {
         if (targetVersion != null && _apiVersion < targetVersion)
             throw new QbittorrentNotSupportedException(opName ?? subPath, targetVersion, _apiVersion);
 
-        await EnsureLoggedInAsync().ConfigureAwait(false);
+        await EnsureLoggedIn().ConfigureAwait(false);
 
-        return await ExecuteWithRetryAsync(
+        return await ExecuteWithRetry(
                                            () => new HttpRequestMessage(HttpMethod.Get, CombineUrl(subPath)),
                                            ct).ConfigureAwait(false);
     }
@@ -80,17 +80,17 @@ public class NetUtils
     /// <summary>
     /// 通用 POST 请求（异步）
     /// </summary>
-    public async Task<string> PostAsync(string                      subPath,
-                                        Dictionary<string, string>? parameters    = null,
-                                        ApiVersion?                 targetVersion = null, string? opName = null,
-                                        CancellationToken           ct            = default)
+    public async Task<string> Post(string                      subPath,
+                                   Dictionary<string, string>? parameters    = null,
+                                   ApiVersion?                 targetVersion = null, string? opName = null,
+                                   CancellationToken           ct            = default)
     {
         if (targetVersion != null && _apiVersion < targetVersion)
             throw new QbittorrentNotSupportedException(opName ?? subPath, targetVersion, _apiVersion);
 
-        await EnsureLoggedInAsync().ConfigureAwait(false);
+        await EnsureLoggedIn().ConfigureAwait(false);
 
-        return await ExecuteWithRetryAsync(
+        return await ExecuteWithRetry(
                                            () =>
                                            {
                                                if (parameters != null)
@@ -106,14 +106,14 @@ public class NetUtils
     /// <summary>
     /// 通用 POST 文件上传（异步）
     /// </summary>
-    public async Task<string> PostWithFilesAsync(string                      subPath,
-                                                 Dictionary<string, string>? parameters,
-                                                 List<string>                filePaths,
-                                                 CancellationToken           ct = default)
+    public async Task<string> PostWithFiles(string                      subPath,
+                                            Dictionary<string, string>? parameters,
+                                            List<string>                filePaths,
+                                            CancellationToken           ct = default)
     {
-        await EnsureLoggedInAsync().ConfigureAwait(false);
+        await EnsureLoggedIn().ConfigureAwait(false);
 
-        return await ExecuteWithRetryAsync(() =>
+        return await ExecuteWithRetry(() =>
         {
             var content = new MultipartFormDataContent();
             if (parameters != null)
@@ -131,7 +131,7 @@ public class NetUtils
         }, ct).ConfigureAwait(false);
     }
 
-    private async Task EnsureLoggedInAsync()
+    private async Task EnsureLoggedIn()
     {
         if (_isLoggedIn && DateTimeOffset.UtcNow < _loginExpiry) return;
 
@@ -139,7 +139,7 @@ public class NetUtils
         try
         {
             if (_isLoggedIn && DateTimeOffset.UtcNow < _loginExpiry) return;
-            await LoginAsync().ConfigureAwait(false);
+            await Login().ConfigureAwait(false);
             _isLoggedIn  = true;
             _loginExpiry = DateTimeOffset.UtcNow.AddHours(8); // TODO: 若能解析 Set-Cookie 中的过期时间则用真实值
         }
@@ -149,7 +149,7 @@ public class NetUtils
         }
     }
 
-    private async Task LoginAsync()
+    private async Task Login()
     {
         var content = new FormUrlEncodedContent(new Dictionary<string, string>
         {
@@ -170,7 +170,7 @@ public class NetUtils
     /// <summary>
     /// 自动重试逻辑（异步）
     /// </summary>
-    private async Task<string> ExecuteWithRetryAsync(Func<HttpRequestMessage?> requestFactory,
+    private async Task<string> ExecuteWithRetry(Func<HttpRequestMessage?> requestFactory,
                                                      CancellationToken         ct         = default,
                                                      int                       maxRetries = 3)
     {

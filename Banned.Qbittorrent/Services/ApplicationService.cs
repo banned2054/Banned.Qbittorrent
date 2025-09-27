@@ -21,7 +21,7 @@ public class ApplicationService(NetUtils netUtils)
     /// </returns>
     public async Task<ApiVersion> GetApiVersion()
     {
-        var result = await netUtils.GetAsync($"{BaseUrl}/webapiVersion");
+        var result = await netUtils.Get($"{BaseUrl}/webapiVersion");
         return new ApiVersion(result);
     }
 
@@ -35,7 +35,7 @@ public class ApplicationService(NetUtils netUtils)
     /// </returns>
     public async Task<string> GetVersion()
     {
-        var result = await netUtils.GetAsync($"{BaseUrl}/version");
+        var result = await netUtils.Get($"{BaseUrl}/version");
         return result;
     }
 
@@ -49,7 +49,7 @@ public class ApplicationService(NetUtils netUtils)
     /// </returns>
     public async Task<string> GetBuildInfo()
     {
-        var result = await netUtils.GetAsync($"{BaseUrl}/buildInfo");
+        var result = await netUtils.Get($"{BaseUrl}/buildInfo");
         return result;
     }
 
@@ -63,6 +63,6 @@ public class ApplicationService(NetUtils netUtils)
     /// </remarks>
     public async Task ShutDown()
     {
-        await netUtils.PostAsync($"{BaseUrl}/shutdown");
+        await netUtils.Post($"{BaseUrl}/shutdown");
     }
 }
