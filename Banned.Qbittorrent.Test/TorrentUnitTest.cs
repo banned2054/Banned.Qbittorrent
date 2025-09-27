@@ -29,11 +29,10 @@ public class TorrentUnitTest
     [Test]
     public async Task TestAddTorrent()
     {
-        var torrentPaths =
-            new List<string>
-            {
-                @"D:\Downloads\Your.Forma.S01E01.1080p.BILI.WEB-DL.AAC2.0.H.264-VARYG.torrent"
-            };
+        var torrentPaths = new List<string>
+        {
+            @"D:\Downloads\Your.Forma.S01E01.1080p.BILI.WEB-DL.AAC2.0.H.264-VARYG.torrent"
+        };
         const string tags = "test";
         await _client.Torrent.AddTorrent(
                                          filePaths : torrentPaths,
