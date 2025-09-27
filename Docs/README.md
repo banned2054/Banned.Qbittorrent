@@ -18,19 +18,19 @@ dotnet add package Banned.Qbittorrent
 using Banned.Qbittorrent;
 
 // 创建带认证的客户端实例
-var client = await QbittorrentClient.CreateAsync("http://localhost:8080", "username", "password");
+var client = await QbittorrentClient.Create("http://localhost:8080", "username", "password");
 
 // 获取种子列表
-var torrents = await client.GetTorrentListAsync();
+var torrents = await client.GetTorrentList();
 
 // 添加新种子
-await client.AddTorrentAsync("magnet:?xt=urn:btih:...");
+await client.AddTorrent("magnet:?xt=urn:btih:...");
 
 // 暂停种子
-await client.PauseTorrentsAsync(new[] { "torrent_hash" });
+await client.PauseTorrents(new[] { "torrent_hash" });
 
 // 恢复种子
-await client.ResumeTorrentsAsync(new[] { "torrent_hash" });
+await client.ResumeTorrents(new[] { "torrent_hash" });
 ```
 
 ## 许可证

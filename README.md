@@ -18,19 +18,19 @@ dotnet add package Banned.Qbittorrent
 using Banned.Qbittorrent;
 
 // Create a client instance with authentication
-var client = await QbittorrentClient.CreateAsync("http://localhost:8080", "username", "password");
+var client = await QbittorrentClient.Create("http://localhost:8080", "username", "password");
 
 // Get torrent list
-var torrents = await client.GetTorrentInfosAsync();
+var torrents = await client.GetTorrentInfos();
 
 // Add a new torrent
-await client.AddTorrentAsync("magnet:?xt=urn:btih:...");
+await client.AddTorrent("magnet:?xt=urn:btih:...");
 
 // Pause torrents
-await client.PauseTorrentsAsync(new[] { "torrent_hash" });
+await client.PauseTorrents(new[] { "torrent_hash" });
 
 // Resume torrents
-await client.ResumeTorrentsAsync(new[] { "torrent_hash" });
+await client.ResumeTorrents(new[] { "torrent_hash" });
 ```
 
 ## License
