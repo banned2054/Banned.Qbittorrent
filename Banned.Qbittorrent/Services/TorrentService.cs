@@ -474,7 +474,6 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
     public async Task ReannounceTorrent(string hash) => await PutHashes("reannounce", hash, new ApiVersion("2.0.2"));
 
-
     /// <summary>
     /// 重新向 Tracker 汇报多个种子。<br/>
     /// Reannounce multiple torrents to the tracker.
@@ -482,6 +481,12 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// <param name="hashList">种子哈希值列表。<br/>List of torrent hash values.</param>
     public async Task ReannounceTorrent(List<string> hashList) =>
         await ReannounceTorrent(string.Join('|', hashList.ToArray()));
+
+    public async Task<List<EnumPieceState>?> GetTorrentPiecesStates(string hash) =>
+        JsonSerializer.Deserialize<List<EnumPieceState>>(await Put("pieceStates", hash));
+
+    public async Task<List<string>?> GetTorrentPiecesHashes(string hash) =>
+        JsonSerializer.Deserialize<List<string>>(await Put("pieceHashes", hash));
 
     /// <summary>
     /// 设置种子中文件的优先度。<br/>

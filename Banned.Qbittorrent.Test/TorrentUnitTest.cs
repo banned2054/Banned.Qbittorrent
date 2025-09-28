@@ -81,4 +81,17 @@ public class TorrentUnitTest
             Console.WriteLine($"{t.Name}\n\t{t.Hash}\n\t{t.SavePath}\n\t{t.ContentPath}");
         }
     }
+
+    [Test]
+    public async Task GetFilePiece()
+    {
+        try
+        {
+            await _client.Torrent.GetTorrentPiecesStates(hash : "d866173fb508d762d177719bcac230a416e80220");
+        }
+        catch
+        {
+            //
+        }
+    }
 }
