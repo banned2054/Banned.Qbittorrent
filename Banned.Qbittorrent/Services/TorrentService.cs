@@ -482,9 +482,27 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     public async Task ReannounceTorrent(List<string> hashList) =>
         await ReannounceTorrent(string.Join('|', hashList.ToArray()));
 
+    /// <summary>
+    /// 获取指定种子的每个分片状态。<br/>
+    /// Get the state of each piece in the specified torrent.
+    /// </summary>
+    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
+    /// <returns>
+    /// 分片状态列表，包含每个分片的下载状态；获取失败返回 <c>null</c>。<br/>
+    /// A list of <see cref="EnumPieceState"/> representing the state of each piece; <c>null</c> if retrieval fails.
+    /// </returns>
     public async Task<List<EnumPieceState>?> GetTorrentPiecesStates(string hash) =>
         JsonSerializer.Deserialize<List<EnumPieceState>>(await Put("pieceStates", hash));
 
+    /// <summary>
+    /// 获取指定种子的每个分片哈希值。<br/>
+    /// Get the hash of each piece in the specified torrent.
+    /// </summary>
+    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
+    /// <returns>
+    /// 分片哈希值列表；获取失败返回 <c>null</c>。<br/>
+    /// A list of piece hash strings; <c>null</c> if retrieval fails.
+    /// </returns>
     public async Task<List<string>?> GetTorrentPiecesHashes(string hash) =>
         JsonSerializer.Deserialize<List<string>>(await Put("pieceHashes", hash));
 
