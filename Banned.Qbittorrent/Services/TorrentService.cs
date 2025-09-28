@@ -319,7 +319,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// 种子文件信息列表。<br/>
     /// List of torrent file information.
     /// </returns>
-    public async Task<List<TorrentFileInfo>> GetTorrentContents(string hash, List<int>? indexes = null)
+    public async Task<List<TorrentFileInfo>> GetTorrentFiles(string hash, List<int>? indexes = null)
     {
         if (string.IsNullOrEmpty(hash))
         {
@@ -377,7 +377,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
 
         if (apiVersion < new ApiVersion(2, 7))
         {
-            var fileList = await GetTorrentContents(hash);
+            var fileList = await GetTorrentFiles(hash);
             var index    = fileList.FindIndex(f => f.Name == oldPath);
             if (index == -1) throw new ArgumentException("File path doesn't exist.", nameof(oldPath));
             await RenameTorrentFile(hash, index, newPath);
@@ -419,7 +419,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
 
         if (apiVersion >= new ApiVersion(2, 7))
         {
-            var fileList = await GetTorrentContents(hash);
+            var fileList = await GetTorrentFiles(hash);
             await RenameTorrentFile(hash, fileList[index].Name, newPath);
         }
 
