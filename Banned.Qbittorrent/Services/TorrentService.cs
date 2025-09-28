@@ -708,6 +708,72 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
         }
     }
 
+    /// <summary>
+    /// 向指定种子添加一个或多个 Peer。<br/>
+    /// Add one or more peers to the specified torrent.
+    /// </summary>
+    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
+    /// <param name="peer">要添加的 Peer 地址（可为 IP:Port 格式）。<br/>Peer address to add (can be in IP:Port format).</param>
+    /// <exception cref="ArgumentException">
+    /// 当 <paramref name="hash"/> 或 <paramref name="peer"/> 为空时抛出。<br/>
+    /// Thrown when <paramref name="hash"/> or <paramref name="peer"/> is null or empty.
+    /// </exception>
+    /// <exception cref="QbittorrentConflictException">
+    /// 当所有指定的 Peer 地址均未找到或添加失败时抛出。<br/>
+    /// Thrown when all specified peer addresses are not found or failed to add.
+    /// </exception>
+    public async Task AddPeers(string hash, string peer)
+    {
+        if (string.IsNullOrWhiteSpace(hash))
+        {
+            throw new ArgumentException("Torrent hash cannot be null or empty", nameof(hash));
+        }
+
+        if (string.IsNullOrWhiteSpace(peer))
+        {
+            throw new ArgumentException("Peer cannot be null or empty", nameof(hash));
+        }
+
+        var parameters = new Dictionary<string, string>
+        {
+            { "hash", hash },
+            { "peers", peer },
+        };
+        try
+        {
+            await netUtils.Post($"{BaseUrl}/addPeers", parameters, new ApiVersion(2, 3));
+        }
+        catch (QbittorrentConflictException)
+        {
+            throw new QbittorrentConflictException("All urls were not found");
+        }
+    }
+
+    /// <summary>
+    /// 向指定种子添加多个 Peer。<br/>
+    /// Add multiple peers to the specified torrent.
+    /// </summary>
+    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
+    /// <param name="peer">要添加的 Peer 地址列表。<br/>List of peer addresses to add.</param>
+    public async Task AddPeers(string hash, List<string> peer) => await AddPeers(hash, string.Join('|', peer));
+
+    /// <summary>
+    /// 向多个种子添加一个 Peer。<br/>
+    /// Add a peer to multiple torrents.
+    /// </summary>
+    /// <param name="hash">种子哈希值列表。<br/>List of torrent hash values.</param>
+    /// <param name="peer">要添加的 Peer 地址。<br/>Peer address to add.</param>
+    public async Task AddPeers(List<string> hash, string peer) => await AddPeers(string.Join('|', hash), peer);
+
+    /// <summary>
+    /// 向多个种子添加多个 Peer。<br/>
+    /// Add multiple peers to multiple torrents.
+    /// </summary>
+    /// <param name="hash">种子哈希值列表。<br/>List of torrent hash values.</param>
+    /// <param name="peer">要添加的 Peer 地址列表。<br/>List of peer addresses to add.</param>
+    public async Task AddPeers(List<string> hash, List<string> peer) =>
+        await AddPeers(string.Join('|', hash), string.Join('|', peer));
+
     private async Task<string> Put(string subPath, string hash, ApiVersion? targetVersion = null)
     {
         if (string.IsNullOrWhiteSpace(hash))
