@@ -637,7 +637,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// 当新 URL 格式无效时抛出。<br/>
     /// Thrown when the new URL is invalid.
     /// </exception>
-    public async Task EditTracker(string hash, string originUrl, string newUrl)
+    public async Task EditTorrentTracker(string hash, string originUrl, string newUrl)
     {
         if (string.IsNullOrWhiteSpace(hash))
         {
@@ -670,8 +670,8 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// </summary>
     /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
     /// <param name="urlList">要删除的 Tracker 地址列表。<br/>List of tracker URLs to remove.</param>
-    public async Task RemoveTrackers(string hash, List<string> urlList) =>
-        await RemoveTrackers(hash, string.Join("|", urlList));
+    public async Task RemoveTorrentTrackers(string hash, List<string> urlList) =>
+        await RemoveTorrentTrackers(hash, string.Join("|", urlList));
 
     /// <summary>
     /// 删除指定种子的 Tracker。<br/>
@@ -686,13 +686,8 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// 当所有指定的 Tracker 地址均未找到时抛出。<br/>
     /// Thrown when all specified tracker URLs are not found.
     /// </exception>
-    public async Task RemoveTrackers(string hash, string url)
+    public async Task RemoveTorrentTrackers(string hash, string url)
     {
-        var require = new ApiVersion("2.2.0");
-        if (apiVersion < require)
-        {
-        }
-
         if (string.IsNullOrWhiteSpace(hash))
         {
             throw new ArgumentException("Torrent hash cannot be null or empty", nameof(hash));
@@ -705,7 +700,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
         };
         try
         {
-            await netUtils.Post($"{BaseUrl}/removeTrackers", parameters);
+            await netUtils.Post($"{BaseUrl}/removeTrackers", parameters, new ApiVersion(2, 2));
         }
         catch (QbittorrentConflictException)
         {
