@@ -5,19 +5,28 @@ namespace Banned.Qbittorrent.Models.Torrent;
 public class TorrentProperties
 {
     [JsonPropertyName("addition_date")]
-    public long AdditionDate { get; set; }
+    public long AdditionDateUnix { get; set; }
+
+    [JsonIgnore]
+    public DateTimeOffset AdditionDate => DateTimeOffset.FromUnixTimeSeconds(AdditionDateUnix);
 
     [JsonPropertyName("comment")]
     public string Comment { get; set; } = string.Empty;
 
     [JsonPropertyName("completion_date")]
-    public long CompletionDate { get; set; }
+    public long CompletionDateUnix { get; set; }
+
+    [JsonIgnore]
+    public DateTimeOffset CompletionDate => DateTimeOffset.FromUnixTimeSeconds(CompletionDateUnix);
 
     [JsonPropertyName("created_by")]
     public string CreatedBy { get; set; } = string.Empty;
 
     [JsonPropertyName("creation_date")]
-    public long CreationDate { get; set; }
+    public long CreationDateUnix { get; set; }
+
+    [JsonIgnore]
+    public DateTimeOffset CreationDate => DateTimeOffset.FromUnixTimeSeconds(CreationDateUnix);
 
     [JsonPropertyName("dl_limit")]
     public long DownloadLimit { get; set; }
@@ -26,16 +35,22 @@ public class TorrentProperties
     public long DownloadSpeed { get; set; }
 
     [JsonPropertyName("dl_speed_avg")]
-    public long DownloadSpeedAvg { get; set; }
+    public long DownloadSpeedAverage { get; set; }
 
     [JsonPropertyName("eta")]
-    public long Eta { get; set; }
+    public long EtaSeconds { get; set; }
+
+    [JsonIgnore]
+    public TimeSpan Eta => TimeSpan.FromSeconds(EtaSeconds);
 
     [JsonPropertyName("isPrivate")]
     public bool IsPrivate { get; set; }
 
     [JsonPropertyName("last_seen")]
-    public long LastSeen { get; set; }
+    public long LastSeenUnix { get; set; }
+
+    [JsonIgnore]
+    public DateTimeOffset LastSeen => DateTimeOffset.FromUnixTimeSeconds(LastSeenUnix);
 
     [JsonPropertyName("nb_connections")]
     public int Connections { get; set; }
@@ -65,7 +80,10 @@ public class TorrentProperties
     public string SavePath { get; set; } = string.Empty;
 
     [JsonPropertyName("seeding_time")]
-    public long SeedingTime { get; set; }
+    public long SeedingTimeSeconds { get; set; }
+
+    [JsonIgnore]
+    public TimeSpan SeedingTime => TimeSpan.FromSeconds(SeedingTimeSeconds);
 
     [JsonPropertyName("seeds")]
     public int Seeds { get; set; }
@@ -77,7 +95,10 @@ public class TorrentProperties
     public double ShareRatio { get; set; }
 
     [JsonPropertyName("time_elapsed")]
-    public long TimeElapsed { get; set; }
+    public long TimeElapsedSeconds { get; set; }
+
+    [JsonIgnore]
+    public TimeSpan TimeElapsed => TimeSpan.FromSeconds(TimeElapsedSeconds);
 
     [JsonPropertyName("total_downloaded")]
     public long TotalDownloaded { get; set; }
@@ -104,5 +125,5 @@ public class TorrentProperties
     public long UploadSpeed { get; set; }
 
     [JsonPropertyName("up_speed_avg")]
-    public long UploadSpeedAvg { get; set; }
+    public long UploadSpeedAverage { get; set; }
 }

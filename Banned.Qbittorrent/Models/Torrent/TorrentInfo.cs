@@ -163,7 +163,6 @@ public class TorrentInfo
             : TagListStr.Split(",", StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries).ToList();
 
     [JsonPropertyName("time_active")]
-
     public int TimeActiveSeconds { get; set; }
 
     [JsonIgnore]
