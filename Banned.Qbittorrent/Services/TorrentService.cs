@@ -5,6 +5,7 @@ using Banned.Qbittorrent.Models.Requests;
 using Banned.Qbittorrent.Models.Torrent;
 using Banned.Qbittorrent.Utils;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Banned.Qbittorrent.Services;
 
@@ -123,6 +124,18 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
         var response = await netUtils.Post($"{BaseUrl}/info", parameters);
         return JsonSerializer.Deserialize<List<TorrentInfo>>(response) ?? [];
     }
+
+    /// <summary>
+    /// 获取指定种子的 Web 种子列表。<br/>
+    /// Get the list of web seeds for the specified torrent.
+    /// </summary>
+    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
+    /// <returns>
+    /// 包含 Web 种子信息的列表；获取失败返回 <c>null</c>。<br/>
+    /// A list of <see cref="TorrentWebSeed"/> representing web seed information; <c>null</c> if retrieval fails.
+    /// </returns>
+    public async Task<List<TorrentWebSeed>?> GetTorrentWebSeeds(string hash) =>
+        JsonSerializer.Deserialize<List<TorrentWebSeed>>(await Put("webseeds", hash));
 
     /// <summary>
     /// 删除指定种子。<br/>

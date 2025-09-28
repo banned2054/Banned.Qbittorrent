@@ -16,6 +16,7 @@ public class TorrentUnitTest
         _client = await QBittorrentClient.Create(url, user, pass);
     }
 
+
     [Test]
     public async Task TestGetAllTorrentInfo()
     {
@@ -83,15 +84,24 @@ public class TorrentUnitTest
     }
 
     [Test]
-    public async Task GetFilePiece()
+    public async Task TestGetPieceStates()
     {
-        try
-        {
+        var result =
             await _client.Torrent.GetTorrentPiecesStates(hash : "d866173fb508d762d177719bcac230a416e80220");
-        }
-        catch
+        foreach (var pState in result)
         {
-            //
+            Console.WriteLine(pState.ToString());
+        }
+    }
+
+    [Test]
+    public async Task TestGetTorrentWebSeed()
+    {
+        var result =
+            await _client.Torrent.GetTorrentWebSeeds(hash : "d866173fb508d762d177719bcac230a416e80220");
+        foreach (var seed in result)
+        {
+            Console.WriteLine(seed.Url);
         }
     }
 }
