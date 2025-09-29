@@ -24,7 +24,7 @@ public class NetUtils
         _baseUrl    = new Uri(baseUrl.TrimEnd('/') + "/");
         _userName   = userName;
         _password   = password;
-        _apiVersion = new ApiVersion(2);
+        _apiVersion = ApiVersion.V2_0_0;
         var cookieContainer = new CookieContainer();
 
         var handler = new HttpClientHandler
@@ -68,13 +68,13 @@ public class NetUtils
                                   CancellationToken ct            = default)
     {
         if (targetVersion != null && _apiVersion < targetVersion)
-            throw new QbittorrentNotSupportedException(opName ?? subPath, targetVersion, _apiVersion);
+            throw new QbittorrentNotSupportedException(opName ?? subPath, targetVersion.Value, _apiVersion);
 
         await EnsureLoggedIn().ConfigureAwait(false);
 
         return await ExecuteWithRetry(
-                                           () => new HttpRequestMessage(HttpMethod.Get, CombineUrl(subPath)),
-                                           ct).ConfigureAwait(false);
+                                      () => new HttpRequestMessage(HttpMethod.Get, CombineUrl(subPath)),
+                                      ct).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -86,21 +86,21 @@ public class NetUtils
                                    CancellationToken           ct            = default)
     {
         if (targetVersion != null && _apiVersion < targetVersion)
-            throw new QbittorrentNotSupportedException(opName ?? subPath, targetVersion, _apiVersion);
+            throw new QbittorrentNotSupportedException(opName ?? subPath, targetVersion.Value, _apiVersion);
 
         await EnsureLoggedIn().ConfigureAwait(false);
 
         return await ExecuteWithRetry(
-                                           () =>
-                                           {
-                                               if (parameters != null)
-                                                   return new HttpRequestMessage(HttpMethod.Post, CombineUrl(subPath))
-                                                   {
-                                                       Content = new FormUrlEncodedContent(parameters)
-                                                   };
-                                               return null;
-                                           },
-                                           ct).ConfigureAwait(false);
+                                      () =>
+                                      {
+                                          if (parameters != null)
+                                              return new HttpRequestMessage(HttpMethod.Post, CombineUrl(subPath))
+                                              {
+                                                  Content = new FormUrlEncodedContent(parameters)
+                                              };
+                                          return null;
+                                      },
+                                      ct).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -171,8 +171,8 @@ public class NetUtils
     /// 自动重试逻辑（异步）
     /// </summary>
     private async Task<string> ExecuteWithRetry(Func<HttpRequestMessage?> requestFactory,
-                                                     CancellationToken         ct         = default,
-                                                     int                       maxRetries = 3)
+                                                CancellationToken         ct         = default,
+                                                int                       maxRetries = 3)
     {
         Exception?           lastException = null;
         HttpResponseMessage? lastResponse  = null;

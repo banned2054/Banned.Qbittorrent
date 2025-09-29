@@ -22,7 +22,7 @@ public class ApplicationService(NetUtils netUtils)
     public async Task<ApiVersion> GetApiVersion()
     {
         var result = await netUtils.Get($"{BaseUrl}/webapiVersion");
-        return new ApiVersion(result);
+        return ApiVersion.Parse(result);
     }
 
     /// <summary>

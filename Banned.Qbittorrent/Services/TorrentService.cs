@@ -5,7 +5,6 @@ using Banned.Qbittorrent.Models.Requests;
 using Banned.Qbittorrent.Models.Torrent;
 using Banned.Qbittorrent.Utils;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace Banned.Qbittorrent.Services;
 
@@ -15,8 +14,7 @@ namespace Banned.Qbittorrent.Services;
 /// </summary>
 public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
 {
-    private const    string     BaseUrl      = "/api/v2/torrents";
-    private readonly ApiVersion _apiVersion5 = new("2.11.0");
+    private const string BaseUrl = "/api/v2/torrents";
 
     /// <summary>
     /// 获取种子信息列表。<br/>
@@ -174,7 +172,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
         {
             { "hashes", hash },
         };
-        if (apiVersion < _apiVersion5)
+        if (apiVersion < ApiVersion.V2_11_0)
             await netUtils.Post($"{BaseUrl}/resume", parameters);
         else
             await netUtils.Post($"{BaseUrl}/start", parameters);
@@ -211,7 +209,8 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// Pause the specified torrent.
     /// </summary>
     /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
-    public async Task PauseTorrent(string hash) => await PutHashes(apiVersion < _apiVersion5 ? "pause" : "stop", hash);
+    public async Task PauseTorrent(string hash) =>
+        await PutHashes(apiVersion < ApiVersion.V2_11_0 ? "pause" : "stop", hash);
 
     /// <summary>
     /// 暂停多个种子。<br/>
@@ -310,7 +309,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
             SequentialDownload     = sequentialDownload,
             FirstLastPiecePriority = firstLastPiecePriority
         };
-        if (apiVersion < _apiVersion5)
+        if (apiVersion < ApiVersion.V2_11_0)
         {
             request.Paused = stopped ?? paused;
         }
@@ -388,7 +387,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
         }
 
 
-        if (apiVersion < new ApiVersion(2, 7))
+        if (apiVersion < ApiVersion.V2_7_0)
         {
             var fileList = await GetTorrentFiles(hash);
             var index    = fileList.FindIndex(f => f.Name == oldPath);
@@ -430,7 +429,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
             throw new ArgumentException("New path cannot be null or empty", nameof(newPath));
         }
 
-        if (apiVersion >= new ApiVersion(2, 7))
+        if (apiVersion >= ApiVersion.V2_7_0)
         {
             var fileList = await GetTorrentFiles(hash);
             await RenameTorrentFile(hash, fileList[index].Name, newPath);
@@ -485,7 +484,8 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// Reannounce the specified torrent to the tracker.
     /// </summary>
     /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
-    public async Task ReannounceTorrent(string hash) => await PutHashes("reannounce", hash, new ApiVersion("2.0.2"));
+    public async Task ReannounceTorrent(string hash) =>
+        await PutHashes("reannounce", hash, ApiVersion.V2_0_2);
 
     /// <summary>
     /// 重新向 Tracker 汇报多个种子。<br/>
@@ -713,7 +713,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
         };
         try
         {
-            await netUtils.Post($"{BaseUrl}/removeTrackers", parameters, new ApiVersion(2, 2));
+            await netUtils.Post($"{BaseUrl}/removeTrackers", parameters, ApiVersion.V2_2_0);
         }
         catch (QbittorrentConflictException)
         {
@@ -754,7 +754,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
         };
         try
         {
-            await netUtils.Post($"{BaseUrl}/addPeers", parameters, new ApiVersion(2, 3));
+            await netUtils.Post($"{BaseUrl}/addPeers", parameters, ApiVersion.V2_3_0);
         }
         catch (QbittorrentConflictException)
         {
