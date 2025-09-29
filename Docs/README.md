@@ -43,4 +43,4 @@ await client.ResumeTorrents(new[] { "torrent_hash" });
 
 ## API 实现进度
 
-[📘 查看 API 实现进度](../API_IMPLEMENTATION.md)
+[📘 查看 API 实现进度](https://github.com/banned2054/Banned.Qbittorrent/blob/main/Docs/API%20Implementation.md)
