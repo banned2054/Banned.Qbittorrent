@@ -56,7 +56,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// <param name="reverse">是否反向排序。<br/>Whether to sort in reverse order.</param>
     /// <param name="limit">返回结果数量限制。<br/>Limit on the number of results returned.</param>
     /// <param name="offset">结果偏移量。<br/>Result offset.</param>
-    /// <param name="hashList">种子哈希值列表。<br/>List of torrent hash values.</param>
+    /// <param name="hashes">种子哈希值列表。<br/>List of torrent hash values.</param>
     /// <returns>
     /// 种子信息列表。<br/>
     /// List of torrent information.
@@ -68,7 +68,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
                                                          bool              reverse  = false,
                                                          int               limit    = 0,
                                                          int               offset   = 0,
-                                                         List<string>?     hashList = null)
+                                                         List<string>?     hashes   = null)
     {
         var parameters = new Dictionary<string, string>();
 
@@ -83,9 +83,9 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
         if (reverse) parameters.Add("reverse", "true");
         if (limit  > 0) parameters.Add("limit", limit.ToString());
         if (offset > 0) parameters.Add("offset", offset.ToString());
-        if (hashList is { Count: > 0 })
+        if (hashes is { Count: > 0 })
         {
-            parameters.Add("hashes", string.Join("|", hashList));
+            parameters.Add("hashes", string.Join("|", hashes));
         }
 
         var response = await netUtils.Post($"{BaseUrl}/info", parameters);
@@ -124,6 +124,30 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     }
 
     /// <summary>
+    /// 获取指定种子的通用属性。<br/>
+    /// Get generic properties of the specified torrent.
+    /// </summary>
+    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
+    /// <returns>
+    /// 包含属性的 <see cref="TorrentProperties"/>；获取失败返回 <c>null</c>。<br/>
+    /// A <see cref="TorrentProperties"/> if successful; otherwise <c>null</c>.
+    /// </returns>
+    public async Task<TorrentProperties?> GetTorrentGenericProperties(string hash) =>
+        JsonSerializer.Deserialize<TorrentProperties>(await Put(hash, "properties"));
+
+    /// <summary>
+    /// 获取指定种子的 Tracker 信息。<br/>
+    /// Get tracker information for the specified torrent.
+    /// </summary>
+    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
+    /// <returns>
+    /// 包含 Tracker 信息的列表；无数据返回空列表。<br/>
+    /// A list of <see cref="TrackerInfo"/>; an empty list if no data is available.
+    /// </returns>
+    public async Task<List<TrackerInfo>?> GetTorrentTrackers(string hash) =>
+        JsonSerializer.Deserialize<List<TrackerInfo>>(await Put(hash, "trackers"));
+
+    /// <summary>
     /// 获取指定种子的 Web 种子列表。<br/>
     /// Get the list of web seeds for the specified torrent.
     /// </summary>
@@ -134,6 +158,102 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// </returns>
     public async Task<List<TorrentWebSeed>?> GetTorrentWebSeeds(string hash) =>
         JsonSerializer.Deserialize<List<TorrentWebSeed>>(await Put("webseeds", hash));
+
+    /// <summary>
+    /// 获取种子的文件列表。<br/>
+    /// Get the file list of a torrent.
+    /// </summary>
+    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
+    /// <param name="indexes">文件索引列表。<br/>List of file indexes.</param>
+    /// <returns>
+    /// 种子文件信息列表。<br/>
+    /// List of torrent file information.
+    /// </returns>
+    public async Task<List<TorrentFileInfo>> GetTorrentFiles(string hash, List<int>? indexes = null)
+    {
+        if (string.IsNullOrEmpty(hash))
+        {
+            throw new ArgumentException("Torrent hash cannot be null or empty", nameof(hash));
+        }
+
+        const string requestUrl = $"{BaseUrl}/files";
+        var parameters = new Dictionary<string, string>
+        {
+            { "hash", hash }
+        };
+
+        if (indexes is { Count: > 0 })
+        {
+            parameters["indexes"] = string.Join("|", indexes);
+        }
+
+        try
+        {
+            var response = await netUtils.Post(requestUrl, parameters);
+            var fileList = JsonSerializer.Deserialize<List<TorrentFileInfo>>(response);
+
+            return fileList ?? [];
+        }
+        catch (QbittorrentNotFoundException)
+        {
+            return [];
+        }
+    }
+
+    /// <summary>
+    /// 获取指定种子的每个分片状态。<br/>
+    /// Get the state of each piece in the specified torrent.
+    /// </summary>
+    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
+    /// <returns>
+    /// 分片状态列表，包含每个分片的下载状态；获取失败返回 <c>null</c>。<br/>
+    /// A list of <see cref="EnumPieceState"/> representing the state of each piece; <c>null</c> if retrieval fails.
+    /// </returns>
+    public async Task<List<EnumPieceState>?> GetTorrentPiecesStates(string hash) =>
+        JsonSerializer.Deserialize<List<EnumPieceState>>(await Put("pieceStates", hash));
+
+    /// <summary>
+    /// 获取指定种子的每个分片哈希值。<br/>
+    /// Get the hash of each piece in the specified torrent.
+    /// </summary>
+    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
+    /// <returns>
+    /// 分片哈希值列表；获取失败返回 <c>null</c>。<br/>
+    /// A list of piece hash strings; <c>null</c> if retrieval fails.
+    /// </returns>
+    public async Task<List<string>?> GetTorrentPiecesHashes(string hash) =>
+        JsonSerializer.Deserialize<List<string>>(await Put("pieceHashes", hash));
+
+    /// <summary>
+    /// 暂停指定种子。<br/>
+    /// Pause the specified torrent.
+    /// </summary>
+    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
+    public async Task PauseTorrent(string hash) =>
+        await PutHashes(apiVersion < ApiVersion.V2_11_0 ? "pause" : "stop", hash);
+
+    /// <summary>
+    /// 暂停多个种子。<br/>
+    /// Pause multiple torrents.
+    /// </summary>
+    /// <param name="hashes">种子哈希值列表。<br/>List of torrent hash values.</param>
+    public async Task PauseTorrent(List<string> hashes) => await PauseTorrent(string.Join('|', hashes.ToArray()));
+
+    /// <summary>
+    /// 继续下载/做种指定种子。<br/>
+    /// Resume the specified torrent.
+    /// </summary>
+    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
+    public async Task ResumeTorrent(string hash) =>
+        await PutHashes(apiVersion < ApiVersion.V2_11_0 ? "resume" : "start", hash);
+
+    /// <summary>
+    /// 继续下载/做种多个种子。<br/>
+    /// Resume multiple torrents.
+    /// </summary>
+    /// <param name="hashes">种子哈希值列表。<br/>List of torrent hash values.</param>
+    public async Task ResumeTorrent(List<string> hashes) =>
+        await ResumeTorrent(string.Join('|', hashes.ToArray()));
 
     /// <summary>
     /// 删除指定种子。<br/>
@@ -156,38 +276,10 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// 删除多个指定种子。<br/>
     /// Delete multiple specified torrents.
     /// </summary>
-    /// <param name="hashList">种子哈希值列表。<br/>List of torrent hash values.</param>
+    /// <param name="hashes">种子哈希值列表。<br/>List of torrent hash values.</param>
     /// <param name="deleteFile">是否同时删除文件。<br/>Whether to delete files as well.</param>
-    public async Task DeleteTorrent(List<string> hashList, bool deleteFile = false) =>
-        await DeleteTorrent(string.Join('|', hashList.ToArray()), deleteFile);
-
-    /// <summary>
-    /// 继续下载/做种指定种子。<br/>
-    /// Resume the specified torrent.
-    /// </summary>
-    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
-    public async Task ResumeTorrent(string hash)
-    {
-        var parameters = new Dictionary<string, string>
-        {
-            { "hashes", hash },
-        };
-        if (apiVersion < ApiVersion.V2_11_0)
-            await netUtils.Post($"{BaseUrl}/resume", parameters);
-        else
-            await netUtils.Post($"{BaseUrl}/start", parameters);
-    }
-
-    /// <summary>
-    /// 继续下载/做种多个种子。<br/>
-    /// Resume multiple torrents.
-    /// </summary>
-    /// <param name="hashList">种子哈希值列表。<br/>List of torrent hash values.</param>
-    public async Task ResumeTorrent(List<string> hashList)
-    {
-        var hash = string.Join('|', hashList.ToArray());
-        await ResumeTorrent(hash);
-    }
+    public async Task DeleteTorrent(List<string> hashes, bool deleteFile = false) =>
+        await DeleteTorrent(string.Join('|', hashes.ToArray()), deleteFile);
 
     /// <summary>
     /// 重新校验指定种子的进度。<br/>
@@ -200,24 +292,177 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// 重新校验多个种子的进度。<br/>
     /// Recheck progress for multiple torrents.
     /// </summary>
-    /// <param name="hashList">种子哈希值列表。<br/>List of torrent hash values.</param>
-    public async Task RecheckTorrent(List<string> hashList) =>
-        await RecheckTorrent(string.Join('|', hashList.ToArray()));
+    /// <param name="hashes">种子哈希值列表。<br/>List of torrent hash values.</param>
+    public async Task RecheckTorrent(List<string> hashes) =>
+        await RecheckTorrent(string.Join('|', hashes.ToArray()));
 
     /// <summary>
-    /// 暂停指定种子。<br/>
-    /// Pause the specified torrent.
+    /// 重新向 Tracker 汇报指定种子。<br/>
+    /// Reannounce the specified torrent to the tracker.
     /// </summary>
     /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
-    public async Task PauseTorrent(string hash) =>
-        await PutHashes(apiVersion < ApiVersion.V2_11_0 ? "pause" : "stop", hash);
+    public async Task ReannounceTorrent(string hash) =>
+        await PutHashes("reannounce", hash, ApiVersion.V2_0_2);
 
     /// <summary>
-    /// 暂停多个种子。<br/>
-    /// Pause multiple torrents.
+    /// 重新向 Tracker 汇报多个种子。<br/>
+    /// Reannounce multiple torrents to the tracker.
     /// </summary>
-    /// <param name="hashList">种子哈希值列表。<br/>List of torrent hash values.</param>
-    public async Task PauseTorrent(List<string> hashList) => await PauseTorrent(string.Join('|', hashList.ToArray()));
+    /// <param name="hashes">种子哈希值列表。<br/>List of torrent hash values.</param>
+    public async Task ReannounceTorrent(List<string> hashes) =>
+        await ReannounceTorrent(string.Join('|', hashes.ToArray()));
+
+    /// <summary>
+    /// 编辑指定种子的 Tracker。<br/>
+    /// Edit the tracker of the specified torrent.
+    /// </summary>
+    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
+    /// <param name="originUrl">原始 Tracker 地址。<br/>Original tracker URL.</param>
+    /// <param name="newUrl">新的 Tracker 地址。<br/>New tracker URL.</param>
+    /// <exception cref="QbittorrentConflictException">
+    /// 当新 URL 已存在或原始 URL 未找到时抛出。<br/>
+    /// Thrown when the new URL already exists or the original URL is not found.
+    /// </exception>
+    /// <exception cref="QbittorrentBadRequestException">
+    /// 当新 URL 格式无效时抛出。<br/>
+    /// Thrown when the new URL is invalid.
+    /// </exception>
+    public async Task EditTorrentTracker(string hash, string originUrl, string newUrl)
+    {
+        if (string.IsNullOrWhiteSpace(hash))
+        {
+            throw new ArgumentException("Torrent hash cannot be null or empty", nameof(hash));
+        }
+
+        var parameters = new Dictionary<string, string>
+        {
+            { "hash", hash },
+            { "origUrl", originUrl },
+            { "newUrl", newUrl },
+        };
+        try
+        {
+            await netUtils.Post($"{BaseUrl}/editTracker", parameters);
+        }
+        catch (QbittorrentConflictException)
+        {
+            throw new QbittorrentConflictException("NewUrl already exists for the torrent. Or origUrl was not found.");
+        }
+        catch (QbittorrentBadRequestException)
+        {
+            throw new QbittorrentBadRequestException("NewUrl is not a valid URL");
+        }
+    }
+
+    /// <summary>
+    /// 删除指定种子的 Tracker。<br/>
+    /// Remove tracker(s) from the specified torrent.
+    /// </summary>
+    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
+    /// <param name="url">
+    /// 要删除的 Tracker 地址，多个以“|”分隔。<br/>
+    /// Tracker URL(s) to remove, separated by '|'.
+    /// </param>
+    /// <exception cref="QbittorrentConflictException">
+    /// 当所有指定的 Tracker 地址均未找到时抛出。<br/>
+    /// Thrown when all specified tracker URLs are not found.
+    /// </exception>
+    public async Task RemoveTorrentTrackers(string hash, string url)
+    {
+        if (string.IsNullOrWhiteSpace(hash))
+        {
+            throw new ArgumentException("Torrent hash cannot be null or empty", nameof(hash));
+        }
+
+        var parameters = new Dictionary<string, string>
+        {
+            { "hash", hash },
+            { "urls", url },
+        };
+        try
+        {
+            await netUtils.Post($"{BaseUrl}/removeTrackers", parameters, ApiVersion.V2_2_0);
+        }
+        catch (QbittorrentConflictException)
+        {
+            throw new QbittorrentConflictException("All urls were not found");
+        }
+    }
+
+    /// <summary>
+    /// 删除指定种子的多个 Tracker。<br/>
+    /// Remove multiple trackers from the specified torrent.
+    /// </summary>
+    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
+    /// <param name="urlList">要删除的 Tracker 地址列表。<br/>List of tracker URLs to remove.</param>
+    public async Task RemoveTorrentTrackers(string hash, List<string> urlList) =>
+        await RemoveTorrentTrackers(hash, string.Join("|", urlList));
+
+    /// <summary>
+    /// 向指定种子添加一个或多个 Peer。<br/>
+    /// Add one or more peers to the specified torrent.
+    /// </summary>
+    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
+    /// <param name="peer">要添加的 Peer 地址（可为 IP:Port 格式）。<br/>Peer address to add (can be in IP:Port format).</param>
+    /// <exception cref="ArgumentException">
+    /// 当 <paramref name="hash"/> 或 <paramref name="peer"/> 为空时抛出。<br/>
+    /// Thrown when <paramref name="hash"/> or <paramref name="peer"/> is null or empty.
+    /// </exception>
+    /// <exception cref="QbittorrentConflictException">
+    /// 当所有指定的 Peer 地址均未找到或添加失败时抛出。<br/>
+    /// Thrown when all specified peer addresses are not found or failed to add.
+    /// </exception>
+    public async Task AddPeers(string hash, string peer)
+    {
+        if (string.IsNullOrWhiteSpace(hash))
+        {
+            throw new ArgumentException("Torrent hash cannot be null or empty", nameof(hash));
+        }
+
+        if (string.IsNullOrWhiteSpace(peer))
+        {
+            throw new ArgumentException("Peer cannot be null or empty", nameof(hash));
+        }
+
+        var parameters = new Dictionary<string, string>
+        {
+            { "hash", hash },
+            { "peers", peer },
+        };
+        try
+        {
+            await netUtils.Post($"{BaseUrl}/addPeers", parameters, ApiVersion.V2_3_0);
+        }
+        catch (QbittorrentConflictException)
+        {
+            throw new QbittorrentConflictException("All urls were not found");
+        }
+    }
+
+    /// <summary>
+    /// 向指定种子添加多个 Peer。<br/>
+    /// Add multiple peers to the specified torrent.
+    /// </summary>
+    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
+    /// <param name="peer">要添加的 Peer 地址列表。<br/>List of peer addresses to add.</param>
+    public async Task AddPeers(string hash, List<string> peer) => await AddPeers(hash, string.Join('|', peer));
+
+    /// <summary>
+    /// 向多个种子添加一个 Peer。<br/>
+    /// Add a peer to multiple torrents.
+    /// </summary>
+    /// <param name="hash">种子哈希值列表。<br/>List of torrent hash values.</param>
+    /// <param name="peer">要添加的 Peer 地址。<br/>Peer address to add.</param>
+    public async Task AddPeers(List<string> hash, string peer) => await AddPeers(string.Join('|', hash), peer);
+
+    /// <summary>
+    /// 向多个种子添加多个 Peer。<br/>
+    /// Add multiple peers to multiple torrents.
+    /// </summary>
+    /// <param name="hash">种子哈希值列表。<br/>List of torrent hash values.</param>
+    /// <param name="peer">要添加的 Peer 地址列表。<br/>List of peer addresses to add.</param>
+    public async Task AddPeers(List<string> hash, List<string> peer) =>
+        await AddPeers(string.Join('|', hash), string.Join('|', peer));
 
     /// <summary>
     /// 添加种子文件或 URL。<br/>
@@ -322,45 +567,275 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     }
 
     /// <summary>
-    /// 获取种子的文件列表。<br/>
-    /// Get the file list of a torrent.
+    /// 为指定种子添加一个或多个 Tracker。<br/>
+    /// Add one or more trackers to the specified torrent.
     /// </summary>
     /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
-    /// <param name="indexes">文件索引列表。<br/>List of file indexes.</param>
-    /// <returns>
-    /// 种子文件信息列表。<br/>
-    /// List of torrent file information.
-    /// </returns>
-    public async Task<List<TorrentFileInfo>> GetTorrentFiles(string hash, List<int>? indexes = null)
+    /// <param name="url">要添加的 Tracker 地址，多个以换行符分隔。<br/>Tracker URL(s) to add, separated by newline characters.</param>
+    public async Task AddTorrentTracker(string hash, string url)
     {
-        if (string.IsNullOrEmpty(hash))
+        if (string.IsNullOrWhiteSpace(hash))
         {
             throw new ArgumentException("Torrent hash cannot be null or empty", nameof(hash));
         }
 
-        const string requestUrl = $"{BaseUrl}/files";
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            throw new ArgumentException("Old path cannot be null or empty", nameof(url));
+        }
+
         var parameters = new Dictionary<string, string>
         {
-            { "hash", hash }
+            { "hash", hash },
+            { "urls", url },
+        };
+        await netUtils.Post($"{BaseUrl}/addTrackers", parameters);
+    }
+
+    /// <summary>
+    /// 为指定种子添加多个 Tracker。<br/>
+    /// Add multiple trackers to the specified torrent.
+    /// </summary>
+    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
+    /// <param name="urls">要添加的 Tracker 地址列表。<br/>List of tracker URLs to add.</param>
+    public async Task AddTorrentTrackers(string hash, List<string> urls) =>
+        await AddTorrentTracker(hash, string.Join('\n', urls));
+
+    /// <summary>
+    /// 提高指定种子的优先级。<br/>
+    /// Increase the priority of the specified torrent.
+    /// </summary>
+    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
+    public async Task IncreaseTorrentPriority(string hash) => await PutHashes("increasePrio", hash);
+
+    /// <summary>
+    /// 提高多个种子的优先级。<br/>
+    /// Increase the priority of multiple torrents.
+    /// </summary>
+    /// <param name="hash">种子哈希值列表。<br/>List of torrent hash values.</param>
+    public async Task IncreaseTorrentPriority(List<string> hash) =>
+        await IncreaseTorrentPriority(string.Join('|', hash));
+
+    /// <summary>
+    /// 降低指定种子的优先级。<br/>
+    /// Decrease the priority of the specified torrent.
+    /// </summary>
+    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
+    public async Task DecreaseTorrentPriority(string hash) => await PutHashes("decreasePrio", hash);
+
+    /// <summary>
+    /// 降低多个种子的优先级。<br/>
+    /// Decrease the priority of multiple torrents.
+    /// </summary>
+    /// <param name="hash">种子哈希值列表。<br/>List of torrent hash values.</param>
+    public async Task DecreaseTorrentPriority(List<string> hash) =>
+        await DecreaseTorrentPriority(string.Join('|', hash));
+
+    /// <summary>
+    /// 将指定种子的优先级提升至最高。<br/>
+    /// Set the priority of the specified torrent to the maximum level.
+    /// </summary>
+    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
+    public async Task MaximalTorrentPriority(string hash) => await PutHashes("topPrio", hash);
+
+    /// <summary>
+    /// 将多个种子的优先级提升至最高。<br/>
+    /// Set the priority of multiple torrents to the maximum level.
+    /// </summary>
+    /// <param name="hash">种子哈希值列表。<br/>List of torrent hash values.</param>
+    public async Task MaximalTorrentPriority(List<string> hash) =>
+        await MaximalTorrentPriority(string.Join('|', hash));
+
+    /// <summary>
+    /// 将指定种子的优先级降低至最低。<br/>
+    /// Set the priority of the specified torrent to the minimum level.
+    /// </summary>
+    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
+    public async Task MinimalTorrentPriority(string hash) => await PutHashes("bottomPrio", hash);
+
+    /// <summary>
+    /// 将多个种子的优先级降低至最低。<br/>
+    /// Set the priority of multiple torrents to the minimum level.
+    /// </summary>
+    /// <param name="hash">种子哈希值列表。<br/>List of torrent hash values.</param>
+    public async Task MinimalTorrentPriority(List<string> hash) =>
+        await MinimalTorrentPriority(string.Join('|', hash));
+
+    /// <summary>
+    /// 设置种子中文件的优先度。<br/>
+    /// Set file priority in a torrent.
+    /// </summary>
+    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
+    /// <param name="fileIndex">文件索引。<br/>File index.</param>
+    /// <param name="priority">文件优先度。<br/>File priority.</param>
+    public async Task SetFilePriority(string hash, int fileIndex, EnumTorrentFilePriority priority)
+    {
+        if (string.IsNullOrWhiteSpace(hash))
+        {
+            throw new ArgumentException("Torrent hash cannot be null or empty", nameof(hash));
+        }
+
+        if (fileIndex < 0)
+        {
+            throw new ArgumentException("File index should start from 0", nameof(fileIndex));
+        }
+
+        var parameters = new Dictionary<string, string>
+        {
+            { "hash", hash },
+            { "id", fileIndex.ToString() },
+            { "priority", ((int)priority).ToString() }
         };
 
-        if (indexes is { Count: > 0 })
-        {
-            parameters["indexes"] = string.Join("|", indexes);
-        }
-
-        try
-        {
-            var response = await netUtils.Post(requestUrl, parameters);
-            var fileList = JsonSerializer.Deserialize<List<TorrentFileInfo>>(response);
-
-            return fileList ?? [];
-        }
-        catch (QbittorrentNotFoundException)
-        {
-            return [];
-        }
+        await netUtils.Post($"{BaseUrl}/filePrio", parameters);
     }
+
+    /// <summary>
+    /// 设置种子中多个文件的优先度。<br/>
+    /// Set priorities for multiple files in a torrent.
+    /// </summary>
+    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
+    /// <param name="fileIndexes">文件索引列表。<br/>List of file indexes.</param>
+    /// <param name="priority">文件优先度。<br/>File priority.</param>
+    public async Task SetFilePriority(string hash, List<int> fileIndexes, EnumTorrentFilePriority priority)
+    {
+        if (string.IsNullOrWhiteSpace(hash))
+        {
+            throw new ArgumentException("Torrent hash cannot be null or empty", nameof(hash));
+        }
+
+        if (fileIndexes == null || fileIndexes.Count == 0)
+        {
+            throw new ArgumentException("File indexes cannot be null or empty", nameof(fileIndexes));
+        }
+
+        var parameters = new Dictionary<string, string>
+        {
+            { "hash", hash },
+            { "ids", string.Join("|", fileIndexes) },
+            { "priority", ((int)priority).ToString() }
+        };
+
+        await netUtils.Post($"{BaseUrl}/filePrio", parameters);
+    }
+
+    /// <summary>
+    /// 设置指定种子的存储位置。<br/>
+    /// Set the storage location for the specified torrent(s).
+    /// </summary>
+    /// <param name="hash">
+    /// 种子哈希值，或由“|”分隔的多个哈希值。<br/>
+    /// Torrent hash value, or multiple hashes separated by '|'.
+    /// </param>
+    /// <param name="newLocation">新的存储路径。<br/>New storage location.</param>
+    public async Task SetLocation(string hash, string newLocation)
+    {
+        if (string.IsNullOrWhiteSpace(hash)
+         || hash.Split('|').All(string.IsNullOrWhiteSpace))
+        {
+            throw new ArgumentException("Torrent hash cannot be null or empty", nameof(hash));
+        }
+
+        var parameters = new Dictionary<string, string>
+        {
+            { "hashes", hash },
+            { "location", newLocation },
+        };
+        await netUtils.Post($"{BaseUrl}/setLocation", parameters);
+    }
+
+    /// <summary>
+    /// 设置多个种子的存储位置。<br/>
+    /// Set the storage location for multiple torrents.
+    /// </summary>
+    /// <param name="hashList">种子哈希值列表。<br/>List of torrent hash values.</param>
+    /// <param name="newLocation">新的存储路径。<br/>New storage location.</param>
+    public async Task SetLocation(List<string> hashList, string newLocation) =>
+        await SetLocation(string.Join('|', hashList), newLocation);
+
+    /// <summary>
+    /// 重命名指定种子。<br/>
+    /// Rename the specified torrent.
+    /// </summary>
+    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
+    /// <param name="newName">新的种子名称。<br/>New torrent name.</param>
+    public async Task RenameTorrent(string hash, string newName)
+    {
+        if (string.IsNullOrWhiteSpace(hash))
+        {
+            throw new ArgumentException("Torrent hash cannot be null or empty", nameof(hash));
+        }
+
+        if (string.IsNullOrWhiteSpace(newName))
+        {
+            throw new ArgumentException("Torrent hash cannot be null or empty", nameof(newName));
+        }
+
+        var parameters = new Dictionary<string, string>
+        {
+            { "hash", hash },
+            { "name", newName },
+        };
+        await netUtils.Post($"{BaseUrl}/rename", parameters);
+    }
+
+    /// <summary>
+    /// 为指定种子设置分类。<br/>
+    /// Set the category for the specified torrent.
+    /// </summary>
+    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
+    /// <param name="category">分类名称。<br/>Category name.</param>
+    public async Task SetTorrentCategory(string hash, string category)
+    {
+        if (string.IsNullOrWhiteSpace(hash))
+        {
+            throw new ArgumentException("Torrent hash cannot be null or empty", nameof(hash));
+        }
+
+        if (string.IsNullOrWhiteSpace(category))
+        {
+            throw new ArgumentException("Torrent hash cannot be null or empty", nameof(category));
+        }
+
+        var parameters = new Dictionary<string, string>
+        {
+            { "hash", hash },
+            { "category", category },
+        };
+        await netUtils.Post($"{BaseUrl}/setCategory", parameters);
+    }
+
+    /// <summary>
+    /// 为多个种子设置分类。<br/>
+    /// Set the category for multiple torrents.
+    /// </summary>
+    /// <param name="hash">种子哈希值列表。<br/>List of torrent hash values.</param>
+    /// <param name="category">分类名称。<br/>Category name.</param>
+    public async Task SetTorrentCategory(List<string> hash, string category) =>
+        await SetTorrentCategory(string.Join('|', hash), category);
+
+
+    /// <summary>
+    /// 获取所有分类。<br/>
+    /// Get all categories.
+    /// </summary>
+    /// <returns>
+    /// 分类信息列表；获取失败返回 <c>null</c>。<br/>
+    /// A list of <see cref="TorrentCategory"/> objects; <c>null</c> if retrieval fails.
+    /// </returns>
+    public async Task<List<TorrentCategory>?> GetAllCategories() => JsonSerializer.Deserialize<List<TorrentCategory>>(
+         await netUtils.Get($"{BaseUrl}/categories", targetVersion : ApiVersion.V2_1_1));
+
+    /// <summary>
+    /// 获取所有标签。<br/>
+    /// Get all tags.
+    /// </summary>
+    /// <returns>
+    /// 标签名称列表；获取失败返回 <c>null</c>。<br/>
+    /// A list of tag names; <c>null</c> if retrieval fails.
+    /// </returns>
+    public async Task<List<string>?> GetAllTags() => JsonSerializer.Deserialize<List<string>>(
+         await netUtils.Get($"{BaseUrl}/tags", targetVersion : ApiVersion.V2_3_0));
 
     /// <summary>
     /// 重命名种子中的文件。<br/>
@@ -385,7 +860,6 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
         {
             throw new ArgumentException("New path cannot be null or empty", nameof(newPath));
         }
-
 
         if (apiVersion < ApiVersion.V2_7_0)
         {
@@ -479,313 +953,6 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
         await netUtils.Post($"{BaseUrl}/renameFolder", parameters);
     }
 
-    /// <summary>
-    /// 重新向 Tracker 汇报指定种子。<br/>
-    /// Reannounce the specified torrent to the tracker.
-    /// </summary>
-    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
-    public async Task ReannounceTorrent(string hash) =>
-        await PutHashes("reannounce", hash, ApiVersion.V2_0_2);
-
-    /// <summary>
-    /// 重新向 Tracker 汇报多个种子。<br/>
-    /// Reannounce multiple torrents to the tracker.
-    /// </summary>
-    /// <param name="hashList">种子哈希值列表。<br/>List of torrent hash values.</param>
-    public async Task ReannounceTorrent(List<string> hashList) =>
-        await ReannounceTorrent(string.Join('|', hashList.ToArray()));
-
-    /// <summary>
-    /// 获取指定种子的每个分片状态。<br/>
-    /// Get the state of each piece in the specified torrent.
-    /// </summary>
-    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
-    /// <returns>
-    /// 分片状态列表，包含每个分片的下载状态；获取失败返回 <c>null</c>。<br/>
-    /// A list of <see cref="EnumPieceState"/> representing the state of each piece; <c>null</c> if retrieval fails.
-    /// </returns>
-    public async Task<List<EnumPieceState>?> GetTorrentPiecesStates(string hash) =>
-        JsonSerializer.Deserialize<List<EnumPieceState>>(await Put("pieceStates", hash));
-
-    /// <summary>
-    /// 获取指定种子的每个分片哈希值。<br/>
-    /// Get the hash of each piece in the specified torrent.
-    /// </summary>
-    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
-    /// <returns>
-    /// 分片哈希值列表；获取失败返回 <c>null</c>。<br/>
-    /// A list of piece hash strings; <c>null</c> if retrieval fails.
-    /// </returns>
-    public async Task<List<string>?> GetTorrentPiecesHashes(string hash) =>
-        JsonSerializer.Deserialize<List<string>>(await Put("pieceHashes", hash));
-
-    /// <summary>
-    /// 设置种子中文件的优先度。<br/>
-    /// Set file priority in a torrent.
-    /// </summary>
-    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
-    /// <param name="fileIndex">文件索引。<br/>File index.</param>
-    /// <param name="priority">文件优先度。<br/>File priority.</param>
-    public async Task SetFilePriority(string hash, int fileIndex, EnumTorrentFilePriority priority)
-    {
-        if (string.IsNullOrWhiteSpace(hash))
-        {
-            throw new ArgumentException("Torrent hash cannot be null or empty", nameof(hash));
-        }
-
-        if (fileIndex < 0)
-        {
-            throw new ArgumentException("File index should start from 0", nameof(fileIndex));
-        }
-
-        var parameters = new Dictionary<string, string>
-        {
-            { "hash", hash },
-            { "id", fileIndex.ToString() },
-            { "priority", ((int)priority).ToString() }
-        };
-
-        await netUtils.Post($"{BaseUrl}/filePrio", parameters);
-    }
-
-    /// <summary>
-    /// 设置种子中多个文件的优先度。<br/>
-    /// Set priorities for multiple files in a torrent.
-    /// </summary>
-    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
-    /// <param name="fileIndexes">文件索引列表。<br/>List of file indexes.</param>
-    /// <param name="priority">文件优先度。<br/>File priority.</param>
-    public async Task SetFilePriority(string hash, List<int> fileIndexes, EnumTorrentFilePriority priority)
-    {
-        if (string.IsNullOrWhiteSpace(hash))
-        {
-            throw new ArgumentException("Torrent hash cannot be null or empty", nameof(hash));
-        }
-
-        if (fileIndexes == null || fileIndexes.Count == 0)
-        {
-            throw new ArgumentException("File indexes cannot be null or empty", nameof(fileIndexes));
-        }
-
-        var parameters = new Dictionary<string, string>
-        {
-            { "hash", hash },
-            { "ids", string.Join("|", fileIndexes) },
-            { "priority", ((int)priority).ToString() }
-        };
-
-        await netUtils.Post($"{BaseUrl}/filePrio", parameters);
-    }
-
-    /// <summary>
-    /// 设置多个种子的存储位置。<br/>
-    /// Set the storage location for multiple torrents.
-    /// </summary>
-    /// <param name="hashList">种子哈希值列表。<br/>List of torrent hash values.</param>
-    /// <param name="newLocation">新的存储路径。<br/>New storage location.</param>
-    public async Task SetLocation(List<string> hashList, string newLocation) =>
-        await SetLocation(string.Join('|', hashList), newLocation);
-
-    /// <summary>
-    /// 设置指定种子的存储位置。<br/>
-    /// Set the storage location for the specified torrent(s).
-    /// </summary>
-    /// <param name="hash">
-    /// 种子哈希值，或由“|”分隔的多个哈希值。<br/>
-    /// Torrent hash value, or multiple hashes separated by '|'.
-    /// </param>
-    /// <param name="newLocation">新的存储路径。<br/>New storage location.</param>
-    public async Task SetLocation(string hash, string newLocation)
-    {
-        if (string.IsNullOrWhiteSpace(hash)
-         || hash.Split('|').All(string.IsNullOrWhiteSpace))
-        {
-            throw new ArgumentException("Torrent hash cannot be null or empty", nameof(hash));
-        }
-
-        var parameters = new Dictionary<string, string>
-        {
-            { "hashes", hash },
-            { "location", newLocation },
-        };
-        await netUtils.Post($"{BaseUrl}/setLocation", parameters);
-    }
-
-    /// <summary>
-    /// 获取指定种子的通用属性。<br/>
-    /// Get generic properties of the specified torrent.
-    /// </summary>
-    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
-    /// <returns>
-    /// 包含属性的 <see cref="TorrentProperties"/>；获取失败返回 <c>null</c>。<br/>
-    /// A <see cref="TorrentProperties"/> if successful; otherwise <c>null</c>.
-    /// </returns>
-    public async Task<TorrentProperties?> GetTorrentGenericProperties(string hash) =>
-        JsonSerializer.Deserialize<TorrentProperties>(await Put(hash, "properties"));
-
-    /// <summary>
-    /// 获取指定种子的 Tracker 信息。<br/>
-    /// Get tracker information for the specified torrent.
-    /// </summary>
-    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
-    /// <returns>
-    /// 包含 Tracker 信息的列表；无数据返回空列表。<br/>
-    /// A list of <see cref="TrackerInfo"/>; an empty list if no data is available.
-    /// </returns>
-    public async Task<List<TrackerInfo>> GetTorrentTrackers(string hash) =>
-        JsonSerializer.Deserialize<List<TrackerInfo>>(await Put(hash, "trackers")) ?? [];
-
-    /// <summary>
-    /// 编辑指定种子的 Tracker。<br/>
-    /// Edit the tracker of the specified torrent.
-    /// </summary>
-    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
-    /// <param name="originUrl">原始 Tracker 地址。<br/>Original tracker URL.</param>
-    /// <param name="newUrl">新的 Tracker 地址。<br/>New tracker URL.</param>
-    /// <exception cref="QbittorrentConflictException">
-    /// 当新 URL 已存在或原始 URL 未找到时抛出。<br/>
-    /// Thrown when the new URL already exists or the original URL is not found.
-    /// </exception>
-    /// <exception cref="QbittorrentBadRequestException">
-    /// 当新 URL 格式无效时抛出。<br/>
-    /// Thrown when the new URL is invalid.
-    /// </exception>
-    public async Task EditTorrentTracker(string hash, string originUrl, string newUrl)
-    {
-        if (string.IsNullOrWhiteSpace(hash))
-        {
-            throw new ArgumentException("Torrent hash cannot be null or empty", nameof(hash));
-        }
-
-        var parameters = new Dictionary<string, string>
-        {
-            { "hash", hash },
-            { "origUrl", originUrl },
-            { "newUrl", newUrl },
-        };
-        try
-        {
-            await netUtils.Post($"{BaseUrl}/editTracker", parameters);
-        }
-        catch (QbittorrentConflictException)
-        {
-            throw new QbittorrentConflictException("NewUrl already exists for the torrent. Or origUrl was not found.");
-        }
-        catch (QbittorrentBadRequestException)
-        {
-            throw new QbittorrentBadRequestException("NewUrl is not a valid URL");
-        }
-    }
-
-    /// <summary>
-    /// 删除指定种子的多个 Tracker。<br/>
-    /// Remove multiple trackers from the specified torrent.
-    /// </summary>
-    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
-    /// <param name="urlList">要删除的 Tracker 地址列表。<br/>List of tracker URLs to remove.</param>
-    public async Task RemoveTorrentTrackers(string hash, List<string> urlList) =>
-        await RemoveTorrentTrackers(hash, string.Join("|", urlList));
-
-    /// <summary>
-    /// 删除指定种子的 Tracker。<br/>
-    /// Remove tracker(s) from the specified torrent.
-    /// </summary>
-    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
-    /// <param name="url">
-    /// 要删除的 Tracker 地址，多个以“|”分隔。<br/>
-    /// Tracker URL(s) to remove, separated by '|'.
-    /// </param>
-    /// <exception cref="QbittorrentConflictException">
-    /// 当所有指定的 Tracker 地址均未找到时抛出。<br/>
-    /// Thrown when all specified tracker URLs are not found.
-    /// </exception>
-    public async Task RemoveTorrentTrackers(string hash, string url)
-    {
-        if (string.IsNullOrWhiteSpace(hash))
-        {
-            throw new ArgumentException("Torrent hash cannot be null or empty", nameof(hash));
-        }
-
-        var parameters = new Dictionary<string, string>
-        {
-            { "hash", hash },
-            { "urls", url },
-        };
-        try
-        {
-            await netUtils.Post($"{BaseUrl}/removeTrackers", parameters, ApiVersion.V2_2_0);
-        }
-        catch (QbittorrentConflictException)
-        {
-            throw new QbittorrentConflictException("All urls were not found");
-        }
-    }
-
-    /// <summary>
-    /// 向指定种子添加一个或多个 Peer。<br/>
-    /// Add one or more peers to the specified torrent.
-    /// </summary>
-    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
-    /// <param name="peer">要添加的 Peer 地址（可为 IP:Port 格式）。<br/>Peer address to add (can be in IP:Port format).</param>
-    /// <exception cref="ArgumentException">
-    /// 当 <paramref name="hash"/> 或 <paramref name="peer"/> 为空时抛出。<br/>
-    /// Thrown when <paramref name="hash"/> or <paramref name="peer"/> is null or empty.
-    /// </exception>
-    /// <exception cref="QbittorrentConflictException">
-    /// 当所有指定的 Peer 地址均未找到或添加失败时抛出。<br/>
-    /// Thrown when all specified peer addresses are not found or failed to add.
-    /// </exception>
-    public async Task AddPeers(string hash, string peer)
-    {
-        if (string.IsNullOrWhiteSpace(hash))
-        {
-            throw new ArgumentException("Torrent hash cannot be null or empty", nameof(hash));
-        }
-
-        if (string.IsNullOrWhiteSpace(peer))
-        {
-            throw new ArgumentException("Peer cannot be null or empty", nameof(hash));
-        }
-
-        var parameters = new Dictionary<string, string>
-        {
-            { "hash", hash },
-            { "peers", peer },
-        };
-        try
-        {
-            await netUtils.Post($"{BaseUrl}/addPeers", parameters, ApiVersion.V2_3_0);
-        }
-        catch (QbittorrentConflictException)
-        {
-            throw new QbittorrentConflictException("All urls were not found");
-        }
-    }
-
-    /// <summary>
-    /// 向指定种子添加多个 Peer。<br/>
-    /// Add multiple peers to the specified torrent.
-    /// </summary>
-    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
-    /// <param name="peer">要添加的 Peer 地址列表。<br/>List of peer addresses to add.</param>
-    public async Task AddPeers(string hash, List<string> peer) => await AddPeers(hash, string.Join('|', peer));
-
-    /// <summary>
-    /// 向多个种子添加一个 Peer。<br/>
-    /// Add a peer to multiple torrents.
-    /// </summary>
-    /// <param name="hash">种子哈希值列表。<br/>List of torrent hash values.</param>
-    /// <param name="peer">要添加的 Peer 地址。<br/>Peer address to add.</param>
-    public async Task AddPeers(List<string> hash, string peer) => await AddPeers(string.Join('|', hash), peer);
-
-    /// <summary>
-    /// 向多个种子添加多个 Peer。<br/>
-    /// Add multiple peers to multiple torrents.
-    /// </summary>
-    /// <param name="hash">种子哈希值列表。<br/>List of torrent hash values.</param>
-    /// <param name="peer">要添加的 Peer 地址列表。<br/>List of peer addresses to add.</param>
-    public async Task AddPeers(List<string> hash, List<string> peer) =>
-        await AddPeers(string.Join('|', hash), string.Join('|', peer));
 
     private async Task<string> Put(string subPath, string hash, ApiVersion? targetVersion = null)
     {
