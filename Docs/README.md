@@ -27,10 +27,10 @@ var torrents = await client.GetTorrentList();
 await client.AddTorrent("magnet:?xt=urn:btih:...");
 
 // 暂停种子
-await client.PauseTorrents(new[] { "torrent_hash" });
+await client.PauseTorrents([ "torrent_hash" ]);
 
 // 恢复种子
-await client.ResumeTorrents(new[] { "torrent_hash" });
+await client.ResumeTorrents([ "torrent_hash" ]);
 ```
 
 ## 许可证
