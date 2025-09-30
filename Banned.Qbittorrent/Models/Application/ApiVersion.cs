@@ -10,10 +10,11 @@ public readonly struct ApiVersion(int major, int minor = 0, int patch = 0)
     // 预定义常用版本（按你的使用场景自行增减）
     public static readonly ApiVersion V2_0_0  = new(2);
     public static readonly ApiVersion V2_0_2  = new(2, 0, 2);
+    public static readonly ApiVersion V2_1_1  = new(2, 1, 1);
     public static readonly ApiVersion V2_2_0  = new(2, 2);
     public static readonly ApiVersion V2_3_0  = new(2, 3);
     public static readonly ApiVersion V2_7_0  = new(2, 7);
-    public static readonly ApiVersion V2_11_0 = new(2, 1);
+    public static readonly ApiVersion V2_11_0 = new(2, 11);
 
     public static bool TryParse(ReadOnlySpan<char> span, out ApiVersion version)
     {
