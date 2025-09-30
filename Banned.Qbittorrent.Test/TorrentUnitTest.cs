@@ -104,4 +104,10 @@ public class TorrentUnitTest
             Console.WriteLine(seed.Url);
         }
     }
+
+    [Test]
+    public async Task TestResumeTorrent()
+    {
+        await _client.Torrent.ResumeTorrent(hash : "4f1043e4910b4d1a2a20e2c1674d0fed670a13f2");
+    }
 }
