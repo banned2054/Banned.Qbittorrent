@@ -812,6 +812,65 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     public async Task<List<TorrentCategory>?> GetAllCategories() => JsonSerializer.Deserialize<List<TorrentCategory>>(
          await netUtils.Get($"{BaseUrl}/categories", targetVersion : ApiVersion.V2_1_1));
 
+    /// <summary>
+    /// 为指定种子添加一个标签。<br/>
+    /// Add a tag to the specified torrent.
+    /// </summary>
+    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
+    /// <param name="tag">要添加的标签名称。<br/>The name of the tag to add.</param>
+    public async Task AddTorrentTag(string hash, string tag)
+    {
+        if (string.IsNullOrWhiteSpace(hash))
+        {
+            throw new ArgumentException("Torrent hash cannot be null or empty", nameof(hash));
+        }
+
+        if (string.IsNullOrWhiteSpace(tag))
+        {
+            throw new ArgumentException("Tag cannot be null or empty", nameof(tag));
+        }
+
+        var parameters = new Dictionary<string, string>
+        {
+            { "hashes", hash },
+            { "tags", tag }
+        };
+        await netUtils.Post($"{BaseUrl}/addTags", parameters, ApiVersion.V2_3_0);
+    }
+
+    /// <summary>
+    /// 为多个种子添加一个标签。<br/>
+    /// Add a tag to multiple torrents.
+    /// </summary>
+    /// <param name="hashes">种子哈希值列表。<br/>List of torrent hash values.</param>
+    /// <param name="tag">要添加的标签名称。<br/>The name of the tag to add.</param>
+    public async Task AddTorrentsTag(List<string> hashes, string tag) =>
+        await AddTorrentTag(StringUtils.Join('|', hashes), tag);
+
+    /// <summary>
+    /// 为指定种子添加多个标签。<br/>
+    /// Add multiple tags to the specified torrent.
+    /// </summary>
+    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
+    /// <param name="tags">要添加的标签名称列表。<br/>List of tag names to add.</param>
+    public async Task AddTorrentTags(string hash, List<string> tags) =>
+        await AddTorrentTag(hash, StringUtils.Join(',', tags));
+
+    /// <summary>
+    /// 为多个种子添加多个标签。<br/>
+    /// Add multiple tags to multiple torrents.
+    /// </summary>
+    /// <param name="hashes">种子哈希值列表。<br/>List of torrent hash values.</param>
+    /// <param name="tags">要添加的标签名称列表。<br/>List of tag names to add.</param>
+    public async Task AddTorrentsTags(List<string> hashes, List<string> tags) =>
+        await AddTorrentTag(StringUtils.Join('|', hashes), StringUtils.Join(',', tags));
+
+    /// <summary>
+    /// 移除指定种子的标签。<br/>
+    /// Remove a tag from the specified torrent.
+    /// </summary>
+    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
+    /// <param name="tag">要移除的标签名称。<br/>The name of the tag to remove.</param>
     public async Task RemoveTorrentTag(string hash, string tag)
     {
         if (string.IsNullOrWhiteSpace(hash))
@@ -832,13 +891,30 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
         await netUtils.Post($"{BaseUrl}/removeTags", parameters, ApiVersion.V2_3_0);
     }
 
+    /// <summary>
+    /// 从多个种子中移除一个标签。<br/>
+    /// Remove a tag from multiple torrents.
+    /// </summary>
+    /// <param name="hashes">种子哈希值列表。<br/>List of torrent hash values.</param>
+    /// <param name="tag">要移除的标签名称。<br/>The name of the tag to remove.</param>
     public async Task RemoveTorrentsTag(List<string> hashes, string tag) =>
         await RemoveTorrentTag(StringUtils.Join('|', hashes), tag);
 
-
+    /// <summary>
+    /// 从指定种子中移除多个标签。<br/>
+    /// Remove multiple tags from the specified torrent.
+    /// </summary>
+    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
+    /// <param name="tags">要移除的标签名称列表。<br/>List of tag names to remove.</param>
     public async Task RemoveTorrentTags(string hash, List<string> tags) =>
         await RemoveTorrentTag(hash, StringUtils.Join(',', tags));
 
+    /// <summary>
+    /// 从多个种子中移除多个标签。<br/>
+    /// Remove multiple tags from multiple torrents.
+    /// </summary>
+    /// <param name="hashes">种子哈希值列表。<br/>List of torrent hash values.</param>
+    /// <param name="tags">要移除的标签名称列表。<br/>List of tag names to remove.</param>
     public async Task RemoveTorrentsTags(List<string> hashes, List<string> tags) =>
         await RemoveTorrentTag(StringUtils.Join('|', hashes), StringUtils.Join(',', tags));
 
