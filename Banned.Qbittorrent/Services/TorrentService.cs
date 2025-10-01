@@ -801,7 +801,6 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     public async Task SetTorrentsCategory(List<string> hashes, string category) =>
         await SetTorrentCategory(string.Join('|', hashes), category);
 
-
     /// <summary>
     /// 获取所有分类。<br/>
     /// Get all categories.
@@ -823,6 +822,32 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// </returns>
     public async Task<List<string>?> GetAllTags() => JsonSerializer.Deserialize<List<string>>(
          await netUtils.Get($"{BaseUrl}/tags", targetVersion : ApiVersion.V2_3_0));
+
+    /// <summary>
+    /// 创建一个标签。<br/>
+    /// Create a tag.
+    /// </summary>
+    /// <param name="tag">要创建的标签名称。<br/>The name of the tag to create.</param>
+    public async Task CreateTag(string tag)
+    {
+        if (string.IsNullOrWhiteSpace(tag))
+        {
+            throw new ArgumentException("Tag cannot be null or empty", nameof(tag));
+        }
+
+        var parameters = new Dictionary<string, string>
+        {
+            { "tags", tag }
+        };
+        await netUtils.Post($"{BaseUrl}/createTags", parameters, ApiVersion.V2_3_0);
+    }
+
+    /// <summary>
+    /// 创建多个标签。<br/>
+    /// Create multiple tags.
+    /// </summary>
+    /// <param name="tags">要创建的标签名称列表。<br/>List of tag names to create.</param>
+    public async Task CreateTags(List<string> tags) => await CreateTag(string.Join(',', tags));
 
     /// <summary>
     /// 重命名种子中的文件。<br/>
@@ -939,7 +964,6 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
 
         await netUtils.Post($"{BaseUrl}/renameFolder", parameters);
     }
-
 
     private async Task<string> Put(string subPath, string hash, ApiVersion? targetVersion = null)
     {
