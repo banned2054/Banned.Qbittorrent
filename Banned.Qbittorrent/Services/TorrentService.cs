@@ -850,6 +850,32 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     public async Task CreateTags(List<string> tags) => await CreateTag(string.Join(',', tags));
 
     /// <summary>
+    /// 删除一个标签。<br/>
+    /// Delete a tag.
+    /// </summary>
+    /// <param name="tag">要删除的标签名称。<br/>The name of the tag to delete.</param>
+    public async Task DeleteTag(string tag)
+    {
+        if (string.IsNullOrWhiteSpace(tag))
+        {
+            throw new ArgumentException("Tag cannot be null or empty", nameof(tag));
+        }
+
+        var parameters = new Dictionary<string, string>
+        {
+            { "tags", tag }
+        };
+        await netUtils.Post($"{BaseUrl}/deleteTags", parameters, ApiVersion.V2_3_0);
+    }
+
+    /// <summary>
+    /// 函数多个标签。<br/>
+    /// Delete multiple tags.
+    /// </summary>
+    /// <param name="tags">要删除的标签名称列表。<br/>List of tag names to delete.</param>
+    public async Task DeleteTags(List<string> tags) => await CreateTag(string.Join(',', tags));
+
+    /// <summary>
     /// 重命名种子中的文件。<br/>
     /// Rename a file in the torrent.
     /// </summary>
