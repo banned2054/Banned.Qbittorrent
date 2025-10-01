@@ -90,7 +90,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
         if (offset > 0) parameters.Add("offset", offset.ToString());
         if (hashes is { Count: > 0 })
         {
-            parameters.Add("hashes", string.Join("|", hashes));
+            parameters.Add("hashes", StringUtils.Join('|', hashes));
         }
 
         var response = await netUtils.Post($"{BaseUrl}/info", parameters);
@@ -121,7 +121,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
         if (request.Offset > 0) parameters.Add("offset", request.Offset.ToString());
         if (request.HashList is { Count: > 0 })
         {
-            parameters.Add("hashes", string.Join("|", request.HashList));
+            parameters.Add("hashes", StringUtils.Join('|', request.HashList));
         }
 
         var response = await netUtils.Post($"{BaseUrl}/info", parameters);
@@ -189,7 +189,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
 
         if (indexes is { Count: > 0 })
         {
-            parameters["indexes"] = string.Join("|", indexes);
+            parameters["indexes"] = StringUtils.Join('|', indexes);
         }
 
         try
@@ -242,7 +242,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// Pause multiple torrents.
     /// </summary>
     /// <param name="hashes">种子哈希值列表。<br/>List of torrent hash values.</param>
-    public async Task PauseTorrents(List<string> hashes) => await PauseTorrent(string.Join('|', hashes));
+    public async Task PauseTorrents(List<string> hashes) => await PauseTorrent(StringUtils.Join('|', hashes));
 
     /// <summary>
     /// 继续下载/做种指定种子。<br/>
@@ -257,7 +257,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// Resume multiple torrents.
     /// </summary>
     /// <param name="hashes">种子哈希值列表。<br/>List of torrent hash values.</param>
-    public async Task ResumeTorrents(List<string> hashes) => await ResumeTorrent(string.Join('|', hashes));
+    public async Task ResumeTorrents(List<string> hashes) => await ResumeTorrent(StringUtils.Join('|', hashes));
 
     /// <summary>
     /// 删除指定种子。<br/>
@@ -283,7 +283,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// <param name="hashes">种子哈希值列表。<br/>List of torrent hash values.</param>
     /// <param name="deleteFile">是否同时删除文件。<br/>Whether to delete files as well.</param>
     public async Task DeleteTorrents(List<string> hashes, bool deleteFile = false) =>
-        await DeleteTorrent(string.Join('|', hashes), deleteFile);
+        await DeleteTorrent(StringUtils.Join('|', hashes), deleteFile);
 
     /// <summary>
     /// 重新校验指定种子的进度。<br/>
@@ -297,7 +297,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// Recheck progress for multiple torrents.
     /// </summary>
     /// <param name="hashes">种子哈希值列表。<br/>List of torrent hash values.</param>
-    public async Task RecheckTorrents(List<string> hashes) => await RecheckTorrent(string.Join('|', hashes));
+    public async Task RecheckTorrents(List<string> hashes) => await RecheckTorrent(StringUtils.Join('|', hashes));
 
     /// <summary>
     /// 重新向 Tracker 汇报指定种子。<br/>
@@ -311,7 +311,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// Reannounce multiple torrents to the tracker.
     /// </summary>
     /// <param name="hashes">种子哈希值列表。<br/>List of torrent hash values.</param>
-    public async Task ReannounceTorrents(List<string> hashes) => await ReannounceTorrent(string.Join('|', hashes));
+    public async Task ReannounceTorrents(List<string> hashes) => await ReannounceTorrent(StringUtils.Join('|', hashes));
 
     /// <summary>
     /// 编辑指定种子的 Tracker。<br/>
@@ -402,7 +402,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
     /// <param name="urls">要删除的 Tracker 地址列表。<br/>List of tracker URLs to remove.</param>
     public async Task RemoveTorrentTrackers(string hash, List<string> urls) =>
-        await RemoveTorrentTracker(hash, string.Join("|", urls));
+        await RemoveTorrentTracker(hash, StringUtils.Join('|', urls));
 
     /// <summary>
     /// 向指定种子添加一个 Peer。<br/>
@@ -448,7 +448,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
     /// <param name="peers">要添加的 Peer 地址列表。<br/>List of peer addresses to add.</param>
     public async Task AddTorrentPeers(string hash, List<string> peers) =>
-        await AddTorrentPeer(hash, string.Join('|', peers));
+        await AddTorrentPeer(hash, StringUtils.Join('|', peers));
 
     /// <summary>
     /// 向多个种子添加一个 Peer。<br/>
@@ -457,7 +457,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// <param name="hashes">种子哈希值列表。<br/>List of torrent hash values.</param>
     /// <param name="peer">要添加的 Peer 地址。<br/>Peer address to add.</param>
     public async Task AddTorrentsPeer(List<string> hashes, string peer) =>
-        await AddTorrentPeer(string.Join('|', hashes), peer);
+        await AddTorrentPeer(StringUtils.Join('|', hashes), peer);
 
     /// <summary>
     /// 向多个种子添加多个 Peer。<br/>
@@ -466,7 +466,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// <param name="hashes">种子哈希值列表。<br/>List of torrent hash values.</param>
     /// <param name="peers">要添加的 Peer 地址列表。<br/>List of peer addresses to add.</param>
     public async Task AddTorrentsPeers(List<string> hashes, List<string> peers) =>
-        await AddTorrentPeer(string.Join('|', hashes), string.Join('|', peers));
+        await AddTorrentPeer(StringUtils.Join('|', hashes), StringUtils.Join('|', peers));
 
     /// <summary>
     /// 添加种子文件或 URL。<br/>
@@ -603,7 +603,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
     /// <param name="urls">要添加的 Tracker 地址列表。<br/>List of tracker URLs to add.</param>
     public async Task AddTorrentTrackers(string hash, List<string> urls) =>
-        await AddTorrentTracker(hash, string.Join('\n', urls));
+        await AddTorrentTracker(hash, StringUtils.Join('\n', urls));
 
     /// <summary>
     /// 提高指定种子的优先级。<br/>
@@ -618,7 +618,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// </summary>
     /// <param name="hashes">种子哈希值列表。<br/>List of torrent hash values.</param>
     public async Task IncreaseTorrentsPriority(List<string> hashes) =>
-        await IncreaseTorrentPriority(string.Join('|', hashes));
+        await IncreaseTorrentPriority(StringUtils.Join('|', hashes));
 
     /// <summary>
     /// 降低指定种子的优先级。<br/>
@@ -633,7 +633,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// </summary>
     /// <param name="hashes">种子哈希值列表。<br/>List of torrent hash values.</param>
     public async Task DecreaseTorrentsPriority(List<string> hashes) =>
-        await DecreaseTorrentPriority(string.Join('|', hashes));
+        await DecreaseTorrentPriority(StringUtils.Join('|', hashes));
 
     /// <summary>
     /// 将指定种子的优先级提升至最高。<br/>
@@ -648,7 +648,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// </summary>
     /// <param name="hashes">种子哈希值列表。<br/>List of torrent hash values.</param>
     public async Task MaximalTorrentsPriority(List<string> hashes) =>
-        await MaximalTorrentPriority(string.Join('|', hashes));
+        await MaximalTorrentPriority(StringUtils.Join('|', hashes));
 
     /// <summary>
     /// 将指定种子的优先级降低至最低。<br/>
@@ -663,7 +663,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// </summary>
     /// <param name="hashes">种子哈希值列表。<br/>List of torrent hash values.</param>
     public async Task MinimalTorrentsPriority(List<string> hashes) =>
-        await MinimalTorrentPriority(string.Join('|', hashes));
+        await MinimalTorrentPriority(StringUtils.Join('|', hashes));
 
     /// <summary>
     /// 设置种子中文件的优先度。<br/>
@@ -702,7 +702,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
         var parameters = new Dictionary<string, string>
         {
             { "hash", hash },
-            { "ids", string.Join("|", fileIndexes) },
+            { "ids", StringUtils.Join('|', fileIndexes) },
             { "priority", ((int)priority).ToString() }
         };
 
@@ -738,7 +738,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// <param name="hashes">种子哈希值列表。<br/>List of torrent hash values.</param>
     /// <param name="newLocation">新的存储路径。<br/>New storage location.</param>
     public async Task SetTorrentsLocation(List<string> hashes, string newLocation) =>
-        await SetTorrentLocation(string.Join('|', hashes), newLocation);
+        await SetTorrentLocation(StringUtils.Join('|', hashes), newLocation);
 
     /// <summary>
     /// 重命名指定种子。<br/>
@@ -799,7 +799,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// <param name="hashes">种子哈希值列表。<br/>List of torrent hash values.</param>
     /// <param name="category">分类名称。<br/>Category name.</param>
     public async Task SetTorrentsCategory(List<string> hashes, string category) =>
-        await SetTorrentCategory(string.Join('|', hashes), category);
+        await SetTorrentCategory(StringUtils.Join('|', hashes), category);
 
     /// <summary>
     /// 获取所有分类。<br/>
@@ -811,6 +811,36 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// </returns>
     public async Task<List<TorrentCategory>?> GetAllCategories() => JsonSerializer.Deserialize<List<TorrentCategory>>(
          await netUtils.Get($"{BaseUrl}/categories", targetVersion : ApiVersion.V2_1_1));
+
+    public async Task RemoveTorrentTag(string hash, string tag)
+    {
+        if (string.IsNullOrWhiteSpace(hash))
+        {
+            throw new ArgumentException("Torrent hash cannot be null or empty", nameof(hash));
+        }
+
+        if (string.IsNullOrWhiteSpace(tag))
+        {
+            throw new ArgumentException("Tag cannot be null or empty", nameof(tag));
+        }
+
+        var parameters = new Dictionary<string, string>
+        {
+            { "hashes", hash },
+            { "tags", tag }
+        };
+        await netUtils.Post($"{BaseUrl}/removeTags", parameters, ApiVersion.V2_3_0);
+    }
+
+    public async Task RemoveTorrentsTag(List<string> hashes, string tag) =>
+        await RemoveTorrentTag(StringUtils.Join('|', hashes), tag);
+
+
+    public async Task RemoveTorrentTags(string hash, List<string> tags) =>
+        await RemoveTorrentTag(hash, StringUtils.Join(',', tags));
+
+    public async Task RemoveTorrentsTags(List<string> hashes, List<string> tags) =>
+        await RemoveTorrentTag(StringUtils.Join('|', hashes), StringUtils.Join(',', tags));
 
     /// <summary>
     /// 获取所有标签。<br/>
@@ -847,7 +877,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// Create multiple tags.
     /// </summary>
     /// <param name="tags">要创建的标签名称列表。<br/>List of tag names to create.</param>
-    public async Task CreateTags(List<string> tags) => await CreateTag(string.Join(',', tags));
+    public async Task CreateTags(List<string> tags) => await CreateTag(StringUtils.Join(',', tags));
 
     /// <summary>
     /// 删除一个标签。<br/>
@@ -873,7 +903,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// Delete multiple tags.
     /// </summary>
     /// <param name="tags">要删除的标签名称列表。<br/>List of tag names to delete.</param>
-    public async Task DeleteTags(List<string> tags) => await CreateTag(string.Join(',', tags));
+    public async Task DeleteTags(List<string> tags) => await CreateTag(StringUtils.Join(',', tags));
 
     /// <summary>
     /// 重命名种子中的文件。<br/>
