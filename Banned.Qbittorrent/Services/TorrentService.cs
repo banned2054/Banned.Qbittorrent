@@ -979,7 +979,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// Delete multiple tags.
     /// </summary>
     /// <param name="tags">要删除的标签名称列表。<br/>List of tag names to delete.</param>
-    public async Task DeleteTags(List<string> tags) => await CreateTag(StringUtils.Join(',', tags));
+    public async Task DeleteTags(List<string> tags) => await DeleteTag(StringUtils.Join(',', tags));
 
     /// <summary>
     /// 重命名种子中的文件。<br/>
