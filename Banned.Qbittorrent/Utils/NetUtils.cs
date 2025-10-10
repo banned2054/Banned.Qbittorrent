@@ -67,7 +67,7 @@ public class NetUtils
                                   string?           opName        = null,
                                   CancellationToken ct            = default)
     {
-        if (targetVersion != null && _apiVersion < targetVersion)
+        if (_apiVersion < targetVersion)
             throw new QbittorrentNotSupportedException(opName ?? subPath, targetVersion.Value, _apiVersion);
 
         await EnsureLoggedIn().ConfigureAwait(false);
