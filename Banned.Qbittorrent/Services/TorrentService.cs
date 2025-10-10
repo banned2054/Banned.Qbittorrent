@@ -813,6 +813,127 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
          await netUtils.Get($"{BaseUrl}/categories", targetVersion : ApiVersion.V2_1_1));
 
     /// <summary>
+    /// 创建一个分类。<br/>
+    /// Create a category.
+    /// </summary>
+    /// <param name="name">要创建的分类名称。<br/>The name of the category to create.</param>
+    /// <param name="savePath">分类保存路径。<br/>The save path of the category.</param>
+    /// <param name="downloadPath">可选的下载路径。<br/>Optional download path.</param>
+    /// <param name="downloadPathEnable">是否启用下载路径。<br/>Whether to enable the download path.</param>
+    /// <exception cref="QbittorrentBadRequestException">
+    /// 当分类名称为空时抛出。<br/>
+    /// Thrown when the category name is empty.
+    /// </exception>
+    /// <exception cref="QbittorrentConflictException">
+    /// 当分类名称无效或已存在时抛出。<br/>
+    /// Thrown when the category name is invalid or already exists.
+    /// </exception>
+    public async Task CreateCategory(string  name,
+                                     string  savePath,
+                                     string? downloadPath       = null,
+                                     bool?   downloadPathEnable = null)
+    {
+        var parameters = new Dictionary<string, string>
+        {
+            { "category", name },
+            { "savePath", savePath },
+        };
+
+        if (!string.IsNullOrWhiteSpace(downloadPath))
+            parameters["downloadPath"] = downloadPath;
+
+        if (downloadPathEnable != null)
+            parameters["downloadPathEnabled"] = downloadPathEnable.Value ? "True" : "False";
+
+        try
+        {
+            await netUtils.Post($"{BaseUrl}/createCategory", parameters);
+        }
+        catch (QbittorrentBadRequestException)
+        {
+            throw new QbittorrentBadRequestException("Category name is empty");
+        }
+        catch (QbittorrentConflictException)
+        {
+            throw new QbittorrentConflictException("Category name is invalid or already exists");
+        }
+    }
+
+
+    /// <summary>
+    /// 编辑一个分类。<br/>
+    /// Edit a category.
+    /// </summary>
+    /// <param name="name">要编辑的分类名称。<br/>The name of the category to edit.</param>
+    /// <param name="savePath">分类保存路径。<br/>The save path of the category.</param>
+    /// <param name="downloadPath">可选的下载路径。<br/>Optional download path.</param>
+    /// <param name="downloadPathEnable">是否启用下载路径。<br/>Whether to enable the download path.</param>
+    /// <exception cref="QbittorrentBadRequestException">
+    /// 当分类名称为空时抛出。<br/>
+    /// Thrown when the category name is empty.
+    /// </exception>
+    /// <exception cref="QbittorrentConflictException">
+    /// 当分类编辑失败时抛出。<br/>
+    /// Thrown when the category editing operation fails.
+    /// </exception>
+    public async Task EditCategory(string  name,
+                                   string  savePath,
+                                   string? downloadPath       = null,
+                                   bool?   downloadPathEnable = null)
+    {
+        var parameters = new Dictionary<string, string>
+        {
+            { "category", name },
+            { "savePath", savePath },
+        };
+
+        if (!string.IsNullOrWhiteSpace(downloadPath))
+            parameters["downloadPath"] = downloadPath;
+
+        if (downloadPathEnable != null)
+            parameters["downloadPathEnabled"] = downloadPathEnable.Value ? "True" : "False";
+
+        try
+        {
+            await netUtils.Post($"{BaseUrl}/editCategory", parameters, ApiVersion.V2_1_0);
+        }
+        catch (QbittorrentBadRequestException)
+        {
+            throw new QbittorrentBadRequestException("Category name is empty");
+        }
+        catch (QbittorrentConflictException)
+        {
+            throw new QbittorrentConflictException("Category editing failed");
+        }
+    }
+
+
+    /// <summary>
+    /// 删除一个分类。<br/>
+    /// Delete a category.
+    /// </summary>
+    /// <param name="category">要删除的分类名称。<br/>The name of the category to delete.</param>
+    public async Task DeleteCategory(string category)
+    {
+        var parameters = new Dictionary<string, string>
+        {
+            { "categories", category }
+        };
+
+        await netUtils.Post($"{BaseUrl}/removeCategories", parameters);
+    }
+
+
+    /// <summary>
+    /// 删除多个分类。<br/>
+    /// Delete multiple categories.
+    /// </summary>
+    /// <param name="categories">要删除的分类名称列表。<br/>List of category names to delete.</param>
+    public async Task DeleteCategories(List<string> categories) =>
+        await DeleteCategory(StringUtils.Join('\n', categories));
+
+
+    /// <summary>
     /// 为指定种子添加一个标签。<br/>
     /// Add a tag to the specified torrent.
     /// </summary>
