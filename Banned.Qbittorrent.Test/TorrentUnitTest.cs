@@ -54,16 +54,15 @@ public class TorrentUnitTest
     [Test]
     public async Task GetTorrents()
     {
-        var trackers =
-            await _client.Torrent.GetTorrentInfo(hash :
-                                                 "a940478142ad9d776a342f512a59e53c3304b8cee4de991c3b09e0bf214f366d");
-        if (trackers.Count == 0)
+        var tracker =
+            await _client.Torrent.GetTorrentInfo("a940478142ad9d776a342f512a59e53c3304b8cee4de991c3b09e0bf214f366d");
+        if (tracker == null)
         {
             Console.WriteLine("Not find");
         }
         else
         {
-            Console.WriteLine(trackers[0]);
+            Console.WriteLine(tracker);
         }
     }
 
@@ -76,11 +75,6 @@ public class TorrentUnitTest
     [Test]
     public async Task SetTorrentLocation()
     {
-        var torrent = await _client.Torrent.GetTorrentInfo(hash : "436f9a9ac50e513b9b046c2f04958aafae24d175");
-        foreach (var t in torrent)
-        {
-            Console.WriteLine($"{t.Name}\n\t{t.Hash}\n\t{t.SavePath}\n\t{t.ContentPath}");
-        }
     }
 
     [Test]
