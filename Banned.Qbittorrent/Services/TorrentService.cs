@@ -18,7 +18,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     private const string BaseUrl = "/api/v2/torrents";
 
     /// <summary>
-    /// 获取种子信息列表。<br/>
+    /// 获取单个种子信息列表。<br/>
     /// Get torrent information list.
     /// </summary>
     /// <param name="hash">单个种子的哈希值。<br/>Hash value of a single torrent.</param>
@@ -139,7 +139,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// A <see cref="TorrentProperties"/> if successful; otherwise <c>null</c>.
     /// </returns>
     public async Task<TorrentProperties?> GetTorrentGenericProperties(string hash) =>
-        JsonSerializer.Deserialize<TorrentProperties>(await Put(hash, "properties"));
+        JsonSerializer.Deserialize<TorrentProperties>(await Put("properties", hash));
 
     /// <summary>
     /// 获取指定种子的 Tracker 信息。<br/>
@@ -151,7 +151,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// A list of <see cref="TrackerInfo"/>; an empty list if no data is available.
     /// </returns>
     public async Task<List<TrackerInfo>?> GetTorrentTrackers(string hash) =>
-        JsonSerializer.Deserialize<List<TrackerInfo>>(await Put(hash, "trackers"));
+        JsonSerializer.Deserialize<List<TrackerInfo>>(await Put("trackers", hash));
 
     /// <summary>
     /// 获取指定种子的 Web 种子列表。<br/>
@@ -414,7 +414,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
 
         if (string.IsNullOrWhiteSpace(peer))
         {
-            throw new ArgumentException("Peer cannot be null or empty", nameof(hash));
+            throw new ArgumentException("Peer cannot be null or empty", nameof(peer));
         }
 
         var parameters = new Dictionary<string, string>
@@ -576,7 +576,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
 
         if (string.IsNullOrWhiteSpace(url))
         {
-            throw new ArgumentException("Old path cannot be null or empty", nameof(url));
+            throw new ArgumentException("Tracker url cannot be null or empty", nameof(url));
         }
 
         var parameters = new Dictionary<string, string>
@@ -921,7 +921,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// 设置指定种子的存储位置。<br/>
     /// Set the storage location for the specified torrent(s).
     /// </summary>
-    /// <param name="hash">种子哈希值<br/>Torrent hash value./// </param>
+    /// <param name="hash">种子哈希值<br/>Torrent hash value.</param>
     /// <param name="newLocation">新的存储路径。<br/>New storage location.</param>
     public async Task SetTorrentLocation(string hash, string newLocation)
     {
@@ -1304,7 +1304,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     }
 
     /// <summary>
-    /// 函数多个标签。<br/>
+    /// 删除多个标签。<br/>
     /// Delete multiple tags.
     /// </summary>
     /// <param name="tags">要删除的标签名称列表。<br/>List of tag names to delete.</param>
@@ -1434,7 +1434,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
 
         var parameters = new Dictionary<string, string>
         {
-            ["hashes"] = string.Join('|', hash),
+            ["hashes"] = hash,
             ["value"]  = enable.ToString().ToLowerInvariant()
         };
 
@@ -1484,7 +1484,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
 
         var parameters = new Dictionary<string, string>
         {
-            ["hashes"] = string.Join('|', hash),
+            ["hashes"] = hash,
             ["value"]  = enable.ToString().ToLowerInvariant()
         };
 
@@ -1583,12 +1583,9 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
         if (apiVersion >= ApiVersion.V2_7_0)
         {
             var fileList = await GetTorrentFiles(hash);
-            if (fileList == null || fileList.Count == 0)
-            {
-                return;
-            }
-
-            await RenameTorrentFile(hash, fileList[index].Name, newPath);
+            if (fileList is { Count: > 0 })
+                await RenameTorrentFile(hash, fileList[index].Name, newPath);
+            return;
         }
 
         var parameters = new Dictionary<string, string>
