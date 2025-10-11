@@ -69,7 +69,7 @@ public class TorrentUnitTest
     [Test]
     public async Task GetTorrentTrackers()
     {
-        var trackers = await _client.Torrent.GetTorrentInfo(hash : "0f9323316a62a4a6b66a5568893a52c3a342501d");
+        var trackers = await _client.Torrent.GetTorrentInfo("0f9323316a62a4a6b66a5568893a52c3a342501d");
     }
 
     [Test]
@@ -81,7 +81,7 @@ public class TorrentUnitTest
     public async Task TestGetPieceStates()
     {
         var result =
-            await _client.Torrent.GetTorrentPiecesStates(hash : "d866173fb508d762d177719bcac230a416e80220");
+            await _client.Torrent.GetTorrentPiecesStates("d866173fb508d762d177719bcac230a416e80220");
         foreach (var pState in result)
         {
             Console.WriteLine(pState.ToString());
@@ -92,7 +92,7 @@ public class TorrentUnitTest
     public async Task TestGetTorrentWebSeed()
     {
         var result =
-            await _client.Torrent.GetTorrentWebSeeds(hash : "d866173fb508d762d177719bcac230a416e80220");
+            await _client.Torrent.GetTorrentWebSeeds("d866173fb508d762d177719bcac230a416e80220");
         foreach (var seed in result)
         {
             Console.WriteLine(seed.Url);
@@ -102,6 +102,12 @@ public class TorrentUnitTest
     [Test]
     public async Task TestResumeTorrent()
     {
-        await _client.Torrent.ResumeTorrent(hash : "4f1043e4910b4d1a2a20e2c1674d0fed670a13f2");
+        await _client.Torrent.ResumeTorrent("4f1043e4910b4d1a2a20e2c1674d0fed670a13f2");
+    }
+
+    [Test]
+    public async Task TestGetTorrentDownloadLimit()
+    {
+        await _client.Torrent.GetTorrentDownloadLimit("d1fb4312d161b6d1aa39963d7a8eccd41a3599f3");
     }
 }
