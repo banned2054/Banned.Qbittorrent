@@ -1,3 +1,4 @@
+using System.Globalization;
 using Banned.Qbittorrent.Exceptions;
 using Banned.Qbittorrent.Models.Application;
 using Banned.Qbittorrent.Models.Enums;
@@ -748,6 +749,105 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
         };
         await netUtils.Post($"{BaseUrl}/setDownloadLimit", parameters);
     }
+
+    /// <summary>
+    /// 设置指定种子的分享限制。<br/>
+    /// Set the share limits for the specified torrent.
+    /// </summary>
+    /// <param name="hash">
+    /// 种子哈希值。<br/>
+    /// Torrent hash value.
+    /// </param>
+    /// <param name="ratioLimit">
+    /// 最大分享率（-2 表示使用全局值，-1 表示无限制）。<br/>
+    /// Maximum share ratio (-2 uses global value, -1 means no limit).
+    /// </param>
+    /// <param name="seedingTimeLimit">
+    /// 最大做种时间（分钟）（-2 表示使用全局值，-1 表示无限制）。<br/>
+    /// Maximum seeding time in minutes (-2 uses global value, -1 means no limit).
+    /// </param>
+    /// <param name="inactiveSeedingTimeLimit">
+    /// 最大非活动做种时间（分钟）（-2 表示使用全局值，-1 表示无限制）。<br/>
+    /// Maximum inactive seeding time in minutes (-2 uses global value, -1 means no limit).
+    /// </param>
+    public async Task SetTorrentShareLimit(string hash,
+                                           float? ratioLimit               = null,
+                                           int?   seedingTimeLimit         = null,
+                                           int?   inactiveSeedingTimeLimit = null)
+    {
+        if (string.IsNullOrWhiteSpace(hash)
+         || hash.Split('|').All(string.IsNullOrWhiteSpace))
+        {
+            throw new ArgumentException("Torrent hash cannot be null or empty", nameof(hash));
+        }
+
+        if (ratioLimit is null && seedingTimeLimit is null && inactiveSeedingTimeLimit is null)
+            throw new
+                ArgumentException("At least one of ratioLimit, seedingTimeLimit, or inactiveSeedingTimeLimit must be provided.");
+
+
+        var parameters = new Dictionary<string, string>
+        {
+            { "hashes", hash },
+        };
+        if (ratioLimit is not null)
+            parameters["ratioLimit"] = ratioLimit.Value.ToString(CultureInfo.InvariantCulture);
+
+        if (seedingTimeLimit is not null)
+            parameters["seedingTimeLimit"] = seedingTimeLimit.Value.ToString();
+
+        if (inactiveSeedingTimeLimit is not null)
+            parameters["inactiveSeedingTimeLimit"] = inactiveSeedingTimeLimit.Value.ToString();
+
+        await netUtils.Post($"{BaseUrl}/setShareLimits", parameters);
+    }
+
+    /// <summary>
+    /// 设置多个种子的分享限制。<br/>
+    /// Set the share limits for multiple torrents.
+    /// </summary>
+    /// <param name="hashes">
+    /// 种子哈希值列表。<br/>
+    /// List of torrent hash values.
+    /// </param>
+    /// <param name="ratioLimit">
+    /// 最大分享率（-2 表示使用全局值，-1 表示无限制）。<br/>
+    /// Maximum share ratio (-2 uses global value, -1 means no limit).
+    /// </param>
+    /// <param name="seedingTimeLimit">
+    /// 最大做种时间（分钟）（-2 表示使用全局值，-1 表示无限制）。<br/>
+    /// Maximum seeding time in minutes (-2 uses global value, -1 means no limit).
+    /// </param>
+    /// <param name="inactiveSeedingTimeLimit">
+    /// 最大非活动做种时间（分钟）（-2 表示使用全局值，-1 表示无限制）。<br/>
+    /// Maximum inactive seeding time in minutes (-2 uses global value, -1 means no limit).
+    /// </param>
+    public async Task SetTorrentsShareLimit(List<string> hashes,
+                                            float?       ratioLimit               = null,
+                                            int?         seedingTimeLimit         = null,
+                                            int?         inactiveSeedingTimeLimit = null) =>
+        await SetTorrentShareLimit(string.Join('|', hashes), ratioLimit, seedingTimeLimit, inactiveSeedingTimeLimit);
+
+    /// <summary>
+    /// 设置所有种子的分享限制。<br/>
+    /// Set the share limits for all torrents.
+    /// </summary>
+    /// <param name="ratioLimit">
+    /// 最大分享率（-2 表示使用全局值，-1 表示无限制）。<br/>
+    /// Maximum share ratio (-2 uses global value, -1 means no limit).
+    /// </param>
+    /// <param name="seedingTimeLimit">
+    /// 最大做种时间（分钟）（-2 表示使用全局值，-1 表示无限制）。<br/>
+    /// Maximum seeding time in minutes (-2 uses global value, -1 means no limit).
+    /// </param>
+    /// <param name="inactiveSeedingTimeLimit">
+    /// 最大非活动做种时间（分钟）（-2 表示使用全局值，-1 表示无限制）。<br/>
+    /// Maximum inactive seeding time in minutes (-2 uses global value, -1 means no limit).
+    /// </param>
+    public async Task SetAllTorrentsShareLimit(float? ratioLimit               = null,
+                                               int?   seedingTimeLimit         = null,
+                                               int?   inactiveSeedingTimeLimit = null) =>
+        await SetTorrentShareLimit("all", ratioLimit, seedingTimeLimit, inactiveSeedingTimeLimit);
 
     /// <summary>
     /// 设置多个种子的下载限速。<br/>

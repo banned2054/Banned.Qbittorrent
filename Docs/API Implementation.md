@@ -16,7 +16,9 @@ This document tracks the implementation status of qBittorrent Web API in this .N
 ### Log
 - [ ] 1. [Get log](https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-5.0)#get-log)
 - [ ] 2. [Get peer log](https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-5.0)#get-peer-log)
+
 ### Sync
+
 - [ ] 1. [Get main data](https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-5.0)#get-main-data)
 - [ ] 2. [Get torrent peers data](https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-5.0)#get-torrent-peers-data)
 
@@ -55,7 +57,7 @@ This document tracks the implementation status of qBittorrent Web API in this .N
 - [x] 22. [Set file priority](https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-5.0)#set-file-priority)
 - [x] 23. [Get torrent download limit](https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-5.0)#get-torrent-download-limit)
 - [x] 24. [Set torrent download limit](https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-5.0)#set-torrent-download-limit)
-- [ ] 25. [Set torrent share limit](https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-5.0)#set-torrent-share-limit)
+- [x] 25. [Set torrent share limit](https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-5.0)#set-torrent-share-limit)
 - [ ] 26. [Get torrent upload limit](https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-5.0)#get-torrent-upload-limit)
 - [ ] 27. [Set torrent upload limit](https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-5.0)#set-torrent-upload-limit)
 - [x] 28. [Set torrent location](https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-5.0)#set-torrent-location)
