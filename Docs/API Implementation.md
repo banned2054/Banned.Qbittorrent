@@ -72,7 +72,7 @@ This document tracks the implementation status of qBittorrent Web API in this .N
 - [x] 37. [Get all tags](https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-5.0)#get-all-tags)
 - [x] 38. [Create tags](https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-5.0)#create-tags)
 - [x] 39. [Delete tags](https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-5.0)#delete-tags)
-- [ ] 40. [Set automatic torrent management](https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-5.0)#set-automatic-torrent-management)
+- [x] 40. [Set automatic torrent management](https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-5.0)#set-automatic-torrent-management)
 - [ ] 41. [Toggle sequential download](https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-5.0)#toggle-sequential-download)
 - [ ] 42. [Set first/last piece priority](https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-5.0)#set-firstlast-piece-priority)
 - [ ] 43. [Set force start](https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-5.0)#set-force-start)

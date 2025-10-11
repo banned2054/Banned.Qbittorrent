@@ -1311,6 +1311,57 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     public async Task DeleteTags(List<string> tags) => await DeleteTag(StringUtils.Join(',', tags));
 
     /// <summary>
+    /// 启用或禁用指定种子的自动管理。<br/>
+    /// Enable or disable automatic management for the specified torrent.
+    /// </summary>
+    /// <param name="hash">
+    /// 种子哈希值，可为单个或多个哈希值。<br/>
+    /// Torrent hash value, can be a single hash or multiple hashes separated by '|'.
+    /// </param>
+    /// <param name="enable">
+    /// 是否启用自动管理（默认禁用）。<br/>
+    /// Whether to enable automatic management (disabled by default).
+    /// </param>
+    public async Task SetTorrentAutoManagementAsync(string hash, bool enable = false)
+    {
+        if (string.IsNullOrWhiteSpace(hash))
+        {
+            throw new ArgumentException("Torrent hash cannot be null or empty", nameof(hash));
+        }
+
+        var parameters = new Dictionary<string, string>
+        {
+            ["hashes"] = hash,
+            ["enable"] = enable.ToString().ToLowerInvariant()
+        };
+
+        await netUtils.Post($"{BaseUrl}/setAutoManagement", parameters);
+    }
+
+    /// <summary>
+    /// 启用或禁用多个种子的自动管理。<br/>
+    /// Enable or disable automatic management for multiple torrents.
+    /// </summary>
+    /// <param name="hashes">种子哈希值列表。<br/>List of torrent hash values.</param>
+    /// <param name="enable">
+    /// 是否启用自动管理（默认禁用）。<br/>
+    /// Whether to enable automatic management (disabled by default).
+    /// </param>
+    public async Task SetTorrentsAutoManagementAsync(List<string> hashes, bool enable = false) =>
+        await SetTorrentAutoManagementAsync(string.Join('|', hashes), enable);
+
+    /// <summary>
+    /// 启用或禁用所有种子的自动管理。<br/>
+    /// Enable or disable automatic management for all torrents.
+    /// </summary>
+    /// <param name="enable">
+    /// 是否启用自动管理（默认禁用）。<br/>
+    /// Whether to enable automatic management (disabled by default).
+    /// </param>
+    public async Task SetAllTorrentsAutoManagementAsync(bool enable = false) =>
+        await SetTorrentAutoManagementAsync("all", enable);
+
+    /// <summary>
     /// 重命名种子中的文件。<br/>
     /// Rename a file in the torrent.
     /// </summary>
