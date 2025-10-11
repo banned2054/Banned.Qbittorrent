@@ -751,6 +751,15 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     }
 
     /// <summary>
+    /// 设置多个种子的下载限速。<br/>
+    /// Set the download limit for multiple torrents.
+    /// </summary>
+    /// <param name="hashes">种子哈希值列表。<br/>List of torrent hash values.</param>
+    /// <param name="limitSpeed">下载速度限制（字节/秒）。<br/>Download speed limit in bytes per second.</param>
+    public async Task SetTorrentsDownloadLimit(List<string> hashes, long limitSpeed) =>
+        await SetTorrentDownloadLimit(string.Join('|', hashes), limitSpeed);
+
+    /// <summary>
     /// 设置指定种子的分享限制。<br/>
     /// Set the share limits for the specified torrent.
     /// </summary>
@@ -850,13 +859,63 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
         await SetTorrentShareLimit("all", ratioLimit, seedingTimeLimit, inactiveSeedingTimeLimit);
 
     /// <summary>
-    /// 设置多个种子的下载限速。<br/>
-    /// Set the download limit for multiple torrents.
+    /// 获取指定种子的上传限速。<br/>
+    /// Get the upload limit of the specified torrent.
+    /// </summary>
+    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
+    /// <returns>
+    /// 包含哈希与限速值的 <see cref="SpeedInfo"/>；未设置或获取失败返回 <c>null</c>。<br/>
+    /// A <see cref="SpeedInfo"/> containing the hash and limit value; <c>null</c> if not set or retrieval fails.
+    /// </returns>
+    public async Task<SpeedInfo?> GetTorrentUploadLimit(string hash) =>
+        (await GetTorrentsUploadLimit([hash]))?.FirstOrDefault();
+
+    /// <summary>
+    /// 获取多个种子的上传限速。<br/>
+    /// Get the upload limits of multiple torrents.
     /// </summary>
     /// <param name="hashes">种子哈希值列表。<br/>List of torrent hash values.</param>
-    /// <param name="limitSpeed">下载速度限制（字节/秒）。<br/>Download speed limit in bytes per second.</param>
-    public async Task SetTorrentsDownloadLimit(List<string> hashes, long limitSpeed) =>
-        await SetTorrentDownloadLimit(string.Join('|', hashes), limitSpeed);
+    /// <returns>
+    /// 包含哈希与限速值的列表；获取失败返回 <c>null</c>。<br/>
+    /// A list of <see cref="SpeedInfo"/> objects; <c>null</c> if retrieval fails.
+    /// </returns>
+    public async Task<List<SpeedInfo>?> GetTorrentsUploadLimit(List<string> hashes)
+    {
+        var response = await PutHashes("uploadLimit", string.Join('|', hashes));
+        var dict     = JsonSerializer.Deserialize<Dictionary<string, long>>(response);
+        return dict?.Select(kv => new SpeedInfo { Hash = kv.Key, Speed = kv.Value }).ToList();
+    }
+
+    /// <summary>
+    /// 设置指定种子的上传限速。<br/>
+    /// Set the upload limit for the specified torrent.
+    /// </summary>
+    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
+    /// <param name="limitSpeed">上传速度限制（字节/秒）。<br/>Upload speed limit in bytes per second.</param>
+    public async Task SetTorrentUploadLimit(string hash, long limitSpeed)
+    {
+        if (string.IsNullOrWhiteSpace(hash)
+         || hash.Split('|').All(string.IsNullOrWhiteSpace))
+        {
+            throw new ArgumentException("Torrent hash cannot be null or empty", nameof(hash));
+        }
+
+        var parameters = new Dictionary<string, string>
+        {
+            { "hashes", hash },
+            { "limit", limitSpeed.ToString() },
+        };
+        await netUtils.Post($"{BaseUrl}/setUploadLimit", parameters);
+    }
+
+    /// <summary>
+    /// 设置多个种子的上传限速。<br/>
+    /// Set the upload limit for multiple torrents.
+    /// </summary>
+    /// <param name="hashes">种子哈希值列表。<br/>List of torrent hash values.</param>
+    /// <param name="limitSpeed">上传速度限制（字节/秒）。<br/>Upload speed limit in bytes per second.</param>
+    public async Task SetTorrentsUploadLimit(List<string> hashes, long limitSpeed) =>
+        await SetTorrentUploadLimit(string.Join('|', hashes), limitSpeed);
 
     /// <summary>
     /// 设置指定种子的存储位置。<br/>
