@@ -1464,6 +1464,56 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     public async Task SetAllTorrentsForceStart(bool enable = true) => await SetTorrentForceStart("all", enable);
 
     /// <summary>
+    /// 启用或禁用指定种子的超级做种模式。<br/>
+    /// Enable or disable super seeding mode for the specified torrent.
+    /// </summary>
+    /// <param name="hash">
+    /// 种子哈希值，可为单个或多个哈希值。<br/>
+    /// Torrent hash value, can be a single hash or multiple hashes separated by '|'.
+    /// </param>
+    /// <param name="enable">
+    /// 是否启用超级做种模式（默认启用）。<br/>
+    /// Whether to enable super seeding mode (enabled by default).
+    /// </param>
+    public async Task SetTorrentSuperSeeding(string hash, bool enable = true)
+    {
+        if (string.IsNullOrWhiteSpace(hash))
+        {
+            throw new ArgumentException("Torrent hash cannot be null or empty", nameof(hash));
+        }
+
+        var parameters = new Dictionary<string, string>
+        {
+            ["hashes"] = string.Join('|', hash),
+            ["value"]  = enable.ToString().ToLowerInvariant()
+        };
+
+        await netUtils.Post($"{BaseUrl}/setSuperSeeding", parameters);
+    }
+
+    /// <summary>
+    /// 启用或禁用多个种子的超级做种模式。<br/>
+    /// Enable or disable super seeding mode for multiple torrents.
+    /// </summary>
+    /// <param name="hashes">种子哈希值列表。<br/>List of torrent hash values.</param>
+    /// <param name="enable">
+    /// 是否启用超级做种模式（默认启用）。<br/>
+    /// Whether to enable super seeding mode (enabled by default).
+    /// </param>
+    public async Task SetTorrentSuperSeeding(List<string> hashes, bool enable = true) =>
+        await SetTorrentSuperSeeding(string.Join('|', hashes), enable);
+
+    /// <summary>
+    /// 启用或禁用所有种子的超级做种模式。<br/>
+    /// Enable or disable super seeding mode for all torrents.
+    /// </summary>
+    /// <param name="enable">
+    /// 是否启用超级做种模式（默认启用）。<br/>
+    /// Whether to enable super seeding mode (enabled by default).
+    /// </param>
+    public async Task SetTorrentSuperSeeding(bool enable = true) => await SetTorrentSuperSeeding("all", enable);
+
+    /// <summary>
     /// 重命名种子中的文件。<br/>
     /// Rename a file in the torrent.
     /// </summary>
