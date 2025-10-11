@@ -2,6 +2,8 @@
 
 [English Documentation](../README.md)
 
+[![License](https://img.shields.io/badge/license-Apache_2.0-green)](../LICENSE)[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/banned2054/Banned.Qbittorrent)
+
 一个基于 .NET 的 qBittorrent Web API 客户端库，参考了 [qbittorrent-api](https://github.com/rmartin16/qbittorrent-api) 和官方 qBittorrent wiki。相比 [qbittorrent-net-client](https://github.com/fedarovich/qbittorrent-net-client)，本库将许多 API 请求从 GET 改为 POST，以获得更好的数据同步效果。
 
 ## 安装
@@ -44,3 +46,7 @@ await client.ResumeTorrents([ "torrent_hash" ]);
 ## API 实现进度
 
 [📘 查看 API 实现进度](https://github.com/banned2054/Banned.Qbittorrent/blob/main/Docs/API%20Implementation.md)
+
+## Changelog
+
+[🧾查看 CHANGELOG](https://github.com/banned2054/Banned.Qbittorrent/blob/main/Docs/CHANGELOG.md)
