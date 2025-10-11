@@ -1511,7 +1511,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// 是否启用超级做种模式（默认启用）。<br/>
     /// Whether to enable super seeding mode (enabled by default).
     /// </param>
-    public async Task SetTorrentSuperSeeding(bool enable = true) => await SetTorrentSuperSeeding("all", enable);
+    public async Task SetAllTorrentsSuperSeeding(bool enable = true) => await SetTorrentSuperSeeding("all", enable);
 
     /// <summary>
     /// 重命名种子中的文件。<br/>
