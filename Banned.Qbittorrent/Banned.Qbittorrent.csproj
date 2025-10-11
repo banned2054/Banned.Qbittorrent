@@ -3,7 +3,7 @@
 	<PropertyGroup>
 		<TargetFrameworks>net9.0;net8.0</TargetFrameworks>
 		<PackageId>Banned.Qbittorrent</PackageId>
-		<Version>0.0.8</Version>
+		<Version>0.0.9</Version>
 		<RepositoryUrl>https://github.com/banned2054/Banned.Qbittorrent</RepositoryUrl>
 		<Authors>banned</Authors>
 		<ImplicitUsings>enable</ImplicitUsings>
