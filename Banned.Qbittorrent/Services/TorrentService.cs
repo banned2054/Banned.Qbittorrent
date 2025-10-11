@@ -1322,7 +1322,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// 是否启用自动管理（默认禁用）。<br/>
     /// Whether to enable automatic management (disabled by default).
     /// </param>
-    public async Task SetTorrentAutoManagementAsync(string hash, bool enable = false)
+    public async Task SetTorrentAutoManagement(string hash, bool enable = false)
     {
         if (string.IsNullOrWhiteSpace(hash))
         {
@@ -1347,8 +1347,8 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// 是否启用自动管理（默认禁用）。<br/>
     /// Whether to enable automatic management (disabled by default).
     /// </param>
-    public async Task SetTorrentsAutoManagementAsync(List<string> hashes, bool enable = false) =>
-        await SetTorrentAutoManagementAsync(string.Join('|', hashes), enable);
+    public async Task SetTorrentsAutoManagement(List<string> hashes, bool enable = false) =>
+        await SetTorrentAutoManagement(string.Join('|', hashes), enable);
 
     /// <summary>
     /// 启用或禁用所有种子的自动管理。<br/>
@@ -1358,8 +1358,46 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// 是否启用自动管理（默认禁用）。<br/>
     /// Whether to enable automatic management (disabled by default).
     /// </param>
-    public async Task SetAllTorrentsAutoManagementAsync(bool enable = false) =>
-        await SetTorrentAutoManagementAsync("all", enable);
+    public async Task SetAllTorrentsAutoManagement(bool enable = false) =>
+        await SetTorrentAutoManagement("all", enable);
+
+    /// <summary>
+    /// 切换指定种子的顺序下载模式。<br/>
+    /// Toggle sequential download mode for the specified torrent.
+    /// </summary>
+    /// <param name="hash">
+    /// 种子哈希值，可为单个或多个哈希值。<br/>
+    /// Torrent hash value, can be a single hash or multiple hashes separated by '|'.
+    /// </param>
+    public async Task ToggleTorrentSequentialDownload(string hash)
+    {
+        if (string.IsNullOrWhiteSpace(hash))
+        {
+            throw new ArgumentException("Torrent hash cannot be null or empty", nameof(hash));
+        }
+
+        var parameters = new Dictionary<string, string>
+        {
+            ["hashes"] = hash
+        };
+
+        await netUtils.Post($"{BaseUrl}/toggleSequentialDownload", parameters);
+    }
+
+    /// <summary>
+    /// 切换多个种子的顺序下载模式。<br/>
+    /// Toggle sequential download mode for multiple torrents.
+    /// </summary>
+    /// <param name="hashes">种子哈希值列表。<br/>List of torrent hash values.</param>
+    public async Task ToggleTorrentsSequentialDownload(List<string> hashes) =>
+        await ToggleTorrentSequentialDownload(string.Join('|', hashes));
+
+    /// <summary>
+    /// 切换所有种子的顺序下载模式。<br/>
+    /// Toggle sequential download mode for all torrents.
+    /// </summary>
+    public async Task ToggleAllTorrentsSequentialDownload() =>
+        await ToggleTorrentSequentialDownload("all");
 
     /// <summary>
     /// 重命名种子中的文件。<br/>
