@@ -1400,6 +1400,44 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
         await ToggleTorrentSequentialDownload("all");
 
     /// <summary>
+    /// 切换指定种子的首尾片段优先下载模式。<br/>
+    /// Toggle first and last piece priority mode for the specified torrent.
+    /// </summary>
+    /// <param name="hash">
+    /// 种子哈希值，可为单个或多个哈希值。<br/>
+    /// Torrent hash value, can be a single hash or multiple hashes separated by '|'.
+    /// </param>
+    public async Task ToggleTorrentFirstLastPiecePriority(string hash)
+    {
+        if (string.IsNullOrWhiteSpace(hash))
+        {
+            throw new ArgumentException("Torrent hash cannot be null or empty", nameof(hash));
+        }
+
+        var parameters = new Dictionary<string, string>
+        {
+            ["hashes"] = hash
+        };
+
+        await netUtils.Post($"{BaseUrl}/toggleFirstLastPiecePrio", parameters);
+    }
+
+    /// <summary>
+    /// 切换多个种子的首尾片段优先下载模式。<br/>
+    /// Toggle first and last piece priority mode for multiple torrents.
+    /// </summary>
+    /// <param name="hashes">种子哈希值列表。<br/>List of torrent hash values.</param>
+    public async Task ToggleTorrentsFirstLastPiecePriority(List<string> hashes) =>
+        await ToggleTorrentFirstLastPiecePriority(string.Join('|', hashes));
+
+    /// <summary>
+    /// 切换所有种子的首尾片段优先下载模式。<br/>
+    /// Toggle first and last piece priority mode for all torrents.
+    /// </summary>
+    public async Task ToggleAllTorrentsFirstLastPiecePriority() =>
+        await ToggleTorrentFirstLastPiecePriority("all");
+
+    /// <summary>
     /// 重命名种子中的文件。<br/>
     /// Rename a file in the torrent.
     /// </summary>
