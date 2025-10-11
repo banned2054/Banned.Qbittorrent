@@ -760,6 +760,18 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
         await SetTorrentDownloadLimit(string.Join('|', hashes), limitSpeed);
 
     /// <summary>
+    /// Set download speed limit for all torrents.
+    ///
+    /// 为所有种子设置下载速度上限。
+    /// </summary>
+    /// <param name="limitSpeed">
+    /// Download limit in bytes per second.  
+    /// 下载限速（单位：字节/秒）。
+    /// </param>
+    public async Task SetAllTorrentsDownloadLimit(long limitSpeed) =>
+        await SetTorrentDownloadLimit("all", limitSpeed);
+
+    /// <summary>
     /// 设置指定种子的分享限制。<br/>
     /// Set the share limits for the specified torrent.
     /// </summary>
@@ -916,6 +928,18 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// <param name="limitSpeed">上传速度限制（字节/秒）。<br/>Upload speed limit in bytes per second.</param>
     public async Task SetTorrentsUploadLimit(List<string> hashes, long limitSpeed) =>
         await SetTorrentUploadLimit(string.Join('|', hashes), limitSpeed);
+
+    /// <summary>
+    /// Set upload speed limit for all torrents.
+    ///
+    /// 为所有种子设置上传速度上限。
+    /// </summary>
+    /// <param name="limitSpeed">
+    /// Upload limit in bytes per second.  
+    /// 上传限速（单位：字节/秒）。
+    /// </param>
+    public async Task SetAllTorrentsUploadLimit(long limitSpeed) =>
+        await SetTorrentUploadLimit("all", limitSpeed);
 
     /// <summary>
     /// 设置指定种子的存储位置。<br/>
