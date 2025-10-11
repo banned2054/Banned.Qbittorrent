@@ -4,7 +4,6 @@ using Banned.Qbittorrent.Models.Enums;
 using Banned.Qbittorrent.Models.Requests;
 using Banned.Qbittorrent.Models.Torrent;
 using Banned.Qbittorrent.Utils;
-using System.Collections.Generic;
 using System.Text.Json;
 
 namespace Banned.Qbittorrent.Services;
@@ -175,7 +174,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// 种子文件信息列表。<br/>
     /// List of torrent file information.
     /// </returns>
-    public async Task<List<TorrentFileInfo>> GetTorrentFiles(string hash, List<int>? indexes = null)
+    public async Task<List<TorrentFileInfo>?> GetTorrentFiles(string hash, List<int>? indexes = null)
     {
         if (string.IsNullOrEmpty(hash))
         {
@@ -193,17 +192,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
             parameters["indexes"] = StringUtils.Join('|', indexes);
         }
 
-        try
-        {
-            var response = await netUtils.Post(requestUrl, parameters);
-            var fileList = JsonSerializer.Deserialize<List<TorrentFileInfo>>(response);
-
-            return fileList ?? [];
-        }
-        catch (QbittorrentNotFoundException)
-        {
-            return [];
-        }
+        return JsonSerializer.Deserialize<List<TorrentFileInfo>>(await netUtils.Post(requestUrl, parameters));
     }
 
     /// <summary>
@@ -1189,7 +1178,8 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
         if (apiVersion < ApiVersion.V2_7_0)
         {
             var fileList = await GetTorrentFiles(hash);
-            var index    = fileList.FindIndex(f => f.Name == oldPath);
+            if (fileList == null || fileList.Count == 0) return;
+            var index = fileList.FindIndex(f => f.Name == oldPath);
             if (index == -1) throw new ArgumentException("File path doesn't exist.", nameof(oldPath));
             await RenameTorrentFile(hash, index, newPath);
             return;
@@ -1231,6 +1221,11 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
         if (apiVersion >= ApiVersion.V2_7_0)
         {
             var fileList = await GetTorrentFiles(hash);
+            if (fileList == null || fileList.Count == 0)
+            {
+                return;
+            }
+
             await RenameTorrentFile(hash, fileList[index].Name, newPath);
         }
 
