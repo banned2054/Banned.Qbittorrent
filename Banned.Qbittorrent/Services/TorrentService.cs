@@ -4,6 +4,7 @@ using Banned.Qbittorrent.Models.Enums;
 using Banned.Qbittorrent.Models.Requests;
 using Banned.Qbittorrent.Models.Torrent;
 using Banned.Qbittorrent.Utils;
+using System.Collections.Generic;
 using System.Text.Json;
 
 namespace Banned.Qbittorrent.Services;
@@ -710,6 +711,65 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     }
 
     /// <summary>
+    /// 获取指定种子的下载限速。<br/>
+    /// Get the download limit of the specified torrent.
+    /// </summary>
+    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
+    /// <returns>
+    /// 包含哈希与限速值的 <see cref="SpeedInfo"/>；未设置或获取失败返回 <c>null</c>。<br/>
+    /// A <see cref="SpeedInfo"/> containing the hash and limit value; <c>null</c> if not set or retrieval fails.
+    /// </returns>
+    public async Task<SpeedInfo?> GetTorrentDownloadLimit(string hash) =>
+        (await GetTorrentsDownloadLimit([hash]))?.FirstOrDefault();
+
+    /// <summary>
+    /// 获取多个种子的下载限速。<br/>
+    /// Get the download limits of multiple torrents.
+    /// </summary>
+    /// <param name="hashes">种子哈希值列表。<br/>List of torrent hash values.</param>
+    /// <returns>
+    /// 包含哈希与限速值的列表；获取失败返回 <c>null</c>。<br/>
+    /// A list of <see cref="SpeedInfo"/> objects; <c>null</c> if retrieval fails.
+    /// </returns>
+    public async Task<List<SpeedInfo>?> GetTorrentsDownloadLimit(List<string> hashes)
+    {
+        var response = await PutHashes("downloadLimit", string.Join('|', hashes));
+        var dict     = JsonSerializer.Deserialize<Dictionary<string, long>>(response);
+        return dict?.Select(kv => new SpeedInfo { Hash = kv.Key, Speed = kv.Value }).ToList();
+    }
+
+    /// <summary>
+    /// 设置指定种子的下载限速。<br/>
+    /// Set the download limit for the specified torrent.
+    /// </summary>
+    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
+    /// <param name="limitSpeed">下载速度限制（字节/秒）。<br/>Download speed limit in bytes per second.</param>
+    public async Task SetTorrentDownloadLimit(string hash, long limitSpeed)
+    {
+        if (string.IsNullOrWhiteSpace(hash)
+         || hash.Split('|').All(string.IsNullOrWhiteSpace))
+        {
+            throw new ArgumentException("Torrent hash cannot be null or empty", nameof(hash));
+        }
+
+        var parameters = new Dictionary<string, string>
+        {
+            { "hashes", hash },
+            { "limit", limitSpeed.ToString() },
+        };
+        await netUtils.Post($"{BaseUrl}/setDownloadLimit", parameters);
+    }
+
+    /// <summary>
+    /// 设置多个种子的下载限速。<br/>
+    /// Set the download limit for multiple torrents.
+    /// </summary>
+    /// <param name="hashes">种子哈希值列表。<br/>List of torrent hash values.</param>
+    /// <param name="limitSpeed">下载速度限制（字节/秒）。<br/>Download speed limit in bytes per second.</param>
+    public async Task SetTorrentsDownloadLimit(List<string> hashes, long limitSpeed) =>
+        await SetTorrentDownloadLimit(string.Join('|', hashes), limitSpeed);
+
+    /// <summary>
     /// 设置指定种子的存储位置。<br/>
     /// Set the storage location for the specified torrent(s).
     /// </summary>
@@ -1232,7 +1292,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
         return await netUtils.Post($"{BaseUrl}/{subPath}", parameters, targetVersion);
     }
 
-    private async Task PutHashes(string subPath, string hash, ApiVersion? targetVersion = null)
+    private async Task<string> PutHashes(string subPath, string hash, ApiVersion? targetVersion = null)
     {
         if (string.IsNullOrWhiteSpace(hash)
          || hash.Split('|').All(string.IsNullOrWhiteSpace))
@@ -1244,6 +1304,6 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
         {
             { "hashes", hash },
         };
-        await netUtils.Post($"{BaseUrl}/{subPath}", parameters, targetVersion);
+        return await netUtils.Post($"{BaseUrl}/{subPath}", parameters, targetVersion);
     }
 }
