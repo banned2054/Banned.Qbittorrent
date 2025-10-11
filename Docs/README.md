@@ -2,7 +2,7 @@
 
 [English Documentation](../README.md)
 
-[![License](https://img.shields.io/badge/license-Apache_2.0-green)](../LICENSE)[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/banned2054/Banned.Qbittorrent)
+[![License](https://img.shields.io/badge/license-Apache_2.0-green)](../LICENSE) [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/banned2054/Banned.Qbittorrent)
 
 一个基于 .NET 的 qBittorrent Web API 客户端库，参考了 [qbittorrent-api](https://github.com/rmartin16/qbittorrent-api) 和官方 qBittorrent wiki。相比 [qbittorrent-net-client](https://github.com/fedarovich/qbittorrent-net-client)，本库将许多 API 请求从 GET 改为 POST，以获得更好的数据同步效果。
 

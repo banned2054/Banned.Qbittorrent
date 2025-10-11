@@ -2,7 +2,7 @@
 
 [中文文档](https://github.com/banned2054/Banned.Qbittorrent/blob/main/Docs/README.md)
 
-[![License](https://img.shields.io/badge/license-Apache_2.0-green)](./LICENSE)[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/banned2054/Banned.Qbittorrent)
+[![License](https://img.shields.io/badge/license-Apache_2.0-green)](./LICENSE) [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/banned2054/Banned.Qbittorrent)
 
 A .NET client library for qBittorrent's Web API, inspired by [qbittorrent-api](https://github.com/rmartin16/qbittorrent-api) and the official qBittorrent wiki. This library improves upon [qbittorrent-net-client](https://github.com/fedarovich/qbittorrent-net-client) by using POST requests instead of GET for better data synchronization.
 
