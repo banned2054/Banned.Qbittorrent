@@ -19,7 +19,6 @@ public static class StringUtils
 
         if (typeof(T) == typeof(string))
         {
-            // 对 string 类型专门处理空白过滤与 Trim
             filtered = values
                       .Cast<string>()
                       .Where(v => !string.IsNullOrWhiteSpace(v))
@@ -27,7 +26,6 @@ public static class StringUtils
         }
         else
         {
-            // 其他类型，直接 ToString()
             filtered = values
                       .Where(v => v != null)
                       .Select(v => v!.ToString()!);
@@ -65,7 +63,6 @@ public static class StringUtils
                       .Select(v => v!.ToString()!);
         }
 
-        // ✅ 直接调用 string.Join(char, IEnumerable<string>)，零分配
         return string.Join(separator, filtered);
     }
 }

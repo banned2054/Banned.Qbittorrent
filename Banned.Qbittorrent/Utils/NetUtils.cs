@@ -51,17 +51,11 @@ public class NetUtils
         _apiVersion = apiVersion;
     }
 
-    /// <summary>
-    /// 拼接 baseUrl 和 subPath，确保不会出现多余或缺少 "/"
-    /// </summary>
     private Uri CombineUrl(string subPath)
     {
         return new Uri(_baseUrl, subPath.TrimStart('/'));
     }
 
-    /// <summary>
-    /// 通用 GET 请求（异步）
-    /// </summary>
     public async Task<string> Get(string            subPath,
                                   ApiVersion?       targetVersion = null,
                                   string?           opName        = null,
@@ -77,9 +71,6 @@ public class NetUtils
                                       ct).ConfigureAwait(false);
     }
 
-    /// <summary>
-    /// 通用 POST 请求（异步）
-    /// </summary>
     public async Task<string> Post(string                      subPath,
                                    Dictionary<string, string>? parameters    = null,
                                    ApiVersion?                 targetVersion = null, string? opName = null,
@@ -103,9 +94,6 @@ public class NetUtils
                                       ct).ConfigureAwait(false);
     }
 
-    /// <summary>
-    /// 通用 POST 文件上传（异步）
-    /// </summary>
     public async Task<string> PostWithFiles(string                      subPath,
                                             Dictionary<string, string>? parameters,
                                             List<string>                filePaths,
@@ -123,7 +111,6 @@ public class NetUtils
             foreach (var filePath in filePaths)
             {
                 if (!File.Exists(filePath)) throw new QbittorrentFileNotFoundException(filePath);
-                // 注意：每次重试都重新读取文件，保证内容新鲜、未释放
                 content.Add(new ByteArrayContent(File.ReadAllBytes(filePath)), "torrents", Path.GetFileName(filePath));
             }
 
@@ -167,9 +154,6 @@ public class NetUtils
         }
     }
 
-    /// <summary>
-    /// 自动重试逻辑（异步）
-    /// </summary>
     private async Task<string> ExecuteWithRetry(Func<HttpRequestMessage?> requestFactory,
                                                 CancellationToken         ct         = default,
                                                 int                       maxRetries = 3)
@@ -234,7 +218,6 @@ public class NetUtils
 
     private static TimeSpan GetDelayFromRetryAfterOrBackoff(HttpResponseMessage response, int attempt)
     {
-        // 尊重 Retry-After（秒或日期）
         var ra = response.Headers.RetryAfter;
         if (ra == null) return ComputeBackoff(attempt);
         if (ra.Delta.HasValue) return ra.Delta.Value;
@@ -245,7 +228,6 @@ public class NetUtils
 
     private static TimeSpan ComputeBackoff(int attempt)
     {
-        // 指数退避 + 抖动：0.5s, 1s, 2s... + [0,250)ms
         var baseMs = 500 * (int)Math.Pow(2, attempt - 1);
         var jitter = Random.Shared.Next(0, 250);
         return TimeSpan.FromMilliseconds(baseMs + jitter);

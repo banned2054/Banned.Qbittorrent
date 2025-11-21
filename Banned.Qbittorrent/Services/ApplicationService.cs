@@ -1,6 +1,7 @@
 using Banned.Qbittorrent.Models.Application;
 using Banned.Qbittorrent.Utils;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Banned.Qbittorrent.Services;
 
@@ -11,6 +12,12 @@ namespace Banned.Qbittorrent.Services;
 public class ApplicationService(NetUtils netUtils)
 {
     private const string BaseUrl = "/api/v2/app";
+
+    private readonly JsonSerializerOptions _serializerOptions = new()
+    {
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        WriteIndented          = false
+    };
 
     /// <summary>
     /// 获取 Web API 版本。<br/>
@@ -50,7 +57,7 @@ public class ApplicationService(NetUtils netUtils)
     /// </returns>
     public async Task<string> GetBuildInfo()
     {
-        var result = await netUtils.Get($"{BaseUrl}/buildInfo");
+        var result = await netUtils.Get($"{BaseUrl}/buildInfo", ApiVersion.V2_3_0);
         return result;
     }
 
@@ -84,5 +91,28 @@ public class ApplicationService(NetUtils netUtils)
         var response = await netUtils.Get($"{BaseUrl}/preferences");
         var result   = JsonSerializer.Deserialize<ApplicationPreferences>(response);
         return result;
+    }
+
+    /// <summary>
+    /// 设置应用程序偏好设置。<br/>
+    /// Set application preferences.
+    /// </summary>
+    /// <param name="applicationPreferences">
+    /// 要更新的应用程序偏好设置对象。<br/>
+    /// The application preference settings to be updated.
+    /// </param>
+    /// <remarks>
+    /// 请求会将参数序列化为 JSON，并作为 <c>json</c> 字段提交到 Web API。<br/>
+    /// The request serializes the preferences into JSON and submits it to the Web API as the <c>json</c> field.
+    /// </remarks>
+    public async Task SetApplicationPreferences(ApplicationPreferences applicationPreferences)
+    {
+        var request = JsonSerializer.Serialize(applicationPreferences, options : _serializerOptions);
+        var parameters = new Dictionary<string, string>
+        {
+            { "json", request }
+        };
+
+        await netUtils.Post($"{BaseUrl}/setPreferences", parameters);
     }
 }

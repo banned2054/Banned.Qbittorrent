@@ -6,10 +6,7 @@ namespace Banned.Qbittorrent.Utils;
 
 public sealed class ProxyTypeJsonConverter : JsonConverter<EnumProxyType?>
 {
-    public override EnumProxyType? Read(
-        ref Utf8JsonReader    reader,
-        Type                  typeToConvert,
-        JsonSerializerOptions options)
+    public override EnumProxyType? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         switch (reader.TokenType)
         {
@@ -27,10 +24,7 @@ public sealed class ProxyTypeJsonConverter : JsonConverter<EnumProxyType?>
         return null;
     }
 
-    public override void Write(
-        Utf8JsonWriter        writer,
-        EnumProxyType?        value,
-        JsonSerializerOptions options)
+    public override void Write(Utf8JsonWriter writer, EnumProxyType? value, JsonSerializerOptions options)
     {
         writer.WriteNumberValue((int)(value ?? 0));
     }
