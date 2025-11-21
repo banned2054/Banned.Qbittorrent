@@ -1,10 +1,10 @@
-using System.Globalization;
 using Banned.Qbittorrent.Exceptions;
 using Banned.Qbittorrent.Models.Application;
 using Banned.Qbittorrent.Models.Enums;
 using Banned.Qbittorrent.Models.Requests;
 using Banned.Qbittorrent.Models.Torrent;
 using Banned.Qbittorrent.Utils;
+using System.Globalization;
 using System.Text.Json;
 
 namespace Banned.Qbittorrent.Services;
