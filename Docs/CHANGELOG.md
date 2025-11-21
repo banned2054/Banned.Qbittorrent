@@ -6,11 +6,43 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## 📘 Versions
 
+- [v0.1.0](#release-v010--application-preferences-api--net-10-upgrade)
 - [v0.0.9](#release-v009--torrent-api-completion--category-management)
 - [v0.0.8](#release-v008--qbittorrent-net-client-tag-management--api-refinement)
 - [v0.0.7](#release-v007--qbittorrent-net-client-refinement)
 - [v0.0.6](#release-v006--qbittorrent-net-client-enhancement)
 - [v0.0.5](#release-v005--qbittorrent-net-client-update)
+
+## 🚀 Release v0.1.0 — Application Preferences API & .NET 10 Upgrade
+
+**Release Date:** 2025-11-21
+
+This release introduces the new **Application Preferences API**, adds a dedicated **CHANGELOG file**, and upgrades the entire project to **.NET 10** for improved performance and long-term platform support.
+
+---
+
+### ✨ Added
+
+- Added **Application Preferences API**
+  - `GetApplicationPreferences` – Retrieve all qBittorrent application settings.
+  - `SetApplicationPreferences` – Update application preference settings.
+
+- Added root-level **CHANGELOG.md** file  
+  - All releases are now properly documented in a unified changelog format.
+
+---
+
+### 🔧 Changed
+
+- Updated target frameworks:  
+  → **Now supports .NET 10.0**.
+
+---
+
+### 📦 Notes
+
+This is a minor feature release that extends functionality into the application-level API and aligns the project with the latest .NET ecosystem (.NET 10).  
+No breaking changes are introduced, but users should update target frameworks accordingly if building custom extensions.
 
 ## 🚀 Release v0.0.9 — Torrent API Completion & Category Management
 
