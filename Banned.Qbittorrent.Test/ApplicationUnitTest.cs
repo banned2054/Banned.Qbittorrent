@@ -39,4 +39,12 @@ public class ApplicationUnitTest
         Console.WriteLine(buildInfo);
         Assert.Pass();
     }
+
+    [Test]
+    public async Task TestGetApplicationPreferences()
+    {
+        var buildInfo = await _client.Application.GetApplicationPreferences();
+        Console.WriteLine(buildInfo);
+        Assert.Pass();
+    }
 }

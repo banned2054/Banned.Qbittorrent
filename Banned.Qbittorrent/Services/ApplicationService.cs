@@ -1,5 +1,6 @@
 using Banned.Qbittorrent.Models.Application;
 using Banned.Qbittorrent.Utils;
+using System.Text.Json;
 
 namespace Banned.Qbittorrent.Services;
 
@@ -64,5 +65,24 @@ public class ApplicationService(NetUtils netUtils)
     public async Task ShutDown()
     {
         await netUtils.Post($"{BaseUrl}/shutdown");
+    }
+
+    /// <summary>
+    /// 获取应用程序偏好设置。<br/>
+    /// Get application preferences.
+    /// </summary>
+    /// <returns>
+    /// 应用程序的所有可用偏好设置；字段取决于 qBittorrent.ini 的内容。<br/>
+    /// All available application preference settings; fields vary depending on qBittorrent.ini.
+    /// </returns>
+    /// <remarks>
+    /// 成功时返回 HTTP 200，并返回 JSON 对象，包含应用程序设置的键值对。<br/>
+    /// On success, returns HTTP 200 with a JSON object containing key-value pairs of application settings.
+    /// </remarks>
+    public async Task<ApplicationPreferences?> GetApplicationPreferences()
+    {
+        var response = await netUtils.Get($"{BaseUrl}/preferences");
+        var result   = JsonSerializer.Deserialize<ApplicationPreferences>(response);
+        return result;
     }
 }
