@@ -10,12 +10,12 @@ jobs:
 
         steps:
             - name: Checkout repository
-              uses: actions/checkout@v3
+              uses: actions/checkout@v6
 
             - name: Set up .NET
-              uses: actions/setup-dotnet@v3
+              uses: actions/setup-dotnet@v5
               with:
-                  dotnet-version: "8.0" # Adjust as per your project needs
+                  dotnet-version: "10.0.x" # Adjust as per your project needs
 
             - name: Restore dependencies
               run: dotnet restore Banned.Qbittorrent/Banned.Qbittorrent.csproj
