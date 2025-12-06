@@ -1,6 +1,9 @@
 # qBittorrent Web API Implementation Status
 
 This document tracks the implementation status of qBittorrent Web API in this .NET client.
+### Authentication
+- [x] 1.[Login](https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-5.0)#login)
+- [x] 2.[Logout](https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-5.0)#logout)
 ### Application
 
 - [x] 1. [Get application version](https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-5.0)#get-application-version)

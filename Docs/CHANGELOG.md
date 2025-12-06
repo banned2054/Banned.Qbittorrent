@@ -6,12 +6,45 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## 📘 Versions
 
-- [v0.1.0](#release-v010--application-preferences-api--net-10-upgrade)
-- [v0.0.9](#release-v009--torrent-api-completion--category-management)
-- [v0.0.8](#release-v008--qbittorrent-net-client-tag-management--api-refinement)
-- [v0.0.7](#release-v007--qbittorrent-net-client-refinement)
-- [v0.0.6](#release-v006--qbittorrent-net-client-enhancement)
-- [v0.0.5](#release-v005--qbittorrent-net-client-update)
+- [v0.1.1](#-release-v011--authentication-service--network-refactoring)
+- [v0.1.0](#-release-v010--application-preferences-api--net-10-upgrade)
+- [v0.0.9](#-release-v009--torrent-api-completion--category-management)
+- [v0.0.8](#-release-v008--qbittorrent-net-client-tag-management--api-refinement)
+- [v0.0.7](#-release-v007--qbittorrent-net-client-refinement)
+- [v0.0.6](#-release-v006--qbittorrent-net-client-enhancement)
+- [v0.0.5](#-release-v005--qbittorrent-net-client-update)
+
+## 🚀 Release v0.1.1 — Authentication Service & Network Refactoring
+
+**Release Date:** 2025-12-06
+
+This release focuses on **internal architectural improvements**, decoupling authentication logic from core network utilities.  
+It introduces a dedicated **Authentication Service** and moves network handling to a new namespace to better align with the qBittorrent API structure.
+
+---
+
+### ✨ Added
+
+- Added **AuthenticationService**
+  - Implements explicit `Login` and `Logout` functionality.
+  - Authentication logic is now separated from generic network requests, adhering to the API endpoint categorization.
+
+---
+
+### 🔧 Changed
+
+- **Refactored Network Utilities:**
+  - Moved `NetUtils` from `Banned.Qbittorrent.Utils.NetUtils` to `Banned.Qbittorrent.Services.NetServices`.
+- **Decoupled Authentication Logic:**
+  - Login operations are no longer implicitly handled within internal `Get` and `Post` network calls.
+  - Authentication is now managed independently via the new `AuthenticationService`.
+
+---
+
+### 📦 Notes
+
+This is primarily a structural refactor to improve code organization and maintainability.  
+If your code directly references the internal `NetUtils` class, please update your namespace references to `Banned.Qbittorrent.Services`.
 
 ## 🚀 Release v0.1.0 — Application Preferences API & .NET 10 Upgrade
 
