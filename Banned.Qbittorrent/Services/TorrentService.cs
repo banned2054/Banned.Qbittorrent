@@ -13,7 +13,7 @@ namespace Banned.Qbittorrent.Services;
 /// 提供与 qBittorrent 种子相关的服务<br/>
 /// Provides services related to qBittorrent torrents
 /// </summary>
-public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
+public class TorrentService(NetService netService, ApiVersion apiVersion)
 {
     private const string BaseUrl = "/api/v2/torrents";
 
@@ -94,7 +94,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
             parameters.Add("hashes", StringUtils.Join('|', hashes));
         }
 
-        var response = await netUtils.Post($"{BaseUrl}/info", parameters);
+        var response = await netService.Post($"{BaseUrl}/info", parameters);
         return JsonSerializer.Deserialize<List<TorrentInfo>>(response) ?? [];
     }
 
@@ -125,7 +125,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
             parameters.Add("hashes", StringUtils.Join('|', request.HashList));
         }
 
-        var response = await netUtils.Post($"{BaseUrl}/info", parameters);
+        var response = await netService.Post($"{BaseUrl}/info", parameters);
         return JsonSerializer.Deserialize<List<TorrentInfo>>(response) ?? [];
     }
 
@@ -193,7 +193,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
             parameters["indexes"] = StringUtils.Join('|', indexes);
         }
 
-        return JsonSerializer.Deserialize<List<TorrentFileInfo>>(await netUtils.Post(requestUrl, parameters));
+        return JsonSerializer.Deserialize<List<TorrentFileInfo>>(await netService.Post(requestUrl, parameters));
     }
 
     /// <summary>
@@ -264,7 +264,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
             { "deleteFiles", deleteFile.ToString().ToLower() }
         };
 
-        await netUtils.Post($"{BaseUrl}/delete", parameters);
+        await netService.Post($"{BaseUrl}/delete", parameters);
     }
 
     /// <summary>
@@ -334,7 +334,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
         };
         try
         {
-            await netUtils.Post($"{BaseUrl}/editTracker", parameters);
+            await netService.Post($"{BaseUrl}/editTracker", parameters);
         }
         catch (QbittorrentConflictException)
         {
@@ -378,7 +378,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
         };
         try
         {
-            await netUtils.Post($"{BaseUrl}/removeTrackers", parameters, ApiVersion.V2_2_0);
+            await netService.Post($"{BaseUrl}/removeTrackers", parameters, ApiVersion.V2_2_0);
         }
         catch (QbittorrentConflictException)
         {
@@ -424,7 +424,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
         };
         try
         {
-            await netUtils.Post($"{BaseUrl}/addPeers", parameters, ApiVersion.V2_3_0);
+            await netService.Post($"{BaseUrl}/addPeers", parameters, ApiVersion.V2_3_0);
         }
         catch (QbittorrentConflictException)
         {
@@ -474,13 +474,13 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
 
         if (request.FilePaths is { Count: > 0 })
         {
-            var result = await netUtils.PostWithFiles($"{BaseUrl}/add", parameters, request.FilePaths);
+            var result = await netService.PostWithFiles($"{BaseUrl}/add", parameters, request.FilePaths);
             return result;
         }
 
         if (request.Urls is { Count: > 0 })
         {
-            var result = await netUtils.Post($"{BaseUrl}/add", parameters);
+            var result = await netService.Post($"{BaseUrl}/add", parameters);
             return result;
         }
 
@@ -584,7 +584,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
             { "hash", hash },
             { "urls", url },
         };
-        await netUtils.Post($"{BaseUrl}/addTrackers", parameters);
+        await netService.Post($"{BaseUrl}/addTrackers", parameters);
     }
 
     /// <summary>
@@ -697,7 +697,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
             { "priority", ((int)priority).ToString() }
         };
 
-        await netUtils.Post($"{BaseUrl}/filePrio", parameters);
+        await netService.Post($"{BaseUrl}/filePrio", parameters);
     }
 
     /// <summary>
@@ -747,7 +747,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
             { "hashes", hash },
             { "limit", limitSpeed.ToString() },
         };
-        await netUtils.Post($"{BaseUrl}/setDownloadLimit", parameters);
+        await netService.Post($"{BaseUrl}/setDownloadLimit", parameters);
     }
 
     /// <summary>
@@ -820,7 +820,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
         if (inactiveSeedingTimeLimit is not null)
             parameters["inactiveSeedingTimeLimit"] = inactiveSeedingTimeLimit.Value.ToString();
 
-        await netUtils.Post($"{BaseUrl}/setShareLimits", parameters);
+        await netService.Post($"{BaseUrl}/setShareLimits", parameters);
     }
 
     /// <summary>
@@ -917,7 +917,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
             { "hashes", hash },
             { "limit", limitSpeed.ToString() },
         };
-        await netUtils.Post($"{BaseUrl}/setUploadLimit", parameters);
+        await netService.Post($"{BaseUrl}/setUploadLimit", parameters);
     }
 
     /// <summary>
@@ -960,7 +960,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
             { "hashes", hash },
             { "location", newLocation },
         };
-        await netUtils.Post($"{BaseUrl}/setLocation", parameters);
+        await netService.Post($"{BaseUrl}/setLocation", parameters);
     }
 
     /// <summary>
@@ -995,7 +995,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
             { "hash", hash },
             { "name", newName },
         };
-        await netUtils.Post($"{BaseUrl}/rename", parameters);
+        await netService.Post($"{BaseUrl}/rename", parameters);
     }
 
     /// <summary>
@@ -1021,7 +1021,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
             { "hash", hash },
             { "category", category },
         };
-        await netUtils.Post($"{BaseUrl}/setCategory", parameters);
+        await netService.Post($"{BaseUrl}/setCategory", parameters);
     }
 
     /// <summary>
@@ -1042,7 +1042,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// A list of <see cref="TorrentCategory"/> objects; <c>null</c> if retrieval fails.
     /// </returns>
     public async Task<List<TorrentCategory>?> GetAllCategories() => JsonSerializer.Deserialize<List<TorrentCategory>>(
-         await netUtils.Get($"{BaseUrl}/categories", targetVersion : ApiVersion.V2_1_1));
+         await netService.Get($"{BaseUrl}/categories", targetVersion : ApiVersion.V2_1_1));
 
     /// <summary>
     /// 创建一个分类。<br/>
@@ -1079,7 +1079,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
 
         try
         {
-            await netUtils.Post($"{BaseUrl}/createCategory", parameters);
+            await netService.Post($"{BaseUrl}/createCategory", parameters);
         }
         catch (QbittorrentBadRequestException)
         {
@@ -1127,7 +1127,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
 
         try
         {
-            await netUtils.Post($"{BaseUrl}/editCategory", parameters, ApiVersion.V2_1_0);
+            await netService.Post($"{BaseUrl}/editCategory", parameters, ApiVersion.V2_1_0);
         }
         catch (QbittorrentBadRequestException)
         {
@@ -1152,7 +1152,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
             { "categories", category }
         };
 
-        await netUtils.Post($"{BaseUrl}/removeCategories", parameters);
+        await netService.Post($"{BaseUrl}/removeCategories", parameters);
     }
 
 
@@ -1188,7 +1188,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
             { "hashes", hash },
             { "tags", tag }
         };
-        await netUtils.Post($"{BaseUrl}/addTags", parameters, ApiVersion.V2_3_0);
+        await netService.Post($"{BaseUrl}/addTags", parameters, ApiVersion.V2_3_0);
     }
 
     /// <summary>
@@ -1241,7 +1241,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
             { "hashes", hash },
             { "tags", tag }
         };
-        await netUtils.Post($"{BaseUrl}/removeTags", parameters, ApiVersion.V2_3_0);
+        await netService.Post($"{BaseUrl}/removeTags", parameters, ApiVersion.V2_3_0);
     }
 
     /// <summary>
@@ -1280,7 +1280,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
     /// A list of tag names; <c>null</c> if retrieval fails.
     /// </returns>
     public async Task<List<string>?> GetAllTags() => JsonSerializer.Deserialize<List<string>>(
-         await netUtils.Get($"{BaseUrl}/tags", targetVersion : ApiVersion.V2_3_0));
+         await netService.Get($"{BaseUrl}/tags", targetVersion : ApiVersion.V2_3_0));
 
     /// <summary>
     /// 创建一个标签。<br/>
@@ -1298,7 +1298,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
         {
             { "tags", tag }
         };
-        await netUtils.Post($"{BaseUrl}/createTags", parameters, ApiVersion.V2_3_0);
+        await netService.Post($"{BaseUrl}/createTags", parameters, ApiVersion.V2_3_0);
     }
 
     /// <summary>
@@ -1324,7 +1324,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
         {
             { "tags", tag }
         };
-        await netUtils.Post($"{BaseUrl}/deleteTags", parameters, ApiVersion.V2_3_0);
+        await netService.Post($"{BaseUrl}/deleteTags", parameters, ApiVersion.V2_3_0);
     }
 
     /// <summary>
@@ -1359,7 +1359,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
             ["enable"] = enable.ToString().ToLowerInvariant()
         };
 
-        await netUtils.Post($"{BaseUrl}/setAutoManagement", parameters);
+        await netService.Post($"{BaseUrl}/setAutoManagement", parameters);
     }
 
     /// <summary>
@@ -1462,7 +1462,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
             ["value"]  = enable.ToString().ToLowerInvariant()
         };
 
-        await netUtils.Post($"{BaseUrl}/setForceStart", parameters);
+        await netService.Post($"{BaseUrl}/setForceStart", parameters);
     }
 
     /// <summary>
@@ -1512,7 +1512,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
             ["value"]  = enable.ToString().ToLowerInvariant()
         };
 
-        await netUtils.Post($"{BaseUrl}/setSuperSeeding", parameters);
+        await netService.Post($"{BaseUrl}/setSuperSeeding", parameters);
     }
 
     /// <summary>
@@ -1577,7 +1577,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
             { "oldPath", oldPath },
             { "newPath", newPath }
         };
-        await netUtils.Post($"{BaseUrl}/renameFile", parameters);
+        await netService.Post($"{BaseUrl}/renameFile", parameters);
     }
 
     /// <summary>
@@ -1619,7 +1619,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
             { "newPath", newPath }
         };
 
-        await netUtils.Post($"{BaseUrl}/renameFile", parameters);
+        await netService.Post($"{BaseUrl}/renameFile", parameters);
     }
 
     /// <summary>
@@ -1653,7 +1653,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
             { "newPath", newPath }
         };
 
-        await netUtils.Post($"{BaseUrl}/renameFolder", parameters);
+        await netService.Post($"{BaseUrl}/renameFolder", parameters);
     }
 
     private async Task<string> Put(string subPath, string hash, ApiVersion? targetVersion = null)
@@ -1667,7 +1667,7 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
         {
             { "hash", hash },
         };
-        return await netUtils.Post($"{BaseUrl}/{subPath}", parameters, targetVersion);
+        return await netService.Post($"{BaseUrl}/{subPath}", parameters, targetVersion);
     }
 
     private async Task<string> PutHashes(string subPath, string hash, ApiVersion? targetVersion = null)
@@ -1682,6 +1682,6 @@ public class TorrentService(NetUtils netUtils, ApiVersion apiVersion)
         {
             { "hashes", hash },
         };
-        return await netUtils.Post($"{BaseUrl}/{subPath}", parameters, targetVersion);
+        return await netService.Post($"{BaseUrl}/{subPath}", parameters, targetVersion);
     }
 }

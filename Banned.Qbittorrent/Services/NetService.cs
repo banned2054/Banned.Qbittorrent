@@ -1,30 +1,22 @@
-using Banned.Qbittorrent.Exceptions;
-using Banned.Qbittorrent.Models.Application;
 using System.Net;
 using System.Net.Http.Headers;
+using Banned.Qbittorrent.Exceptions;
+using Banned.Qbittorrent.Models.Application;
 
-namespace Banned.Qbittorrent.Utils;
+namespace Banned.Qbittorrent.Services;
 
-public class NetUtils
+public class NetService : IDisposable
 {
     private readonly HttpClient _client;
     private readonly Uri        _baseUrl;
 
     private ApiVersion _apiVersion;
 
-    private readonly string _userName;
-    private readonly string _password;
+    public Func<Task>? EnsureLoggedInHandler { get; set; }
 
-    private readonly SemaphoreSlim  _loginLock = new(1, 1);
-    private volatile bool           _isLoggedIn;
-    private          DateTimeOffset _loginExpiry = DateTimeOffset.MinValue;
-
-    public NetUtils(string baseUrl, string userName, string password)
+    public NetService(string baseUrl)
     {
-        _baseUrl    = new Uri(baseUrl.TrimEnd('/') + "/");
-        _userName   = userName;
-        _password   = password;
-        _apiVersion = ApiVersion.V2_0_0;
+        _baseUrl = new Uri(baseUrl.TrimEnd('/') + "/");
         var cookieContainer = new CookieContainer();
 
         var handler = new HttpClientHandler
@@ -46,25 +38,19 @@ public class NetUtils
         };
     }
 
-    public void SetApiVersion(ApiVersion apiVersion)
-    {
-        _apiVersion = apiVersion;
-    }
-
-    private Uri CombineUrl(string subPath)
-    {
-        return new Uri(_baseUrl, subPath.TrimStart('/'));
-    }
+    public  void SetApiVersion(ApiVersion apiVersion) => _apiVersion = apiVersion;
+    private Uri  CombineUrl(string        subPath)    => new(_baseUrl, subPath.TrimStart('/'));
 
     public async Task<string> Get(string            subPath,
                                   ApiVersion?       targetVersion = null,
                                   string?           opName        = null,
+                                  bool              skipAuthCheck = false,
                                   CancellationToken ct            = default)
     {
         if (_apiVersion < targetVersion)
             throw new QbittorrentNotSupportedException(opName ?? subPath, targetVersion.Value, _apiVersion);
 
-        await EnsureLoggedIn().ConfigureAwait(false);
+        await CheckAuth(skipAuthCheck).ConfigureAwait(false);
 
         return await ExecuteWithRetry(
                                       () => new HttpRequestMessage(HttpMethod.Get, CombineUrl(subPath)),
@@ -73,25 +59,27 @@ public class NetUtils
 
     public async Task<string> Post(string                      subPath,
                                    Dictionary<string, string>? parameters    = null,
-                                   ApiVersion?                 targetVersion = null, string? opName = null,
+                                   ApiVersion?                 targetVersion = null,
+                                   string?                     opName        = null,
+                                   bool                        skipAuthCheck = false,
                                    CancellationToken           ct            = default)
     {
-        if (targetVersion != null && _apiVersion < targetVersion)
+        if (_apiVersion < targetVersion)
             throw new QbittorrentNotSupportedException(opName ?? subPath, targetVersion.Value, _apiVersion);
 
-        await EnsureLoggedIn().ConfigureAwait(false);
+        await CheckAuth(skipAuthCheck).ConfigureAwait(false);
 
-        return await ExecuteWithRetry(
-                                      () =>
-                                      {
-                                          if (parameters != null)
-                                              return new HttpRequestMessage(HttpMethod.Post, CombineUrl(subPath))
-                                              {
-                                                  Content = new FormUrlEncodedContent(parameters)
-                                              };
-                                          return null;
-                                      },
-                                      ct).ConfigureAwait(false);
+        return await ExecuteWithRetry(() =>
+        {
+            var request = new HttpRequestMessage(HttpMethod.Post, CombineUrl(subPath));
+
+            if (parameters != null)
+            {
+                request.Content = new FormUrlEncodedContent(parameters);
+            }
+
+            return request;
+        }, ct).ConfigureAwait(false);
     }
 
     public async Task<string> PostWithFiles(string                      subPath,
@@ -99,7 +87,7 @@ public class NetUtils
                                             List<string>                filePaths,
                                             CancellationToken           ct = default)
     {
-        await EnsureLoggedIn().ConfigureAwait(false);
+        await CheckAuth(false).ConfigureAwait(false);
 
         return await ExecuteWithRetry(() =>
         {
@@ -118,45 +106,17 @@ public class NetUtils
         }, ct).ConfigureAwait(false);
     }
 
-    private async Task EnsureLoggedIn()
+    private async Task CheckAuth(bool skipAuthCheck)
     {
-        if (_isLoggedIn && DateTimeOffset.UtcNow < _loginExpiry) return;
-
-        await _loginLock.WaitAsync().ConfigureAwait(false);
-        try
+        if (!skipAuthCheck && EnsureLoggedInHandler != null)
         {
-            if (_isLoggedIn && DateTimeOffset.UtcNow < _loginExpiry) return;
-            await Login().ConfigureAwait(false);
-            _isLoggedIn  = true;
-            _loginExpiry = DateTimeOffset.UtcNow.AddHours(8); // TODO: 若能解析 Set-Cookie 中的过期时间则用真实值
-        }
-        finally
-        {
-            _loginLock.Release();
+            await EnsureLoggedInHandler.Invoke().ConfigureAwait(false);
         }
     }
 
-    private async Task Login()
-    {
-        var content = new FormUrlEncodedContent(new Dictionary<string, string>
-        {
-            { "username", _userName },
-            { "password", _password }
-        });
-
-        var response = await _client.PostAsync(CombineUrl("api/v2/auth/login"), content);
-        var body     = await response.Content.ReadAsStringAsync();
-        if (!response.IsSuccessStatusCode)
-        {
-            throw new QbittorrentLoginFailedException(
-                                                      $"Login failed: HTTP {(int)response.StatusCode} {response.ReasonPhrase}, Body: {body}",
-                                                      (int)response.StatusCode);
-        }
-    }
-
-    private async Task<string> ExecuteWithRetry(Func<HttpRequestMessage?> requestFactory,
-                                                CancellationToken         ct         = default,
-                                                int                       maxRetries = 3)
+    private async Task<string> ExecuteWithRetry(Func<HttpRequestMessage> requestFactory,
+                                                CancellationToken        ct         = default,
+                                                int                      maxRetries = 3)
     {
         Exception?           lastException = null;
         HttpResponseMessage? lastResponse  = null;
@@ -242,4 +202,9 @@ public class NetUtils
         HttpStatusCode.RequestTimeout,      // 408
         HttpStatusCode.TooManyRequests
     ];
+
+    public void Dispose()
+    {
+        _client.Dispose();
+    }
 }

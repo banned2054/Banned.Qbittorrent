@@ -1,5 +1,4 @@
 using Banned.Qbittorrent.Models.Application;
-using Banned.Qbittorrent.Utils;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -9,7 +8,7 @@ namespace Banned.Qbittorrent.Services;
 /// 提供与 qBittorrent 应用程序相关的服务<br/>
 /// Provides services related to qBittorrent application
 /// </summary>
-public class ApplicationService(NetUtils netUtils)
+public class ApplicationService(NetService netService)
 {
     private const string BaseUrl = "/api/v2/app";
 
@@ -29,7 +28,7 @@ public class ApplicationService(NetUtils netUtils)
     /// </returns>
     public async Task<ApiVersion> GetApiVersion()
     {
-        var result = await netUtils.Get($"{BaseUrl}/webapiVersion");
+        var result = await netService.Get($"{BaseUrl}/webapiVersion");
         return ApiVersion.Parse(result);
     }
 
@@ -43,7 +42,7 @@ public class ApplicationService(NetUtils netUtils)
     /// </returns>
     public async Task<string> GetVersion()
     {
-        var result = await netUtils.Get($"{BaseUrl}/version");
+        var result = await netService.Get($"{BaseUrl}/version");
         return result;
     }
 
@@ -57,7 +56,7 @@ public class ApplicationService(NetUtils netUtils)
     /// </returns>
     public async Task<string> GetBuildInfo()
     {
-        var result = await netUtils.Get($"{BaseUrl}/buildInfo", ApiVersion.V2_3_0);
+        var result = await netService.Get($"{BaseUrl}/buildInfo", ApiVersion.V2_3_0);
         return result;
     }
 
@@ -71,7 +70,7 @@ public class ApplicationService(NetUtils netUtils)
     /// </remarks>
     public async Task ShutDown()
     {
-        await netUtils.Post($"{BaseUrl}/shutdown");
+        await netService.Post($"{BaseUrl}/shutdown");
     }
 
     /// <summary>
@@ -88,7 +87,7 @@ public class ApplicationService(NetUtils netUtils)
     /// </remarks>
     public async Task<ApplicationPreferences?> GetApplicationPreferences()
     {
-        var response = await netUtils.Get($"{BaseUrl}/preferences");
+        var response = await netService.Get($"{BaseUrl}/preferences");
         var result   = JsonSerializer.Deserialize<ApplicationPreferences>(response);
         return result;
     }
@@ -113,6 +112,6 @@ public class ApplicationService(NetUtils netUtils)
             { "json", request }
         };
 
-        await netUtils.Post($"{BaseUrl}/setPreferences", parameters);
+        await netService.Post($"{BaseUrl}/setPreferences", parameters);
     }
 }
