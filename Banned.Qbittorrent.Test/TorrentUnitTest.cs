@@ -6,6 +6,8 @@ public class TorrentUnitTest
 {
     private QBittorrentClient _client;
 
+    public readonly string Hash = "1777eb08ced679afb93c0103013923c53b8b0db5";
+
     [SetUp]
     public async Task SetUp()
     {
@@ -55,7 +57,7 @@ public class TorrentUnitTest
     public async Task GetTorrents()
     {
         var tracker =
-            await _client.Torrent.GetTorrentInfo("a940478142ad9d776a342f512a59e53c3304b8cee4de991c3b09e0bf214f366d");
+            await _client.Torrent.GetTorrentInfo(Hash);
         if (tracker == null)
         {
             Console.WriteLine("Not find");
@@ -69,7 +71,7 @@ public class TorrentUnitTest
     [Test]
     public async Task GetTorrentTrackers()
     {
-        var trackers = await _client.Torrent.GetTorrentInfo("0f9323316a62a4a6b66a5568893a52c3a342501d");
+        var trackers = await _client.Torrent.GetTorrentInfo(Hash);
     }
 
     [Test]
@@ -81,7 +83,7 @@ public class TorrentUnitTest
     public async Task TestGetPieceStates()
     {
         var result =
-            await _client.Torrent.GetTorrentPiecesStates("d866173fb508d762d177719bcac230a416e80220");
+            await _client.Torrent.GetTorrentPiecesStates(Hash);
         foreach (var pState in result)
         {
             Console.WriteLine(pState.ToString());
@@ -92,7 +94,7 @@ public class TorrentUnitTest
     public async Task TestGetTorrentWebSeed()
     {
         var result =
-            await _client.Torrent.GetTorrentWebSeeds("d866173fb508d762d177719bcac230a416e80220");
+            await _client.Torrent.GetTorrentWebSeeds(Hash);
         foreach (var seed in result)
         {
             Console.WriteLine(seed.Url);
@@ -108,6 +110,6 @@ public class TorrentUnitTest
     [Test]
     public async Task TestGetTorrentDownloadLimit()
     {
-        await _client.Torrent.GetTorrentDownloadLimit("d1fb4312d161b6d1aa39963d7a8eccd41a3599f3");
+        await _client.Torrent.GetTorrentDownloadLimit(Hash);
     }
 }
