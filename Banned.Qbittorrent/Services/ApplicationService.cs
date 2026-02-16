@@ -114,4 +114,55 @@ public class ApplicationService(NetService netService)
 
         await netService.Post($"{BaseUrl}/setPreferences", parameters);
     }
+
+    /// <summary>
+    /// 获取默认保存路径。<br/>
+    /// Get the default save path.
+    /// </summary>
+    /// <returns>
+    /// 默认保存路径字符串。<br/>
+    /// The default save path string.
+    /// </returns>
+    public async Task<string> GetDefaultSavePath()
+    {
+        var result = await netService.Get($"{BaseUrl}/defaultSavePath");
+        return result;
+    }
+
+    /// <summary>
+    /// 获取应用程序正在使用的所有 Cookie。<br/>
+    /// Get all cookies used by the application.
+    /// </summary>
+    /// <returns>
+    /// Cookie 列表。<br/>
+    /// A list of cookies.
+    /// </returns>
+    public async Task<List<Cookie>> GetCookies()
+    {
+        var response = await netService.Get($"{BaseUrl}/cookies", ApiVersion.V2_11_3);
+        var result   = JsonSerializer.Deserialize<List<Cookie>>(response);
+        return result ?? [];
+    }
+
+    /// <summary>
+    /// 设置应用程序的 Cookie。<br/>
+    /// Set cookies for the application.
+    /// </summary>
+    /// <param name="cookies">
+    /// 要设置的 Cookie 列表。<br/>
+    /// The list of cookies to be set.
+    /// </param>
+    /// <remarks>
+    /// 列表中的每个 Cookie 必须包含 name, domain, path 和 value 字段。<br/>
+    /// Each cookie in the list must contain name, domain, path, and value fields.
+    /// </remarks>
+    public async Task SetCookies(List<Cookie> cookies)
+    {
+        var request = JsonSerializer.Serialize(cookies, options : _serializerOptions);
+        var parameters = new Dictionary<string, string>
+        {
+            { "json", request }
+        };
+        await netService.Post($"{BaseUrl}/setCookies", parameters, ApiVersion.V2_11_3);
+    }
 }
