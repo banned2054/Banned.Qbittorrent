@@ -1,3 +1,5 @@
+using Banned.Qbittorrent.Models.Enums;
+
 namespace Banned.Qbittorrent.Utils;
 
 public static class StringUtils
@@ -64,5 +66,16 @@ public static class StringUtils
         }
 
         return string.Join(separator, filtered);
+    }
+
+    public static EnumConnectionStatus String2ConnectionStatus(string? status)
+    {
+        return status?.ToLower() switch
+        {
+            "connected"    => EnumConnectionStatus.Connected,
+            "firewalled"   => EnumConnectionStatus.Firewalled,
+            "disconnected" => EnumConnectionStatus.Disconnected,
+            _              => EnumConnectionStatus.Unknown
+        };
     }
 }
