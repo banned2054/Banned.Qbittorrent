@@ -6,6 +6,7 @@ public class QBittorrentClient : IDisposable
 {
     public AuthenticationService Authentication { get; }
     public ApplicationService    Application    { get; }
+    public LogService            Log            { get; }
     public TorrentService        Torrent        { get; }
 
     private readonly NetService _network;
@@ -13,11 +14,13 @@ public class QBittorrentClient : IDisposable
     private QBittorrentClient(
         ApplicationService    app,
         AuthenticationService authentication,
+        LogService            log,
         TorrentService        torrent,
         NetService            net)
     {
         Application    = app;
         Authentication = authentication;
+        Log            = log;
         Torrent        = torrent;
         _network       = net;
     }
@@ -28,9 +31,10 @@ public class QBittorrentClient : IDisposable
         var auth        = new AuthenticationService(net, userName, password);
         var application = new ApplicationService(net);
         var apiVersion  = await application.GetApiVersion().ConfigureAwait(false);
+        var log         = new LogService(net);
         net.SetApiVersion(apiVersion);
         var torrent = new TorrentService(net, apiVersion);
-        return new QBittorrentClient(application, auth, torrent, net);
+        return new QBittorrentClient(application, auth, log, torrent, net);
     }
 
     public void Dispose()
