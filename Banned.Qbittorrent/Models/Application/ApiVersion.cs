@@ -15,8 +15,10 @@ public readonly struct ApiVersion(int major, int minor = 0, int patch = 0)
     public static readonly ApiVersion V2_3_0  = new(2, 3);
     public static readonly ApiVersion V2_5_1  = new(2, 5, 1);
     public static readonly ApiVersion V2_7_0  = new(2, 7);
+    public static readonly ApiVersion V2_9_1  = new(2, 9, 1);
     public static readonly ApiVersion V2_11_0 = new(2, 11);
     public static readonly ApiVersion V2_11_3 = new(2, 11, 3);
+    public static readonly ApiVersion V2_11_5 = new(2, 11, 5);
 
     public static bool TryParse(ReadOnlySpan<char> span, out ApiVersion version)
     {

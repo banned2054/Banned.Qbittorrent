@@ -47,6 +47,46 @@ public class RssService(NetService netService)
     }
 
     /// <summary>
+    /// 更新现有 RSS 订阅源的 URL。<br/>
+    /// Update the URL for an existing RSS feed.
+    /// </summary>
+    /// <param name="itemPath">订阅源的项目路径（例如：Folder\Subfolder\FeedName）。Name and/or path for feed.</param>
+    /// <param name="url">新的 RSS 订阅源 URL。New URL of RSS feed.</param>
+    /// <remarks>
+    /// 此方法自 qBittorrent v4.6.0 (Web API v2.9.1) 起引入。<br/>
+    /// This method was introduced with qBittorrent v4.6.0 (Web API v2.9.1).
+    /// </remarks>
+    public async Task SetFeedUrl(string itemPath, string url)
+    {
+        var parameters = new Dictionary<string, string>
+        {
+            { "path", itemPath },
+            { "url", url }
+        };
+        await netService.Post($"{BaseUrl}/setFeedURL", parameters, ApiVersion.V2_9_1);
+    }
+
+    /// <summary>
+    /// 更新 RSS 订阅源的刷新间隔。<br/>
+    /// Update the refresh interval for the RSS feed.
+    /// </summary>
+    /// <param name="itemPath">订阅源的项目路径。Name and/or path for feed.</param>
+    /// <param name="refreshInterval">刷新间隔（分钟）。Refresh interval in minutes.</param>
+    /// <remarks>
+    /// 此方法自 qBittorrent v5.0.0 (Web API v2.11.5) 起引入。<br/>
+    /// The method was introduced with qBittorrent v5.0.0 (Web API v2.11.5).
+    /// </remarks>
+    public async Task SetFeedRefreshInterval(string itemPath, int refreshInterval)
+    {
+        var parameters = new Dictionary<string, string>
+        {
+            { "path", itemPath },
+            { "refreshInterval", refreshInterval.ToString() }
+        };
+        await netService.Post($"{BaseUrl}/setFeedRefreshInterval", parameters, ApiVersion.V2_11_5);
+    }
+
+    /// <summary>
     /// 移除 RSS 项目（订阅源或文件夹）。<br/>
     /// Remove RSS item (feed or folder).
     /// </summary>
