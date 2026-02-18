@@ -78,4 +78,48 @@ public static class StringUtils
             _              => EnumConnectionStatus.Unknown
         };
     }
+
+    public static EnumStopCondition String2StopCondition(string? value)
+    {
+        return value?.ToLower() switch
+        {
+            "never"            => EnumStopCondition.Never,
+            "metadatareceived" => EnumStopCondition.MetadataReceived,
+            "torrentadded"     => EnumStopCondition.TorrentAdded,
+            _                  => EnumStopCondition.Unknown
+        };
+    }
+
+    public static string StopCondition2String(this EnumStopCondition value)
+    {
+        return value switch
+        {
+            EnumStopCondition.Never            => "Never",
+            EnumStopCondition.MetadataReceived => "MetadataReceived",
+            EnumStopCondition.TorrentAdded     => "TorrentAdded",
+            _                                  => "Never" // 默认返回 Never 比较安全
+        };
+    }
+
+    public static EnumContentLayout String2ContentLayout(string? value)
+    {
+        return value?.ToLower() switch
+        {
+            "original"    => EnumContentLayout.Original,
+            "subfolder"   => EnumContentLayout.Subfolder,
+            "nosubfolder" => EnumContentLayout.NoSubfolder,
+            _             => EnumContentLayout.Unknown
+        };
+    }
+
+    public static string ContentLayout2String(this EnumContentLayout value)
+    {
+        return value switch
+        {
+            EnumContentLayout.Original    => "Original",
+            EnumContentLayout.Subfolder   => "Subfolder",
+            EnumContentLayout.NoSubfolder => "NoSubfolder",
+            _                             => "Original"
+        };
+    }
 }
