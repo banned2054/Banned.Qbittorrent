@@ -112,6 +112,6 @@ public class AutoDownloadRule
     /// 内容布局。 / Content layout.
     /// </summary>
     [JsonPropertyName("contentLayout")]
-    [JsonConverter(typeof(StopConditionConverter))]
+    [JsonConverter(typeof(ContentLayoutConverter))]
     public EnumContentLayout ContentLayout { get; set; }
 }

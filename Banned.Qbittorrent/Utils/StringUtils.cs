@@ -2,16 +2,20 @@ using Banned.Qbittorrent.Models.Enums;
 
 namespace Banned.Qbittorrent.Utils;
 
+/// <summary>
+/// 提供字符串处理与枚举转换的辅助方法。<br/>
+/// Provides helper methods for string processing and enum conversion.
+/// </summary>
 public static class StringUtils
 {
     /// <summary>
-    /// 使用指定分隔符连接集合中的元素。<br/>
-    /// Automatically ignores null or whitespace items when the element type is string.
+    /// 使用指定分隔符连接集合中的元素，并自动忽略空值。<br/>
+    /// Joins elements of a collection using a specified separator, automatically ignoring null or whitespace.
     /// </summary>
-    /// <typeparam name="T">集合中元素的类型。</typeparam>
-    /// <param name="separator">分隔符（字符串）。</param>
-    /// <param name="values">要连接的集合。</param>
-    /// <returns>连接后的字符串；若集合为空或全为空白则返回空字符串。</returns>
+    /// <typeparam name="T">集合中元素的类型。 / The type of elements in the collection.</typeparam>
+    /// <param name="separator">分隔符（字符串）。 / The separator string.</param>
+    /// <param name="values">要连接的集合。 / The collection to join.</param>
+    /// <returns>连接后的字符串。 / The joined string.</returns>
     public static string Join<T>(string separator, IEnumerable<T>? values)
     {
         if (values == null)
@@ -37,13 +41,13 @@ public static class StringUtils
     }
 
     /// <summary>
-    /// 使用指定分隔符连接集合中的元素。<br/>
-    /// Automatically ignores null or whitespace items when the element type is string.
+    /// 使用指定分隔符连接集合中的元素，并自动忽略空值。<br/>
+    /// Joins elements of a collection using a specified separator, automatically ignoring null or whitespace.
     /// </summary>
-    /// <typeparam name="T">集合中元素的类型。</typeparam>
-    /// <param name="separator">分隔符（字符）。</param>
-    /// <param name="values">要连接的集合。</param>
-    /// <returns>连接后的字符串；若集合为空或全为空白则返回空字符串。</returns>
+    /// <typeparam name="T">集合中元素的类型。 / The type of elements in the collection.</typeparam>
+    /// <param name="separator">分隔符（字符）。 / The separator character.</param>
+    /// <param name="values">要连接的集合。 / The collection to join.</param>
+    /// <returns>连接后的字符串。 / The joined string.</returns>
     public static string Join<T>(char separator, IEnumerable<T>? values)
     {
         if (values == null)
@@ -68,6 +72,10 @@ public static class StringUtils
         return string.Join(separator, filtered);
     }
 
+    /// <summary>
+    /// 将连接状态字符串转换为枚举。<br/>
+    /// Converts a connection status string to an enum.
+    /// </summary>
     public static EnumConnectionStatus String2ConnectionStatus(string? status)
     {
         return status?.ToLower() switch
@@ -79,6 +87,10 @@ public static class StringUtils
         };
     }
 
+    /// <summary>
+    /// 将停止条件字符串转换为枚举。<br/>
+    /// Converts a stop condition string to an enum.
+    /// </summary>
     public static EnumStopCondition String2StopCondition(string? value)
     {
         return value?.ToLower() switch
@@ -90,6 +102,10 @@ public static class StringUtils
         };
     }
 
+    /// <summary>
+    /// 将停止条件枚举转换为 API 识别的字符串。<br/>
+    /// Converts a stop condition enum to an API-recognized string.
+    /// </summary>
     public static string StopCondition2String(this EnumStopCondition value)
     {
         return value switch
@@ -97,10 +113,14 @@ public static class StringUtils
             EnumStopCondition.Never            => "Never",
             EnumStopCondition.MetadataReceived => "MetadataReceived",
             EnumStopCondition.TorrentAdded     => "TorrentAdded",
-            _                                  => "Never" // 默认返回 Never 比较安全
+            _                                  => "Never"
         };
     }
 
+    /// <summary>
+    /// 将内容布局字符串转换为枚举。<br/>
+    /// Converts a content layout string to an enum.
+    /// </summary>
     public static EnumContentLayout String2ContentLayout(string? value)
     {
         return value?.ToLower() switch
@@ -112,6 +132,10 @@ public static class StringUtils
         };
     }
 
+    /// <summary>
+    /// 将内容布局枚举转换为 API 识别的字符串。<br/>
+    /// Converts a content layout enum to an API-recognized string.
+    /// </summary>
     public static string ContentLayout2String(this EnumContentLayout value)
     {
         return value switch
@@ -123,6 +147,10 @@ public static class StringUtils
         };
     }
 
+    /// <summary>
+    /// 将搜索状态字符串转换为枚举。<br/>
+    /// Converts a search status string to an enum.
+    /// </summary>
     public static EnumSearchStatus String2SearchStatus(string? value)
     {
         return value switch
@@ -133,6 +161,10 @@ public static class StringUtils
         };
     }
 
+    /// <summary>
+    /// 将种子过滤器枚举转换为 API 识别的小写字符串。<br/>
+    /// Converts a torrent filter enum to an API-recognized lowercase string.
+    /// </summary>
     public static string TorrentFilter2String(this EnumTorrentFilter value)
     {
         return value switch
@@ -154,6 +186,10 @@ public static class StringUtils
         };
     }
 
+    /// <summary>
+    /// 将 API 返回的过滤器字符串转换为枚举。<br/>
+    /// Converts a filter string from the API to an enum.
+    /// </summary>
     public static EnumTorrentFilter String2TorrentFilter(string value)
     {
         return value switch
@@ -174,6 +210,10 @@ public static class StringUtils
         };
     }
 
+    /// <summary>
+    /// 将种子状态字符串（兼容 v4/v5）转换为枚举。<br/>
+    /// Converts a torrent state string (v4/v5 compatible) to an enum.
+    /// </summary>
     public static EnumTorrentState String2TorrentState(string value)
     {
         return value switch
@@ -203,6 +243,11 @@ public static class StringUtils
         };
     }
 
+    /// <summary>
+    /// 将状态枚举转换为 qBittorrent v4.x 使用的字符串格式。<br/>
+    /// Converts the state enum to the string format used by qBittorrent v4.x.
+    /// </summary>
+    /// <remarks>使用 "pausedUP" / "pausedDL" 等字样。 / Uses terms like "pausedUP" / "pausedDL".</remarks>
     public static string TorrentState2StringV4(this EnumTorrentState value)
     {
         return value switch
@@ -230,6 +275,11 @@ public static class StringUtils
         };
     }
 
+    /// <summary>
+    /// 将状态枚举转换为 qBittorrent v5.x 使用的字符串格式。<br/>
+    /// Converts the state enum to the string format used by qBittorrent v5.x.
+    /// </summary>
+    /// <remarks>使用 "stoppedUP" / "stoppedDL" 等字样。 / Uses terms like "stoppedUP" / "stoppedDL".</remarks>
     public static string TorrentState2StringV5(this EnumTorrentState value)
     {
         return value switch
