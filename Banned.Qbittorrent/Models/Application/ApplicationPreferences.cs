@@ -5,25 +5,39 @@ using System.Text.Json.Serialization;
 
 namespace Banned.Qbittorrent.Models.Application;
 
+/// <summary>
+/// 表示 qBittorrent 的应用程序首选项/设置。<br/>
+/// Represents qBittorrent application preferences/settings.
+/// </summary>
 public sealed class ApplicationPreferences
 {
+    #region Basic Settings(基础设置)
+
     [JsonPropertyName("locale")]
     public string? Locale { get; set; }
 
+    /// <summary>是否启用创建子文件夹。<br/>Whether to create subfolder.</summary>
     [JsonPropertyName("create_subfolder_enabled")]
     public bool? CreateSubfolderEnabled { get; set; }
 
+    /// <summary>添加种子时是否默认为停止/暂停状态。<br/>Whether to start torrents in paused/stopped state by default.</summary>
     [JsonPropertyName("start_paused_enabled")]
     public bool? StartPausedEnabled { get; set; }
 
     [JsonPropertyName("auto_delete_mode")]
     public EnumAutoDeleteMode? AutoDeleteMode { get; set; }
 
+    /// <summary>预分配所有磁盘空间。<br/>Preallocate disk space for all files.</summary>
     [JsonPropertyName("preallocate_all")]
     public bool? PreallocateAll { get; set; }
 
+    /// <summary>未完成文件使用扩展名 (!qB)。<br/>Append .!qB extension to incomplete files.</summary>
     [JsonPropertyName("incomplete_files_ext")]
     public bool? IncompleteFilesExt { get; set; }
+
+    #endregion
+
+    #region Torrent Management Mode (自动管理模式)
 
     [JsonPropertyName("auto_tmm_enabled")]
     public bool? AutoTmmEnabled { get; set; }
@@ -46,6 +60,10 @@ public sealed class ApplicationPreferences
     [JsonPropertyName("temp_path")]
     public string? TempPath { get; set; }
 
+    #endregion
+
+    #region Scan Dirs & Export (监控与导出)
+
     [JsonPropertyName("scan_dirs")]
     public Dictionary<string, ScanDirDestination>? ScanDirs { get; set; }
 
@@ -54,6 +72,10 @@ public sealed class ApplicationPreferences
 
     [JsonPropertyName("export_dir_fin")]
     public string? ExportDirFinished { get; set; }
+
+    #endregion
+
+    #region Mail Notification (邮件通知)
 
     [JsonPropertyName("mail_notification_enabled")]
     public bool? MailNotificationEnabled { get; set; }
@@ -79,6 +101,10 @@ public sealed class ApplicationPreferences
     [JsonPropertyName("mail_notification_password")]
     public string? MailNotificationPassword { get; set; }
 
+    #endregion
+
+    #region Queueing & Limits (队列与限制)
+
     [JsonPropertyName("autorun_enabled")]
     public bool? AutoRunEnabled { get; set; }
 
@@ -86,7 +112,7 @@ public sealed class ApplicationPreferences
     public string? AutoRunCommand { get; set; }
 
     [JsonPropertyName("queueing_enabled")]
-    public bool? QueueingEnabled { get; set; }
+    public bool? EnableQueueing { get; set; }
 
     [JsonPropertyName("max_active_downloads")]
     public int? MaxActiveDownloads { get; set; }
@@ -100,14 +126,21 @@ public sealed class ApplicationPreferences
     [JsonPropertyName("dont_count_slow_torrents")]
     public bool? IgnoreSlowTorrents { get; set; }
 
+    /// <summary>慢速下载速度阈值 (KiB/s)。<br/>Slow download rate threshold in KiB/s.</summary>
     [JsonPropertyName("slow_torrent_dl_rate_threshold")]
     public int? SlowDownloadRateKiB { get; set; }
 
+    /// <summary>慢速上传速度阈值 (KiB/s)。<br/>Slow upload rate threshold in KiB/s.</summary>
     [JsonPropertyName("slow_torrent_ul_rate_threshold")]
     public int? SlowUploadRateKiB { get; set; }
 
+    /// <summary>判定种子非活动的时间 (秒)。<br/>Seconds before a torrent is considered inactive.</summary>
     [JsonPropertyName("slow_torrent_inactive_timer")]
     public int? SlowInactiveSeconds { get; set; }
+
+    #endregion
+
+    #region Share Limits (分享限制)
 
     [JsonPropertyName("max_ratio_enabled")]
     public bool? MaxRatioEnabled { get; set; }
@@ -118,6 +151,10 @@ public sealed class ApplicationPreferences
     [JsonPropertyName("max_ratio_act")]
     public EnumMaxRatioAction? MaxRatioAction { get; set; }
 
+    #endregion
+
+    #region Network & Connection (网络与连接)
+
     [JsonPropertyName("listen_port")]
     public int? ListenPort { get; set; }
 
@@ -127,9 +164,11 @@ public sealed class ApplicationPreferences
     [JsonPropertyName("random_port")]
     public bool? RandomPortEnabled { get; set; }
 
+    /// <summary>全局下载限制 (KiB/s)。<br/>Global download limit in KiB/s.</summary>
     [JsonPropertyName("dl_limit")]
     public int? GlobalDlLimitKiB { get; set; }
 
+    /// <summary>全局上传限制 (KiB/s)。<br/>Global upload limit in KiB/s.</summary>
     [JsonPropertyName("up_limit")]
     public int? GlobalUpLimitKiB { get; set; }
 
@@ -163,6 +202,10 @@ public sealed class ApplicationPreferences
     [JsonPropertyName("limit_lan_peers")]
     public bool? LimitLanPeers { get; set; }
 
+    #endregion
+
+    #region Scheduler (速度调度器)
+
     [JsonPropertyName("alt_dl_limit")]
     public int? AlternativeDownloadLimitKiB { get; set; }
 
@@ -187,14 +230,18 @@ public sealed class ApplicationPreferences
     [JsonPropertyName("scheduler_days")]
     public EnumSchedulerDay? SchedulerDays { get; set; }
 
+    #endregion
+
+    #region Proxy & Privacy (代理与隐私)
+
     [JsonPropertyName("dht")]
-    public bool? Dht { get; set; }
+    public bool? DistributedHashTableEnabled { get; set; }
 
     [JsonPropertyName("pex")]
-    public bool? Pex { get; set; }
+    public bool? PeerExchangeEnable { get; set; }
 
     [JsonPropertyName("lsd")]
-    public bool? Lsd { get; set; }
+    public bool? LocalServiceDiscoveryEnabled { get; set; }
 
     [JsonPropertyName("encryption")]
     public EnumEncryptionMode? Encryption { get; set; }
@@ -227,6 +274,10 @@ public sealed class ApplicationPreferences
     [JsonPropertyName("proxy_torrents_only")]
     public bool? ProxyTorrentsOnly { get; set; }
 
+    #endregion
+
+    #region IP Filtering (IP 过滤)
+
     [JsonPropertyName("ip_filter_enabled")]
     public bool? IpFilterEnabled { get; set; }
 
@@ -235,6 +286,10 @@ public sealed class ApplicationPreferences
 
     [JsonPropertyName("ip_filter_trackers")]
     public bool? IpFilterTrackersEnabled { get; set; }
+
+    #endregion
+
+    #region Web UI Settings (Web 界面设置)
 
     [JsonPropertyName("web_ui_domain_list")]
     public string? WebUiDomains { get; set; }
@@ -320,8 +375,13 @@ public sealed class ApplicationPreferences
     [JsonPropertyName("dyndns_domain")]
     public string? DynamicalDnsDomain { get; set; }
 
+    #endregion
+
+    #region RSS & Trackers (订阅与 Tracker)
+
     [JsonPropertyName("rss_refresh_interval")]
-    public int? RssRefreshInterval { get; set; }
+    [JsonConverter(typeof(MinutesTimeSpanConverter))]
+    public TimeSpan? RssRefreshInterval { get; set; }
 
     [JsonPropertyName("rss_max_articles_per_feed")]
     public int? RssMaxArticlesPerFeed { get; set; }
@@ -365,12 +425,17 @@ public sealed class ApplicationPreferences
     [JsonPropertyName("announce_to_all_trackers")]
     public bool? AnnounceToAllTrackers { get; set; }
 
+    #endregion
+
+    #region Advanced & Libtorrent (高级设置)
+
     [JsonPropertyName("async_io_threads")]
     public int? AsyncIoThreads { get; set; }
 
     [JsonPropertyName("banned_IPs")]
     public string? BannedIPs { get; set; }
 
+    /// <summary>校验内存限制 (MiB)。<br/>Memory usage for checking in MiB.</summary>
     [JsonPropertyName("checking_memory_use")]
     public int? CheckingMemoryUseMiB { get; set; }
 
@@ -380,29 +445,32 @@ public sealed class ApplicationPreferences
     [JsonPropertyName("current_network_interface")]
     public string? CurrentNetworkInterface { get; set; }
 
+    /// <summary>磁盘缓存大小 (MiB)。<br/>Disk cache size in MiB.</summary>
     [JsonPropertyName("disk_cache")]
     public int? DiskCacheMiB { get; set; }
 
+    /// <summary>磁盘缓存到期时间。<br/>Disk cache expiry time.</summary>
     [JsonPropertyName("disk_cache_ttl")]
-    public int? DiskCacheTtlSeconds { get; set; }
+    [JsonConverter(typeof(SecondsTimeSpanConverter))]
+    public TimeSpan DiskCacheTtlSeconds { get; set; }
 
     [JsonPropertyName("embedded_tracker_port")]
     public int? EmbeddedTrackerPort { get; set; }
 
     [JsonPropertyName("enable_coalesce_read_write")]
-    public bool? EnableCoalesceReadWrite { get; set; }
+    public bool? CoalesceReadWriteEnabled { get; set; }
 
     [JsonPropertyName("enable_embedded_tracker")]
-    public bool? EnableEmbeddedTracker { get; set; }
+    public bool? EmbeddedTrackerEnabled { get; set; }
 
     [JsonPropertyName("enable_multi_connections_from_same_ip")]
-    public bool? EnableMultiConnectionsFromSameIp { get; set; }
+    public bool? MultiConnectionsFromSameIpEnabled { get; set; }
 
     [JsonPropertyName("enable_os_cache")]
-    public bool? EnableOsCache { get; set; }
+    public bool? OsCacheEnabled { get; set; }
 
     [JsonPropertyName("enable_upload_suggestions")]
-    public bool? EnableUploadSuggestions { get; set; }
+    public bool? UploadSuggestionsEnabled { get; set; }
 
     [JsonPropertyName("file_pool_size")]
     public int? FilePoolSize { get; set; }
@@ -446,6 +514,12 @@ public sealed class ApplicationPreferences
     [JsonPropertyName("utp_tcp_mixed_mode")]
     public EnumUtpTcpMixedMode? UtpTcpMixedMode { get; set; }
 
+    #endregion
+
+    /// <summary>
+    /// 包含任何未明确映射到属性的额外 JSON 数据。<br/>
+    /// Contains any additional JSON data not explicitly mapped to properties.
+    /// </summary>
     [JsonExtensionData]
     public Dictionary<string, JsonElement>? ExtensionData { get; set; }
 }

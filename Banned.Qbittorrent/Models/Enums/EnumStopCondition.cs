@@ -6,15 +6,27 @@ namespace Banned.Qbittorrent.Models.Enums;
 /// </summary>
 public enum EnumStopCondition
 {
-    /// <summary>未知或未设置。 / Unknown or not set.</summary>
+    /// <summary>
+    /// 未知或未设置。<br/>
+    /// Unknown or not set.
+    /// </summary>
     Unknown,
 
-    /// <summary>从不停止。 / Never stop.</summary>
+    /// <summary>
+    /// 从不停止。<br/>
+    /// Never stop.
+    /// </summary>
     Never,
 
-    /// <summary>一旦获取到元数据就停止。 / Stop once metadata is received.</summary>
+    /// <summary>
+    /// 一旦获取到元数据就停止。<br/>
+    /// Stop once metadata is received.
+    /// </summary>
     MetadataReceived,
 
-    /// <summary>一旦种子被添加就停止。 / Stop once the torrent is added.</summary>
+    /// <summary>
+    /// 一旦种子被添加就停止。<br/>
+    /// Stop once the torrent is added.
+    /// </summary>
     TorrentAdded
 }

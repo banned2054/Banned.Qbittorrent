@@ -31,32 +31,32 @@ public class TrackerInfo
     public int Tier { get; set; }
 
     /// <summary>
-    /// 该 Tracker 提供的 Peer（用户）总数。<br/>
+    /// 该 Tracker 提供的 Peer（用户）数量。<br/>
     /// Number of peers for this tracker.
     /// </summary>
     [JsonPropertyName("num_peers")]
-    public int NumPeers { get; set; }
+    public int PeersCount { get; set; }
 
     /// <summary>
-    /// 该 Tracker 提供的 Seed（种子/做种者）数量。<br/>
+    /// 该 Tracker 提供的 Seed（做种者）数量。<br/>
     /// Number of seeds for this tracker.
     /// </summary>
     [JsonPropertyName("num_seeds")]
-    public int NumSeeds { get; set; }
+    public int SeedsCount { get; set; }
 
     /// <summary>
-    /// 该 Tracker 提供的 Leech（吸血者/下载中）数量。<br/>
+    /// 该 Tracker 提供的 Leech（下载者）数量。<br/>
     /// Number of leeches for this tracker.
     /// </summary>
     [JsonPropertyName("num_leeches")]
-    public int NumLeeches { get; set; }
+    public int LeechesCount { get; set; }
 
     /// <summary>
     /// 已通过该 Tracker 完成下载的次数。<br/>
     /// Number of times the torrent has been downloaded via this tracker.
     /// </summary>
     [JsonPropertyName("num_downloaded")]
-    public int NumDownloaded { get; set; }
+    public int DownloadedCount { get; set; }
 
     /// <summary>
     /// Tracker 返回的消息（通常用于显示错误信息）。<br/>

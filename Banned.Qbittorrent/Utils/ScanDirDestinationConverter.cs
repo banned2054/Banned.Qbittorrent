@@ -1,7 +1,8 @@
+using Banned.Qbittorrent.Models.Application;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Banned.Qbittorrent.Models.Application;
+namespace Banned.Qbittorrent.Utils;
 
 public sealed class ScanDirDestinationConverter : JsonConverter<ScanDirDestination>
 {
