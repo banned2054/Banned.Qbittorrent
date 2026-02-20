@@ -122,4 +122,14 @@ public static class StringUtils
             _                             => "Original"
         };
     }
+
+    public static EnumSearchStatus String2EnumSearchStatus(string? value)
+    {
+        return value switch
+        {
+            "Running" => EnumSearchStatus.Running,
+            "Stopped" => EnumSearchStatus.Stopped,
+            _         => EnumSearchStatus.Unknown,
+        };
+    }
 }
