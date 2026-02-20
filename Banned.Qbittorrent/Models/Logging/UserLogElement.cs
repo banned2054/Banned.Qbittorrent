@@ -1,3 +1,4 @@
+using Banned.Qbittorrent.Utils;
 using System.Text.Json.Serialization;
 
 namespace Banned.Qbittorrent.Models.Logging;
@@ -11,10 +12,8 @@ public class UserLogElement
     public int Ip { get; set; }
 
     [JsonPropertyName("timestamp")]
-    public long TimeStampUnix { get; set; }
-
-    [JsonIgnore]
-    public DateTimeOffset TimeStamp => DateTimeOffset.FromUnixTimeSeconds(TimeStampUnix);
+    [JsonConverter(typeof(UnixTimestampConverter))]
+    public DateTimeOffset TimeStamp { get; set; }
 
     [JsonPropertyName("blocked")]
     public bool IsBlocked { get; set; }

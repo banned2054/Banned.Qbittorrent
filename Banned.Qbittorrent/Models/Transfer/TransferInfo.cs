@@ -1,6 +1,6 @@
-using System.Text.Json.Serialization;
 using Banned.Qbittorrent.Models.Enums;
 using Banned.Qbittorrent.Utils;
+using System.Text.Json.Serialization;
 
 namespace Banned.Qbittorrent.Models.Transfer;
 
@@ -39,18 +39,11 @@ public class TransferInfo
     public int? DhtNodes { get; set; }
 
     /// <summary>
-    /// 连接状态（原始字符串）。 / Connection status (raw string).
+    /// 连接状态。 / connection status.
     /// </summary>
     [JsonPropertyName("connection_status")]
-    public string? ConnectionStatusStr { get; set; }
-
-    /// <summary>
-    /// 解析后的连接状态枚举。 / Parsed connection status enum.
-    /// </summary>
-    [JsonIgnore]
-    public EnumConnectionStatus? ConnectionStatus => string.IsNullOrWhiteSpace(ConnectionStatusStr)
-        ? null
-        : StringUtils.String2ConnectionStatus(ConnectionStatusStr);
+    [JsonConverter(typeof(ConnectionStatusConverter))]
+    public EnumConnectionStatus? ConnectionStatus { get; set; }
 
     /// <summary>是否启用了种子排队。 / True if torrent queueing is enabled.</summary>
     [JsonPropertyName("queueing")]

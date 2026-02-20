@@ -1,5 +1,6 @@
-using System.Text.Json.Serialization;
 using Banned.Qbittorrent.Models.Enums;
+using Banned.Qbittorrent.Utils;
+using System.Text.Json.Serialization;
 
 namespace Banned.Qbittorrent.Models.Logging;
 
@@ -12,10 +13,8 @@ public class LogElement
     public int Message { get; set; }
 
     [JsonPropertyName("timestamp")]
-    public long TimeStampUnix { get; set; }
-
-    [JsonIgnore]
-    public DateTimeOffset TimeStamp => DateTimeOffset.FromUnixTimeSeconds(TimeStampUnix);
+    [JsonConverter(typeof(UnixTimestampConverter))]
+    public DateTimeOffset TimeStamp { get; set; }
 
     [JsonPropertyName("type")]
     public EnumLogType Type { get; set; }

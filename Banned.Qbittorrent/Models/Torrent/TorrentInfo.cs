@@ -1,4 +1,5 @@
 using Banned.Qbittorrent.Models.Enums;
+using Banned.Qbittorrent.Utils;
 using System.Text.Json.Serialization;
 
 namespace Banned.Qbittorrent.Models.Torrent;
@@ -9,14 +10,10 @@ namespace Banned.Qbittorrent.Models.Torrent;
 /// </summary>
 public class TorrentInfo
 {
-    /// <summary>添加时间（Unix 时间戳）。 / Time when the torrent was added (Unix timestamp).</summary>
-    [JsonPropertyName("added_on")]
-    public long? AddedOnUnix { get; set; }
-
     /// <summary>添加时间。 / Time when the torrent was added.</summary>
-    [JsonIgnore]
-    public DateTimeOffset? AddedOn =>
-        AddedOnUnix == null ? null : DateTimeOffset.FromUnixTimeSeconds(AddedOnUnix.Value);
+    [JsonPropertyName("added_on")]
+    [JsonConverter(typeof(UnixTimestampConverter))]
+    public DateTimeOffset? AddedOn { get; set; }
 
     /// <summary>剩余需要下载的字节数。 / Remaining bytes to download.</summary>
     [JsonPropertyName("amount_left")]
@@ -38,14 +35,10 @@ public class TorrentInfo
     [JsonPropertyName("completed")]
     public long? Completed { get; set; }
 
-    /// <summary>完成时间（Unix 时间戳）。 / Time when the torrent was completed (Unix timestamp).</summary>
-    [JsonPropertyName("completion_on")]
-    public long? CompletionOnUnix { get; set; }
-
     /// <summary>完成时间。 / Time when the torrent was completed.</summary>
-    [JsonIgnore]
-    public DateTimeOffset? CompletionOn =>
-        CompletionOnUnix == null ? null : DateTimeOffset.FromUnixTimeSeconds(CompletionOnUnix.Value);
+    [JsonPropertyName("completion_on")]
+    [JsonConverter(typeof(UnixTimestampConverter))]
+    public DateTimeOffset? CompletionOn { get; set; }
 
     /// <summary>内容保存路径。 / Absolute path of torrent content.</summary>
     [JsonPropertyName("content_path")]
@@ -67,13 +60,10 @@ public class TorrentInfo
     [JsonPropertyName("downloaded_session")]
     public long? DownloadedSession { get; set; }
 
-    /// <summary>预计剩余时间（秒）。 / Estimated Time of Arrival (seconds).</summary>
-    [JsonPropertyName("eta")]
-    public int? EtaSeconds { get; set; }
-
     /// <summary>预计剩余时间。 / Estimated Time of Arrival.</summary>
-    [JsonIgnore]
-    public TimeSpan? Eta => EtaSeconds == null ? null : TimeSpan.FromSeconds(EtaSeconds.Value);
+    [JsonPropertyName("eta")]
+    [JsonConverter(typeof(SecondsTimeSpanConverter))]
+    public TimeSpan? EstimatedTimeArrival { get; set; }
 
     /// <summary>是否优先下载第一块和最后一块。 / Whether first and last pieces are prioritized.</summary>
     [JsonPropertyName("f_l_piece_prio")]
@@ -91,14 +81,10 @@ public class TorrentInfo
     [JsonPropertyName("isPrivate")]
     public bool? IsPrivate { get; set; }
 
-    /// <summary>最后活跃时间（Unix 时间戳）。 / Last activity time (Unix timestamp).</summary>
-    [JsonPropertyName("last_activity")]
-    public long? LastActivityUnix { get; set; }
-
     /// <summary>最后活跃时间。 / Last activity time.</summary>
-    [JsonIgnore]
-    public DateTimeOffset? LastActivity =>
-        LastActivityUnix == null ? null : DateTimeOffset.FromUnixTimeSeconds(LastActivityUnix.Value);
+    [JsonPropertyName("last_activity")]
+    [JsonConverter(typeof(UnixTimestampConverter))]
+    public DateTimeOffset? LastActivity { get; set; }
 
     /// <summary>磁力链接。 / Magnet URI of the torrent.</summary>
     [JsonPropertyName("magnet_uri")]
@@ -108,14 +94,10 @@ public class TorrentInfo
     [JsonPropertyName("max_ratio")]
     public float? MaxRatio { get; set; }
 
-    /// <summary>最大做种时间限制（分钟）。 / Maximum seeding time limit (minutes).</summary>
-    [JsonPropertyName("max_seeding_time")]
-    public int? MaxSeedingTimeSeconds { get; set; }
-
     /// <summary>最大做种时间限制。 / Maximum seeding time limit.</summary>
-    [JsonIgnore]
-    public TimeSpan? MaxSeedingTime =>
-        MaxSeedingTimeSeconds == null ? null : TimeSpan.FromMinutes(MaxSeedingTimeSeconds.Value);
+    [JsonPropertyName("max_seeding_time")]
+    [JsonConverter(typeof(MinutesTimeSpanConverter))]
+    public TimeSpan? MaxSeedingTime { get; set; }
 
     /// <summary>种子名称。 / Name of the torrent.</summary>
     [JsonPropertyName("name")]
@@ -153,44 +135,29 @@ public class TorrentInfo
     [JsonPropertyName("ratio_limit")]
     public float? RatioLimit { get; set; }
 
-    /// <summary>下次汇报（Announce）剩余时间（秒）。 / Time until next announce (seconds).</summary>
+    /// <summary>下次汇报（Announce）剩余时间。 / Time until next announce.</summary>
     [JsonPropertyName("reannounce")]
-    public int? ReannounceSeconds { get; set; }
-
-    /// <summary>下次汇报剩余时间。 / Time until next announce.</summary>
-    [JsonIgnore]
-    public TimeSpan? ReannounceTime =>
-        ReannounceSeconds == null ? null : TimeSpan.FromSeconds(ReannounceSeconds.Value);
+    [JsonConverter(typeof(SecondsTimeSpanConverter))]
+    public TimeSpan? ReannounceTime { get; set; }
 
     /// <summary>保存路径。 / Save path of the torrent.</summary>
     [JsonPropertyName("save_path")]
     public string? SavePath { get; set; }
 
-    /// <summary>累计做种时间（秒）。 / Total seeding time (seconds).</summary>
-    [JsonPropertyName("seeding_time")]
-    public int? SeedingTimeSeconds { get; set; }
-
     /// <summary>累计做种时间。 / Total seeding time.</summary>
-    [JsonIgnore]
-    public TimeSpan? SeedingTime => SeedingTimeSeconds == null ? null : TimeSpan.FromSeconds(SeedingTimeSeconds.Value);
+    [JsonPropertyName("seeding_time")]
+    [JsonConverter(typeof(SecondsTimeSpanConverter))]
+    public TimeSpan? SeedingTime { get; set; }
 
     /// <summary>做种时间限制（分钟）。 / Seeding time limit (minutes).</summary>
     [JsonPropertyName("seeding_time_limit")]
-    public int? SeedingTimeLimitSeconds { get; set; }
-
-    /// <summary>做种时间限制。 / Seeding time limit.</summary>
-    [JsonIgnore]
-    public TimeSpan? SeedingTimeLimit =>
-        SeedingTimeLimitSeconds == null ? null : TimeSpan.FromMinutes(SeedingTimeLimitSeconds.Value);
+    [JsonConverter(typeof(MinutesTimeSpanConverter))]
+    public TimeSpan? SeedingTimeLimit { get; set; }
 
     /// <summary>最后一次见到完整种子的时间（Unix 时间戳）。 / Time when the torrent was last seen complete (Unix timestamp).</summary>
     [JsonPropertyName("seen_complete")]
-    public long? SeenCompleteUnix { get; set; }
-
-    /// <summary>最后一次见到完整种子的时间。 / Time when the torrent was last seen complete.</summary>
-    [JsonIgnore]
-    public DateTimeOffset? SeenComplete =>
-        SeenCompleteUnix == null ? null : DateTimeOffset.FromUnixTimeSeconds(SeenCompleteUnix.Value);
+    [JsonConverter(typeof(UnixTimestampConverter))]
+    public DateTimeOffset? SeenComplete { get; set; }
 
     /// <summary>是否开启顺序下载。 / Whether sequential download is enabled.</summary>
     [JsonPropertyName("seq_dl")]
@@ -216,22 +183,13 @@ public class TorrentInfo
 
     /// <summary>标签列表（原始逗号分隔字符串）。 / Raw comma-separated tags string.</summary>
     [JsonPropertyName("tags")]
-    public string? TagListStr { get; set; }
-
-    /// <summary>解析后的标签列表。 / Parsed list of tags.</summary>
-    [JsonIgnore]
-    public List<string> TagList =>
-        string.IsNullOrWhiteSpace(TagListStr)
-            ? []
-            : TagListStr.Split(",", StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries).ToList();
-
-    /// <summary>累计活跃时间（秒）。 / Total active time (seconds).</summary>
-    [JsonPropertyName("time_active")]
-    public int? TimeActiveSeconds { get; set; }
+    [JsonConverter(typeof(CommaSeparatedListConverter))]
+    public List<string> TagList { get; set; }
 
     /// <summary>累计活跃时间。 / Total active time.</summary>
-    [JsonIgnore]
-    public TimeSpan? TimeActive => TimeActiveSeconds == null ? null : TimeSpan.FromSeconds(TimeActiveSeconds.Value);
+    [JsonPropertyName("time_active")]
+    [JsonConverter(typeof(SecondsTimeSpanConverter))]
+    public TimeSpan? TimeActive { get; set; }
 
     /// <summary>总大小（含额外开销）。 / Total size including overhead.</summary>
     [JsonPropertyName("total_size")]

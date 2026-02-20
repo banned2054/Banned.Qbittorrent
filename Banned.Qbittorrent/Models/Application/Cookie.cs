@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Banned.Qbittorrent.Utils;
 
 namespace Banned.Qbittorrent.Models.Application;
 
@@ -17,12 +18,6 @@ public class Cookie
     public string Value { get; set; }
 
     [JsonPropertyName("expirationDate")]
-    public long ExpirationDateUnix { get; set; }
-
-    [JsonIgnore]
-    public DateTimeOffset? Expiration
-    {
-        get => ExpirationDateUnix <= 0 ? null : DateTimeOffset.FromUnixTimeSeconds(ExpirationDateUnix);
-        set => ExpirationDateUnix = (long)(value?.ToUnixTimeSeconds() ?? 0);
-    }
+    [JsonConverter(typeof(UnixTimestampConverter))]
+    public DateTimeOffset? Expiration { get; set; }
 }

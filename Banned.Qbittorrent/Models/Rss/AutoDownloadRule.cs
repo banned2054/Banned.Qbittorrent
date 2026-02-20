@@ -102,38 +102,16 @@ public class AutoDownloadRule
     public string? SavePath { get; set; }
 
     /// <summary>
-    /// 停止条件（原始字符串）。<br/>
-    /// Stop condition (raw string).
+    /// 停止条件。 / Stop condition.
     /// </summary>
     [JsonPropertyName("stopCondition")]
-    public string? StopConditionStr { get; set; }
+    [JsonConverter(typeof(StopConditionConverter))]
+    public EnumStopCondition StopCondition { get; set; }
 
     /// <summary>
-    /// 停止条件枚举。<br/>
-    /// Stop condition enum.
-    /// </summary>
-    [JsonIgnore]
-    public EnumStopCondition StopCondition
-    {
-        get => StringUtils.String2StopCondition(StopConditionStr);
-        set => StopConditionStr = value.StopCondition2String();
-    }
-
-    /// <summary>
-    /// 内容布局（原始字符串）。<br/>
-    /// Content layout (raw string).
+    /// 内容布局。 / Content layout.
     /// </summary>
     [JsonPropertyName("contentLayout")]
-    public string? ContentLayoutStr { get; set; }
-
-    /// <summary>
-    /// 内容布局枚举。<br/>
-    /// Content layout enum.
-    /// </summary>
-    [JsonIgnore]
-    public EnumContentLayout ContentLayout
-    {
-        get => StringUtils.String2ContentLayout(ContentLayoutStr);
-        set => ContentLayoutStr = value.ContentLayout2String();
-    }
+    [JsonConverter(typeof(StopConditionConverter))]
+    public EnumContentLayout ContentLayout { get; set; }
 }

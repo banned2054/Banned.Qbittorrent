@@ -6,7 +6,7 @@ public class TorrentUnitTest
 {
     private QBittorrentClient _client;
 
-    public readonly string Hash = "1777eb08ced679afb93c0103013923c53b8b0db5";
+    public readonly string Hash = "83dc9bac00c24a1a023abb2d09839a495b3c688e";
 
     [SetUp]
     public async Task SetUp()
