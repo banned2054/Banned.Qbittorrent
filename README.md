@@ -2,11 +2,19 @@
 
 [中文文档](https://github.com/banned2054/Banned.Qbittorrent/blob/main/Docs/README.md)
 
-[![License](https://img.shields.io/badge/license-Apache_2.0-green)](./LICENSE) [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/banned2054/Banned.Qbittorrent)
+[![License](https://img.shields.io/badge/license-Apache_2.0-green)](./LICENSE) [![NuGet](https://img.shields.io/nuget/v/Banned.Qbittorrent.svg)](https://www.nuget.org/packages/Banned.Qbittorrent)
 
-A .NET client library for qBittorrent's Web API, inspired by [qbittorrent-api](https://github.com/rmartin16/qbittorrent-api) and the official qBittorrent wiki. This library improves upon [qbittorrent-net-client](https://github.com/fedarovich/qbittorrent-net-client) by using POST requests instead of GET for better data synchronization.
+**Banned.Qbittorrent** is a high-performance, strongly-typed .NET client library for qBittorrent's Web API. It is designed to be modern, asynchronous, and robust, providing full coverage of the qBittorrent feature set.
 
-## Installation
+## ✨ Key Features
+
+* **Full API Implementation**: Complete coverage of Torrent management, Application settings, RSS, Search, and Sync modules.
+* **Automatic Version Negotiation**: Automatically detects the Web API version and enforces compatibility checks for specific features.
+* **Smart Auth Handling**: Built-in session keep-alive and automatic re-login logic.
+* **Resilient Networking**: Includes an exponential backoff retry mechanism to handle transient network issues.
+* **Asynchronous First**: First-class support for `Task`-based asynchronous patterns and `CancellationToken`.
+
+## 📦 Installation
 
 Install via NuGet Package Manager:
 
@@ -14,39 +22,67 @@ Install via NuGet Package Manager:
 dotnet add package Banned.Qbittorrent
 ```
 
-## Quick Start
+## 🚀 Quick Start
+
+1. Initialize the Client
+    Use the static Create factory method to handle initial authentication and API version negotiation automatically.
 
 ```csharp
 using Banned.Qbittorrent;
 
-// Create a client instance with authentication
-var client = await QbittorrentClient.Create("http://localhost:8080", "username", "password");
+// Automatically logs in and configures version compatibility
+var client = await QBittorrentClient.Create("http://localhost:8080", "admin", "adminadmin");
+```
+2. Torrent Management
+```csharp
+// Get all torrents
+var torrents = await client.Torrent.GetInfos();
 
-// Get torrent list
-var torrents = await client.GetTorrentInfos();
+// Add a new torrent via Magnet link
+await client.Torrent.Add(new AddTorrentsRequest {
+    Urls = new[] { "magnet:?xt=urn:btih:..." },
+    SavePath = "/downloads/movies"
+});
 
-// Add a new torrent
-await client.AddTorrent("magnet:?xt=urn:btih:...");
+// Manage specific torrents
+var hashes = new[] { "hash1", "hash2" };
+await client.Torrent.Pause(hashes);
+await client.Torrent.Resume(hashes);
+```
+3. Application Preferences
+```csharp
+// Retrieve current settings
+var prefs = await client.Application.GetApplicationPreferences();
 
-// Pause torrents
-await client.PauseTorrents([ "torrent_hash" ]);
-
-// Resume torrents
-await client.ResumeTorrents([ "torrent_hash" ]);
+// Modify and save
+prefs.AlternativeWebuiEnabled = true;
+await client.Application.SetApplicationPreferences(prefs);
 ```
 
-## License
+## 🛠 Project Architecture
 
-This project is licensed under the Apache License 2.0.
+|Service|Description|
+|----------|-----------|
+|Application|"App versions, Build info, Preferences, and Cookie management."|
+|Authentication|"Login, Logout, and Session persistence."|
+|Torrent|"Management of torrents, categories, tags, and file priority."|
+|Transfer|"Global speed limits, transfer statistics, and info."|
+|Sync|Main data synchronization and incremental status updates.|
+|Rss|Management of RSS feeds and automated download rules.|
+|Search|Search engine tasks and plugin management.|
+|Log|System events and peer-to-peer connection logs.|
 
-## Contributing
-
-Contributions are welcome! Feel free to submit issues and pull requests.
-
-## Implementation Status
-
-[📘 API Implementation List](https://github.com/banned2054/Banned.Qbittorrent/blob/main/Docs/API%20Implementation.md)
-
-## Changelog
+## 📜 Changelog
 
 [🧾 View CHANGELOG](https://github.com/banned2054/Banned.Qbittorrent/blob/main/Docs/CHANGELOG.md)
+
+## ⚖️ License
+
+This project is licensed under the Apache License 2.0. See the [LICENSE](https://github.com/banned2054/Banned.Qbittorrent/blob/main/LICENSE.txt) file for details.
+
+## 🤝 Contributing
+
+Contributions are welcome! If you encounter a bug or have a feature request, please open an issue. Pull requests are highly appreciated.
+
+---
+Inspired by [qbittorrent-api](https://github.com/rmartin16/qbittorrent-api) and [official qBittorrent WebUI Wiki](https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-5.0)).

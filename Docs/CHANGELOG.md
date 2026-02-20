@@ -6,6 +6,7 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## 📘 Versions
 
+- [v1.0.0](#-release-v100--full-api-completion--unified-standard)
 - [v0.1.1](#-release-v011--authentication-service--network-refactoring)
 - [v0.1.0](#-release-v010--application-preferences-api--net-10-upgrade)
 - [v0.0.9](#-release-v009--torrent-api-completion--category-management)
@@ -13,6 +14,73 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 - [v0.0.7](#-release-v007--qbittorrent-net-client-refinement)
 - [v0.0.6](#-release-v006--qbittorrent-net-client-enhancement)
 - [v0.0.5](#-release-v005--qbittorrent-net-client-update)
+
+## 🚀 Release v1.0.0 — Full API Completion & Unified Standard
+
+**Release Date:** 2026-02-20
+
+This major milestone marks the **100% completion** of the qBittorrent Web API implementation. Version 1.0.0 introduces the remaining service modules, full documentation coverage, and a significant refactoring of naming conventions to ensure long-term consistency and predictability across the library.
+
+---
+
+### ✨ Added
+
+* **Full API Coverage:** – Implemented all remaining core services:
+    * `ApplicationService` – System state and server controls.
+    * `LogService` – Server log and main log access.
+    * `TransferService` – Global transfer info and speed limits.
+    * `SyncService` – Main and torrent-specific synchronization.
+    * `RssService` – RSS feeds, articles, and automated rules.
+    * `SearchService` – Search jobs, plugin management, and results.
+
+
+* **Comprehensive Documentation:** Added XML documentation comments to all public classes, properties, and methods for enhanced IntelliSense support.
+
+---
+
+### 🔧 Changed (Breaking Changes)
+
+* **Unified Boolean Naming:** To eliminate ambiguity, most boolean properties have been renamed from `IsXXX` or `EnableXXX` to the `XXXEnabled` pattern.
+* **Standardized Property Suffixes:** Replaced inconsistent suffixes like `Total`, `Num`, or `List` with `Count` and other descriptive terms.
+
+**Key Renaming Mapping:**
+
+| Old Name | New Name (v1.0.0) |
+| --- | --- |
+| `DiskCacheTtlSeconds` | `DiskCacheTtl` |
+| `dht` | `DistributedHashTableEnabled` |
+| `pex` | `PeerExchangeEnabled` |
+| `lsd` | `LocalServiceDiscoveryEnabled` |
+| `EnableCoalesceReadWrite` | `CoalesceReadWriteEnabled` |
+| `EnableEmbeddedTracker` | `EmbeddedTrackerEnabled` |
+| `IsSeed` / `IsPrivate` | `SeedEnabled` / `PrivateEnabled` |
+| `AutoTmm` / `ForceStart` | `AutoTmmEnabled` / `ForceStartEnabled` |
+| `SeqDl` / `SuperSeeding` | `SequentialDownloadEnabled` / `SuperSeedingEnabled` |
+| `IsQueueingEnabled` | `QueueingEnabled` |
+| `UseAltSpeedLimits` | `AltSpeedLimitsEnabled` |
+| `PeersTotal` / `NumPeers` | `PeersCount` |
+| `SeedsTotal` / `NumSeeds` | `SeedsCount` |
+| `NumLeeches` / `NumDownloaded` | `LeechesCount` / `DownloadedCount` |
+| `DhtNodes` | `DhtNodesCount` |
+
+---
+
+### 🧱 Completed Module
+
+* ✅ **100% API Implementation:** Every endpoint group defined in the official qBittorrent Web API is now fully supported.
+
+---
+
+### 🧹 Improved
+
+* **Naming Consistency:** Performed a global sweep to align method signatures and property names with the new unified standard.
+* **Internal Refactoring:** Improved internal mapping logic and exception handling for better stability.
+
+---
+
+### 📦 Notes
+
+This is a **major release** and contains **breaking changes** regarding property names. If you are upgrading from any v0.x.x version, please refer to the renaming table above to update your implementation.
 
 ## 🚀 Release v0.1.1 — Authentication Service & Network Refactoring
 
