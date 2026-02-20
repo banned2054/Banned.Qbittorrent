@@ -117,7 +117,7 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
         if (!string.IsNullOrEmpty(request.Category)) parameters.Add("category", request.Category);
         if (!string.IsNullOrEmpty(request.Tag)) parameters.Add("tag", request.Tag);
         if (!string.IsNullOrEmpty(request.Sort)) parameters.Add("sort", request.Sort);
-        if (request.Reverse) parameters.Add("reverse", "true");
+        if (request.ReverseEnabled) parameters.Add("reverse", "true");
         if (request.Limit  > 0) parameters.Add("limit", request.Limit.ToString());
         if (request.Offset > 0) parameters.Add("offset", request.Offset.ToString());
         if (request.HashList is { Count: > 0 })
@@ -533,30 +533,23 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
     {
         var request = new AddTorrentRequest
         {
-            FilePaths              = filePaths,
-            Urls                   = urls,
-            SavePath               = savePath,
-            Category               = category,
-            Tags                   = tags,
-            SkipChecking           = skipChecking,
-            RootFolder             = rootFolder,
-            Rename                 = rename,
-            UploadLimit            = uploadLimit,
-            DownloadLimit          = downloadLimit,
-            RatioLimit             = ratioLimit,
-            SeedingTimeLimit       = seedingTimeLimit,
-            AutoTmm                = autoTmm,
-            SequentialDownload     = sequentialDownload,
-            FirstLastPiecePriority = firstLastPiecePriority
+            FilePaths                     = filePaths,
+            Urls                          = urls,
+            SavePath                      = savePath,
+            Category                      = category,
+            Tags                          = tags,
+            SkipCheckingEnabled           = skipChecking,
+            RootFolderEnabled             = rootFolder,
+            Rename                        = rename,
+            UploadLimit                   = uploadLimit,
+            DownloadLimit                 = downloadLimit,
+            RatioLimit                    = ratioLimit,
+            SeedingTimeLimit              = seedingTimeLimit,
+            AutoTmmEnabled                = autoTmm,
+            SequentialDownloadEnabled     = sequentialDownload,
+            FirstLastPiecePriorityEnabled = firstLastPiecePriority,
+            PausedEnabled                 = stopped ?? paused
         };
-        if (apiVersion < ApiVersion.V2_11_0)
-        {
-            request.Paused = stopped ?? paused;
-        }
-        else
-        {
-            request.Stopped = stopped ?? paused;
-        }
 
         return await AddTorrent(request);
     }
