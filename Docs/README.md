@@ -13,6 +13,9 @@
 * **智能身份验证**: 内置会话保持（Keep-alive）机制与自动重新登录逻辑。
 * **弹性网络处理**: 包含指数退避（Exponential Backoff）重试机制，从容应对瞬时网络抖动。
 * **异步优先**: 原生支持基于 `Task` 的异步模式及 `CancellationToken` 取消令牌。
+* **并行请求执行**: 并发执行多个请求以提高性能。
+* **增强的配置选项**: 灵活的选项用于自定义重试行为、超时和日志记录。
+* **内存优化**: 改进的文件上传机制，减少大种子文件的内存使用。
 
 ## 📦 安装
 
@@ -32,6 +35,17 @@ using Banned.Qbittorrent;
 
 // 自动登录并配置版本兼容性
 var client = await QBittorrentClient.Create("http://localhost:8080", "admin", "adminadmin");
+
+// 或使用自定义配置
+var client = await QBittorrentClient.Create(
+    url: "http://localhost:8080",
+    userName: "admin",
+    password: "adminadmin",
+    httpClient: customHttpClient,    // 自定义HttpClient实例
+    maxRetries: 5,                   // 最大重试次数
+    timeout: TimeSpan.FromSeconds(30), // 请求超时时间
+    enableDetailedLogging: true      // 启用详细日志
+);
 ```
 2. 种子管理
 ```csharp

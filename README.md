@@ -13,6 +13,9 @@
 * **Smart Auth Handling**: Built-in session keep-alive and automatic re-login logic.
 * **Resilient Networking**: Includes an exponential backoff retry mechanism to handle transient network issues.
 * **Asynchronous First**: First-class support for `Task`-based asynchronous patterns and `CancellationToken`.
+* **Parallel Request Execution**: Execute multiple requests concurrently for improved performance.
+* **Enhanced Configuration**: Flexible options for customizing retry behavior, timeouts, and logging.
+* **Memory Optimization**: Improved file upload mechanism to reduce memory usage for large torrent files.
 
 ## 📦 Installation
 
@@ -32,6 +35,17 @@ using Banned.Qbittorrent;
 
 // Automatically logs in and configures version compatibility
 var client = await QBittorrentClient.Create("http://localhost:8080", "admin", "adminadmin");
+
+// Or with custom configuration
+var client = await QBittorrentClient.Create(
+    url: "http://localhost:8080",
+    userName: "admin",
+    password: "adminadmin",
+    httpClient: customHttpClient,    // Custom HttpClient instance
+    maxRetries: 5,                   // Maximum number of retries
+    timeout: TimeSpan.FromSeconds(30), // Request timeout
+    enableDetailedLogging: true      // Enable detailed logging
+);
 ```
 2. Torrent Management
 ```csharp
@@ -63,10 +77,10 @@ await client.Application.SetApplicationPreferences(prefs);
 
 |Service|Description|
 |----------|-----------|
-|Application|"App versions, Build info, Preferences, and Cookie management."|
-|Authentication|"Login, Logout, and Session persistence."|
-|Torrent|"Management of torrents, categories, tags, and file priority."|
-|Transfer|"Global speed limits, transfer statistics, and info."|
+|Application|App versions, Build info, Preferences, and Cookie management.|
+|Authentication|Login, Logout, and Session persistence.|
+|Torrent|Management of torrents, categories, tags, and file priority.|
+|Transfer|Global speed limits, transfer statistics, and info.|
 |Sync|Main data synchronization and incremental status updates.|
 |Rss|Management of RSS feeds and automated download rules.|
 |Search|Search engine tasks and plugin management.|

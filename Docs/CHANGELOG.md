@@ -6,6 +6,7 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## 📘 Versions
 
+- [v1.1.0](#-release-v110--performance-optimizations--flexibility-enhancements)
 - [v1.0.0](#-release-v100--full-api-completion--unified-standard)
 - [v0.1.1](#-release-v011--authentication-service--network-refactoring)
 - [v0.1.0](#-release-v010--application-preferences-api--net-10-upgrade)
@@ -14,6 +15,73 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 - [v0.0.7](#-release-v007--qbittorrent-net-client-refinement)
 - [v0.0.6](#-release-v006--qbittorrent-net-client-enhancement)
 - [v0.0.5](#-release-v005--qbittorrent-net-client-update)
+
+## 🚀 Release v1.1.0 — Performance Optimizations & Flexibility Enhancements
+
+**Release Date:** 2026-03-06
+
+This minor release focuses on **performance optimizations**, **flexibility enhancements**, and **observability improvements** to the qBittorrent .NET client library. It introduces parallel request execution, memory usage optimizations, and enhanced configuration options.
+
+---
+
+### ✨ Added
+
+* **Parallel Request Execution**
+  - Added `ExecuteParallelRequests` method to `NetService` for executing multiple requests concurrently
+  - Significantly improves performance when fetching multiple pieces of data simultaneously
+
+* **Enhanced Client Configuration**
+  - Added `maxRetries` parameter to `QBittorrentClient.Create` for customizing retry behavior
+  - Added `timeout` parameter for setting custom request timeout
+  - Added `enableDetailedLogging` parameter for verbose operation logging
+
+* **Detailed Logging**
+  - Added `EnableDetailedLogging` property to `NetService`
+  - Added detailed log output for request attempts, retries, and file uploads
+
+---
+
+### 🔧 Changed
+
+* **Unified Client Creation**
+  - Merged two `Create` methods in `QBittorrentClient` into a single method with optional parameters
+  - Simplified API surface while maintaining backward compatibility
+
+* **NetService Refactoring**
+  - Updated `NetService` constructor to accept optional `HttpClient` and `timeout` parameters
+  - Added `MaxRetries` property for centralized retry configuration
+
+* **TorrentService Parameter Alignment**
+  - Updated parameter names in `TorrentService` to maintain consistency with naming conventions
+  - Changed `Reverse` to `ReverseEnabled` for better clarity
+
+---
+
+### 🚀 Optimized
+
+* **Memory Usage**
+  - Improved file upload mechanism to use `FileStream` instead of `File.ReadAllBytes`
+  - Reduces memory consumption when uploading large torrent files
+
+* **Retry Mechanism**
+  - Enhanced `ExecuteWithRetry` method to support asynchronous request factories
+  - Improved retry logic with detailed delay calculations and logging
+
+* **Performance**
+  - Added parallel request execution capability for faster data retrieval
+  - Optimized internal request handling for better throughput
+
+---
+
+### 📦 Notes
+
+This is a **minor release** with no breaking changes. All existing code will continue to work as before, while new features and optimizations are available for those who wish to use them.
+
+Key improvements include:
+- Better performance for multi-request scenarios
+- Reduced memory usage during file uploads
+- More flexible configuration options
+- Enhanced observability through detailed logging
 
 ## 🚀 Release v1.0.0 — Full API Completion & Unified Standard
 
