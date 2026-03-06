@@ -23,14 +23,28 @@ public class NetService : IDisposable
     public Func<Task>? EnsureLoggedInHandler { get; set; }
 
     /// <summary>
+    /// 获取或设置最大重试次数。<br/>
+    /// Gets or sets the maximum number of retries.
+    /// </summary>
+    public int MaxRetries { get; set; } = 3;
+
+    /// <summary>
+    /// 获取或设置是否启用详细日志。<br/>
+    /// Gets or sets whether to enable detailed logging.
+    /// </summary>
+    public bool EnableDetailedLogging { get; set; } = false;
+
+    /// <summary>
     /// 初始化 <see cref="NetService"/> 类的新实例。<br/>
     /// Initializes a new instance of the <see cref="NetService"/> class.
     /// </summary>
     /// <param name="baseUrl">qBittorrent Web UI 的基础地址。 / The base URL of qBittorrent Web UI.</param>
     /// <param name="httpClient">可选的 HttpClient 实例。 / Optional HttpClient instance.</param>
-    public NetService(string baseUrl, HttpClient? httpClient = null)
+    /// <param name="timeout">可选的请求超时时间，为 null 时默认 15 秒。 / Optional request timeout, default 15 seconds when null.</param>
+    public NetService(string baseUrl, HttpClient? httpClient = null, TimeSpan? timeout = null)
     {
         _baseUrl = new Uri(baseUrl.TrimEnd('/') + "/");
+        var defaultTimeout = timeout ?? TimeSpan.FromSeconds(15);
 
         if (httpClient != null)
         {
@@ -47,10 +61,7 @@ public class NetService : IDisposable
                 UseCookies        = true
             };
 
-            _client = new HttpClient(handler)
-            {
-                Timeout = TimeSpan.FromSeconds(15)
-            };
+            _client = new HttpClient(handler) { Timeout = defaultTimeout };
         }
 
         _client.DefaultRequestHeaders.CacheControl = new CacheControlHeaderValue
@@ -151,18 +162,43 @@ public class NetService : IDisposable
 
         return await ExecuteWithRetry(() =>
         {
-            var content = new MultipartFormDataContent();
-            if (parameters != null)
-                foreach (var (k, v) in parameters)
-                    content.Add(new StringContent(v), k);
-
-            foreach (var filePath in filePaths)
+            try
             {
-                if (!File.Exists(filePath)) throw new QbittorrentFileNotFoundException(filePath);
-                content.Add(new ByteArrayContent(File.ReadAllBytes(filePath)), "torrents", Path.GetFileName(filePath));
-            }
+                var content = new MultipartFormDataContent();
+                if (parameters != null)
+                    foreach (var (k, v) in parameters)
+                        content.Add(new StringContent(v), k);
 
-            return new HttpRequestMessage(HttpMethod.Post, CombineUrl(subPath)) { Content = content };
+                foreach (var filePath in filePaths)
+                {
+                    if (!File.Exists(filePath)) throw new QbittorrentFileNotFoundException(filePath);
+                    if (EnableDetailedLogging)
+                        Console.WriteLine($"Uploading file: {filePath}");
+
+                    // 使用 FileStream 代替 File.ReadAllBytes 以减少内存使用
+                    var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, 8192,
+                                                    FileOptions.Asynchronous);
+                    try
+                    {
+                        content.Add(new StreamContent(fileStream), "torrents", Path.GetFileName(filePath));
+                    }
+                    catch
+                    {
+                        fileStream.Dispose();
+                        throw;
+                    }
+                }
+
+                var request = new HttpRequestMessage(HttpMethod.Post, CombineUrl(subPath)) { Content = content };
+                if (EnableDetailedLogging)
+                    Console.WriteLine($"Sending POST request to: {request.RequestUri}");
+
+                return Task.FromResult(request);
+            }
+            catch (Exception exception)
+            {
+                return Task.FromException<HttpRequestMessage>(exception);
+            }
         }, ct).ConfigureAwait(false);
     }
 
@@ -213,17 +249,38 @@ public class NetService : IDisposable
     /// <returns>响应体内容。 / Response body content.</returns>
     private async Task<string> ExecuteWithRetry(Func<HttpRequestMessage> requestFactory,
                                                 CancellationToken        ct         = default,
-                                                int                      maxRetries = 3)
+                                                int?                     maxRetries = null)
     {
-        Exception?           lastException = null;
-        HttpResponseMessage? lastResponse  = null;
-        var                  lastBody      = string.Empty;
-
-        for (var attempt = 1; attempt <= maxRetries; attempt++)
+        return await ExecuteWithRetry(() =>
         {
             try
             {
-                using var request = requestFactory();
+                return Task.FromResult(requestFactory());
+            }
+            catch (Exception exception)
+            {
+                return Task.FromException<HttpRequestMessage>(exception);
+            }
+        }, ct, maxRetries);
+    }
+
+    private async Task<string> ExecuteWithRetry(Func<Task<HttpRequestMessage>> requestFactory,
+                                                CancellationToken              ct         = default,
+                                                int?                           maxRetries = null)
+    {
+        Exception?           lastException    = null;
+        HttpResponseMessage? lastResponse     = null;
+        var                  lastBody         = string.Empty;
+        var                  actualMaxRetries = maxRetries ?? MaxRetries;
+
+        for (var attempt = 1; attempt <= actualMaxRetries; attempt++)
+        {
+            try
+            {
+                using var request = await requestFactory().ConfigureAwait(false);
+                if (EnableDetailedLogging)
+                    Console.WriteLine($"Attempt {attempt}/{actualMaxRetries}: Sending {request.Method} request to {request.RequestUri}");
+
                 using var response = await _client.SendAsync(
                                                              request, HttpCompletionOption.ResponseHeadersRead, ct)
                                                   .ConfigureAwait(false);
@@ -231,31 +288,60 @@ public class NetService : IDisposable
                 lastResponse = response;
                 lastBody     = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
 
+                if (EnableDetailedLogging)
+                    Console.WriteLine($"Attempt {attempt}/{actualMaxRetries}: Received response with status code: {response.StatusCode}");
+
                 if (response.IsSuccessStatusCode) return lastBody;
 
                 if (!RetryableStatusCodes.Contains(response.StatusCode))
                     throw MapToException(response, lastBody);
 
-                if (attempt == maxRetries) break;
-                await Task.Delay(GetDelayFromRetryAfterOrBackoff(response, attempt), ct).ConfigureAwait(false);
+                if (attempt == actualMaxRetries) break;
+
+                var delay = GetDelayFromRetryAfterOrBackoff(response, attempt);
+                if (EnableDetailedLogging)
+                    Console.WriteLine($"Attempt {attempt}/{actualMaxRetries}: Retrying in {delay.TotalMilliseconds}ms due to status code: {response.StatusCode}");
+
+                await Task.Delay(delay, ct).ConfigureAwait(false);
             }
             catch (TaskCanceledException ex)
             {
                 lastException = ex;
-                if (attempt == maxRetries) break;
-                await Task.Delay(ComputeBackoff(attempt), ct).ConfigureAwait(false);
+                if (EnableDetailedLogging)
+                    Console.WriteLine($"Attempt {attempt}/{actualMaxRetries}: Task canceled: {ex.Message}");
+                if (attempt == actualMaxRetries) break;
+
+                var delay = ComputeBackoff(attempt);
+                if (EnableDetailedLogging)
+                    Console.WriteLine($"Attempt {attempt}/{actualMaxRetries}: Retrying in {delay.TotalMilliseconds}ms due to cancellation");
+
+                await Task.Delay(delay, ct).ConfigureAwait(false);
             }
             catch (HttpRequestException ex)
             {
                 lastException = ex;
-                if (attempt == maxRetries) break;
-                await Task.Delay(ComputeBackoff(attempt), ct).ConfigureAwait(false);
+                if (EnableDetailedLogging)
+                    Console.WriteLine($"Attempt {attempt}/{actualMaxRetries}: HTTP request failed: {ex.Message}");
+                if (attempt == actualMaxRetries) break;
+
+                var delay = ComputeBackoff(attempt);
+                if (EnableDetailedLogging)
+                    Console.WriteLine($"Attempt {attempt}/{actualMaxRetries}: Retrying in {delay.TotalMilliseconds}ms due to network error");
+
+                await Task.Delay(delay, ct).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                // 捕获其他异常，不进行重试
+                if (EnableDetailedLogging)
+                    Console.WriteLine($"Attempt {attempt}/{actualMaxRetries}: Unexpected error: {ex.Message}");
+                throw;
             }
         }
 
         if (lastResponse != null) throw MapToException(lastResponse, lastBody);
         throw new QbittorrentServerErrorException(
-                                                  $"Network error after {maxRetries} attempts: {lastException?.Message ?? "unknown error"}");
+                                                  $"Network error after {actualMaxRetries} attempts: {lastException?.Message ?? "unknown error"}");
     }
 
     /// <summary>
