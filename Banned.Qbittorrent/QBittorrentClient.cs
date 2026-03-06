@@ -120,6 +120,39 @@ public class QBittorrentClient : IDisposable
     }
 
     /// <summary>
+    /// 使用自定义 HttpClient 创建并初始化一个新的 <see cref="QBittorrentClient"/> 实例。<br/>
+    /// Creates and initializes a new <see cref="QBittorrentClient"/> instance using a custom HttpClient.
+    /// </summary>
+    /// <param name="url">qBittorrent Web UI 地址（例如：http://localhost:8080）。 / qBittorrent Web UI URL.</param>
+    /// <param name="userName">用户名。 / Username.</param>
+    /// <param name="password">密码。 / Password.</param>
+    /// <param name="httpClient">自定义的 HttpClient 实例。 / Custom HttpClient instance.</param>
+    /// <returns>已完成 API 版本协商的客户端实例。 / A client instance with API version negotiation completed.</returns>
+    public static async Task<QBittorrentClient> Create(string     url, string userName, string password,
+                                                       HttpClient httpClient)
+    {
+        var net         = new NetService(url, httpClient);
+        var application = new ApplicationService(net);
+        var auth        = new AuthenticationService(net, userName, password);
+
+        // 自动协商 API 版本
+        // Automatically negotiate API version
+        var apiVersion = await application.GetApiVersion().ConfigureAwait(false);
+
+        var log    = new LogService(net);
+        var rss    = new RssService(net);
+        var search = new SearchService(net);
+        var sync   = new SyncService(net);
+
+        net.SetApiVersion(apiVersion);
+
+        var torrent  = new TorrentService(net, apiVersion);
+        var transfer = new TransferService(net);
+
+        return new QBittorrentClient(application, auth, log, rss, search, sync, torrent, transfer, net);
+    }
+
+    /// <summary>
     /// 释放 <see cref="QBittorrentClient"/> 及其内部服务使用的资源。<br/>
     /// Releases the resources used by the <see cref="QBittorrentClient"/> and its internal services.
     /// </summary>

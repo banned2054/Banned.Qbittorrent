@@ -27,22 +27,31 @@ public class NetService : IDisposable
     /// Initializes a new instance of the <see cref="NetService"/> class.
     /// </summary>
     /// <param name="baseUrl">qBittorrent Web UI 的基础地址。 / The base URL of qBittorrent Web UI.</param>
-    public NetService(string baseUrl)
+    /// <param name="httpClient">可选的 HttpClient 实例。 / Optional HttpClient instance.</param>
+    public NetService(string baseUrl, HttpClient? httpClient = null)
     {
         _baseUrl = new Uri(baseUrl.TrimEnd('/') + "/");
-        var cookieContainer = new CookieContainer();
 
-        var handler = new HttpClientHandler
+        if (httpClient != null)
         {
-            CookieContainer   = cookieContainer,
-            AllowAutoRedirect = true,
-            UseCookies        = true
-        };
+            _client = httpClient;
+        }
+        else
+        {
+            var cookieContainer = new CookieContainer();
 
-        _client = new HttpClient(handler)
-        {
-            Timeout = TimeSpan.FromSeconds(15)
-        };
+            var handler = new HttpClientHandler
+            {
+                CookieContainer   = cookieContainer,
+                AllowAutoRedirect = true,
+                UseCookies        = true
+            };
+
+            _client = new HttpClient(handler)
+            {
+                Timeout = TimeSpan.FromSeconds(15)
+            };
+        }
 
         _client.DefaultRequestHeaders.CacheControl = new CacheControlHeaderValue
         {
@@ -155,6 +164,31 @@ public class NetService : IDisposable
 
             return new HttpRequestMessage(HttpMethod.Post, CombineUrl(subPath)) { Content = content };
         }, ct).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// 并行执行多个请求。<br/>
+    /// Executes multiple requests in parallel.
+    /// </summary>
+    /// <param name="requests">请求信息列表。 / List of request information.</param>
+    /// <param name="ct">取消令牌。 / Cancellation token.</param>
+    /// <returns>响应体字符串列表，与请求顺序对应。 / List of response body strings, corresponding to the request order.</returns>
+    public async Task<List<string>> ExecuteParallelRequests(
+        List<(string subPath, HttpMethod method, Dictionary<string, string>? parameters)> requests,
+        CancellationToken                                                                 ct = default)
+    {
+        var tasks = requests.Select(async request =>
+        {
+            if (request.method == HttpMethod.Get)
+            {
+                return await Get(request.subPath, skipAuthCheck : false, ct : ct);
+            }
+
+            return await Post(request.subPath, request.parameters, skipAuthCheck : false, ct : ct);
+        }).ToList();
+
+        var results = await Task.WhenAll(tasks);
+        return results.ToList();
     }
 
     /// <summary>
