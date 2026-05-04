@@ -13,7 +13,7 @@ public class PerformanceOptimizationExample
         var httpClient = new HttpClient(new HttpClientHandler
         {
             AllowAutoRedirect = true,
-            UseCookies = true
+            UseCookies        = true
         })
         {
             Timeout = TimeSpan.FromSeconds(30)
@@ -58,11 +58,11 @@ public class PerformanceOptimizationExample
         try
         {
             // 2. 准备并行请求
-            var requests = new List<(string subPath, HttpMethod method, Dictionary<string, string>? parameters)>()
+            var requests = new List<(string subPath, HttpMethod method, Dictionary<string, string>? parameters)>
             {
-                ($"/api/v2/app/version", HttpMethod.Get, null),
-                ($"/api/v2/app/preferences", HttpMethod.Get, null),
-                ($"/api/v2/torrents/categories", HttpMethod.Get, null)
+                ("/api/v2/app/version", HttpMethod.Get, null),
+                ("/api/v2/app/preferences", HttpMethod.Get, null),
+                ("/api/v2/torrents/categories", HttpMethod.Get, null)
             };
 
             // 3. 执行并行请求
@@ -71,13 +71,7 @@ public class PerformanceOptimizationExample
                                         .GetField("netService",
                                                   System.Reflection.BindingFlags.NonPublic |
                                                   System.Reflection.BindingFlags.Instance);
-            if (netServiceField == null)
-            {
-                throw new Exception("无法获取 NetService 实例");
-            }
-
-            var netService = netServiceField.GetValue(client.Application) as NetService;
-            if (netService == null)
+            if (netServiceField == null || netServiceField.GetValue(client.Application) is not NetService netService)
             {
                 throw new Exception("无法获取 NetService 实例");
             }
