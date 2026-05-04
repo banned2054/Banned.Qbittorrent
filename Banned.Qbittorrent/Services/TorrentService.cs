@@ -42,11 +42,7 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
                                                    int               limit    = 0,
                                                    int               offset   = 0)
     {
-        if (string.IsNullOrEmpty(hash))
-        {
-            throw new ArgumentException("Torrent hash cannot be null or empty", nameof(hash));
-        }
-
+        hash = StringUtils.NormalizeHash(hash);
         var result = await GetTorrentInfos([hash], filter, category, tag, sort, reverse, limit, offset);
         return result.FirstOrDefault();
     }
@@ -89,10 +85,7 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
         if (reverse) parameters.Add("reverse", "true");
         if (limit  > 0) parameters.Add("limit", limit.ToString());
         if (offset > 0) parameters.Add("offset", offset.ToString());
-        if (hashes is { Count: > 0 })
-        {
-            parameters.Add("hashes", StringUtils.Join('|', hashes));
-        }
+        if (hashes is { Count: > 0 }) parameters.Add("hashes", StringUtils.NormalizeHash(hashes));
 
         var response = await netService.Post($"{BaseUrl}/info", parameters);
         return JsonSerializer.Deserialize<List<TorrentInfo>>(response) ?? [];
@@ -120,11 +113,7 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
         if (request.ReverseEnabled) parameters.Add("reverse", "true");
         if (request.Limit  > 0) parameters.Add("limit", request.Limit.ToString());
         if (request.Offset > 0) parameters.Add("offset", request.Offset.ToString());
-        if (request.HashList is { Count: > 0 })
-        {
-            parameters.Add("hashes", StringUtils.Join('|', request.HashList));
-        }
-
+        if (request.HashList is { Count: > 0 }) parameters.Add("hashes", StringUtils.NormalizeHash(request.HashList));
         var response = await netService.Post($"{BaseUrl}/info", parameters);
         return JsonSerializer.Deserialize<List<TorrentInfo>>(response) ?? [];
     }
@@ -177,11 +166,7 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
     /// </returns>
     public async Task<List<TorrentFileInfo>?> GetTorrentFiles(string hash, List<int>? indexes = null)
     {
-        if (string.IsNullOrEmpty(hash))
-        {
-            throw new ArgumentException("Torrent hash cannot be null or empty", nameof(hash));
-        }
-
+        hash = StringUtils.NormalizeHash(hash);
         const string requestUrl = $"{BaseUrl}/files";
         var parameters = new Dictionary<string, string>
         {
@@ -258,6 +243,7 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
     /// <param name="deleteFile">是否同时删除文件。<br/>Whether to delete files as well.</param>
     public async Task DeleteTorrent(string hash, bool deleteFile = false)
     {
+        hash = StringUtils.NormalizeHash(hash);
         var parameters = new Dictionary<string, string>
         {
             { "hashes", hash },
@@ -321,11 +307,7 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
     /// </exception>
     public async Task EditTorrentTracker(string hash, string originUrl, string newUrl)
     {
-        if (string.IsNullOrWhiteSpace(hash))
-        {
-            throw new ArgumentException("Torrent hash cannot be null or empty", nameof(hash));
-        }
-
+        hash = StringUtils.NormalizeHash(hash);
         var parameters = new Dictionary<string, string>
         {
             { "hash", hash },
@@ -361,16 +343,12 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
     /// </exception>
     public async Task RemoveTorrentTracker(string hash, string url)
     {
-        if (string.IsNullOrWhiteSpace(hash))
-        {
-            throw new ArgumentException("Torrent hash cannot be null or empty", nameof(hash));
-        }
-
         if (string.IsNullOrWhiteSpace(url))
         {
             throw new ArgumentException("Tracker url cannot be null or empty", nameof(url));
         }
 
+        hash = StringUtils.NormalizeHash(hash);
         var parameters = new Dictionary<string, string>
         {
             { "hash", hash },
@@ -407,16 +385,12 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
     /// </exception>
     public async Task AddTorrentPeer(string hash, string peer)
     {
-        if (string.IsNullOrWhiteSpace(hash))
-        {
-            throw new ArgumentException("Torrent hash cannot be null or empty", nameof(hash));
-        }
-
         if (string.IsNullOrWhiteSpace(peer))
         {
             throw new ArgumentException("Peer cannot be null or empty", nameof(peer));
         }
 
+        hash = StringUtils.NormalizeHash(hash);
         var parameters = new Dictionary<string, string>
         {
             { "hash", hash },
@@ -562,16 +536,12 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
     /// <param name="url">要添加的 Tracker 地址，多个以换行符分隔。<br/>Tracker URL(s) to add, separated by newline characters.</param>
     public async Task AddTorrentTracker(string hash, string url)
     {
-        if (string.IsNullOrWhiteSpace(hash))
-        {
-            throw new ArgumentException("Torrent hash cannot be null or empty", nameof(hash));
-        }
-
         if (string.IsNullOrWhiteSpace(url))
         {
             throw new ArgumentException("Tracker url cannot be null or empty", nameof(url));
         }
 
+        hash = StringUtils.NormalizeHash(hash);
         var parameters = new Dictionary<string, string>
         {
             { "hash", hash },
@@ -668,11 +638,6 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
     /// <param name="priority">文件优先度。<br/>File priority.</param>
     public async Task SetFilesPriority(string hash, List<int> fileIndexes, EnumTorrentFilePriority priority)
     {
-        if (string.IsNullOrWhiteSpace(hash))
-        {
-            throw new ArgumentException("Torrent hash cannot be null or empty", nameof(hash));
-        }
-
         if (fileIndexes == null || fileIndexes.Count == 0)
         {
             throw new ArgumentException("File indexes cannot be null or empty", nameof(fileIndexes));
@@ -683,6 +648,7 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
             throw new ArgumentException("File indexes has invalid index", nameof(fileIndexes));
         }
 
+        hash = StringUtils.NormalizeHash(hash);
         var parameters = new Dictionary<string, string>
         {
             { "hash", hash },
@@ -729,12 +695,7 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
     /// <param name="limitSpeed">下载速度限制（字节/秒）。<br/>Download speed limit in bytes per second.</param>
     public async Task SetTorrentDownloadLimit(string hash, long limitSpeed)
     {
-        if (string.IsNullOrWhiteSpace(hash)
-         || hash.Split('|').All(string.IsNullOrWhiteSpace))
-        {
-            throw new ArgumentException("Torrent hash cannot be null or empty", nameof(hash));
-        }
-
+        hash = StringUtils.NormalizeHash(hash);
         var parameters = new Dictionary<string, string>
         {
             { "hashes", hash },
@@ -789,17 +750,11 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
                                            int?   seedingTimeLimit         = null,
                                            int?   inactiveSeedingTimeLimit = null)
     {
-        if (string.IsNullOrWhiteSpace(hash)
-         || hash.Split('|').All(string.IsNullOrWhiteSpace))
-        {
-            throw new ArgumentException("Torrent hash cannot be null or empty", nameof(hash));
-        }
-
         if (ratioLimit is null && seedingTimeLimit is null && inactiveSeedingTimeLimit is null)
             throw new
                 ArgumentException("At least one of ratioLimit, seedingTimeLimit, or inactiveSeedingTimeLimit must be provided.");
 
-
+        hash = StringUtils.NormalizeHash(hash);
         var parameters = new Dictionary<string, string>
         {
             { "hashes", hash },
@@ -899,12 +854,7 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
     /// <param name="limitSpeed">上传速度限制（字节/秒）。<br/>Upload speed limit in bytes per second.</param>
     public async Task SetTorrentUploadLimit(string hash, long limitSpeed)
     {
-        if (string.IsNullOrWhiteSpace(hash)
-         || hash.Split('|').All(string.IsNullOrWhiteSpace))
-        {
-            throw new ArgumentException("Torrent hash cannot be null or empty", nameof(hash));
-        }
-
+        hash = StringUtils.NormalizeHash(hash);
         var parameters = new Dictionary<string, string>
         {
             { "hashes", hash },
@@ -942,12 +892,7 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
     /// <param name="newLocation">新的存储路径。<br/>New storage location.</param>
     public async Task SetTorrentLocation(string hash, string newLocation)
     {
-        if (string.IsNullOrWhiteSpace(hash)
-         || hash.Split('|').All(string.IsNullOrWhiteSpace))
-        {
-            throw new ArgumentException("Torrent hash cannot be null or empty", nameof(hash));
-        }
-
+        hash = StringUtils.NormalizeHash(hash);
         var parameters = new Dictionary<string, string>
         {
             { "hashes", hash },
@@ -973,16 +918,12 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
     /// <param name="newName">新的种子名称。<br/>New torrent name.</param>
     public async Task RenameTorrent(string hash, string newName)
     {
-        if (string.IsNullOrWhiteSpace(hash))
-        {
-            throw new ArgumentException("Torrent hash cannot be null or empty", nameof(hash));
-        }
-
         if (string.IsNullOrWhiteSpace(newName))
         {
             throw new ArgumentException("Torrent new name cannot be null or empty", nameof(newName));
         }
 
+        hash = StringUtils.NormalizeHash(hash);
         var parameters = new Dictionary<string, string>
         {
             { "hash", hash },
@@ -999,16 +940,12 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
     /// <param name="category">分类名称。<br/>Category name.</param>
     public async Task SetTorrentCategory(string hash, string category)
     {
-        if (string.IsNullOrWhiteSpace(hash))
-        {
-            throw new ArgumentException("Torrent hash cannot be null or empty", nameof(hash));
-        }
-
         if (string.IsNullOrWhiteSpace(category))
         {
             throw new ArgumentException("Category cannot be null or empty", nameof(category));
         }
 
+        hash = StringUtils.NormalizeHash(hash);
         var parameters = new Dictionary<string, string>
         {
             { "hash", hash },
@@ -1166,16 +1103,12 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
     /// <param name="tag">要添加的标签名称。<br/>The name of the tag to add.</param>
     public async Task AddTorrentTag(string hash, string tag)
     {
-        if (string.IsNullOrWhiteSpace(hash))
-        {
-            throw new ArgumentException("Torrent hash cannot be null or empty", nameof(hash));
-        }
-
         if (string.IsNullOrWhiteSpace(tag))
         {
             throw new ArgumentException("Tag cannot be null or empty", nameof(tag));
         }
 
+        hash = StringUtils.NormalizeHash(hash);
         var parameters = new Dictionary<string, string>
         {
             { "hashes", hash },
@@ -1219,16 +1152,12 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
     /// <param name="tag">要移除的标签名称。<br/>The name of the tag to remove.</param>
     public async Task RemoveTorrentTag(string hash, string tag)
     {
-        if (string.IsNullOrWhiteSpace(hash))
-        {
-            throw new ArgumentException("Torrent hash cannot be null or empty", nameof(hash));
-        }
-
         if (string.IsNullOrWhiteSpace(tag))
         {
             throw new ArgumentException("Tag cannot be null or empty", nameof(tag));
         }
 
+        hash = StringUtils.NormalizeHash(hash);
         var parameters = new Dictionary<string, string>
         {
             { "hashes", hash },
@@ -1341,11 +1270,7 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
     /// </param>
     public async Task SetTorrentAutoManagement(string hash, bool enable = false)
     {
-        if (string.IsNullOrWhiteSpace(hash))
-        {
-            throw new ArgumentException("Torrent hash cannot be null or empty", nameof(hash));
-        }
-
+        hash = StringUtils.NormalizeHash(hash);
         var parameters = new Dictionary<string, string>
         {
             ["hashes"] = hash,
@@ -1444,11 +1369,7 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
     /// </param>
     public async Task SetTorrentForceStart(string hash, bool enable = true)
     {
-        if (string.IsNullOrWhiteSpace(hash))
-        {
-            throw new ArgumentException("Torrent hash cannot be null or empty", nameof(hash));
-        }
-
+        hash = StringUtils.NormalizeHash(hash);
         var parameters = new Dictionary<string, string>
         {
             ["hashes"] = hash,
@@ -1494,11 +1415,7 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
     /// </param>
     public async Task SetTorrentSuperSeeding(string hash, bool enable = true)
     {
-        if (string.IsNullOrWhiteSpace(hash))
-        {
-            throw new ArgumentException("Torrent hash cannot be null or empty", nameof(hash));
-        }
-
+        hash = StringUtils.NormalizeHash(hash);
         var parameters = new Dictionary<string, string>
         {
             ["hashes"] = hash,
@@ -1539,11 +1456,6 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
     /// <param name="newPath">新文件路径。<br/>New file path.</param>
     public async Task RenameTorrentFile(string hash, string oldPath, string newPath)
     {
-        if (string.IsNullOrWhiteSpace(hash))
-        {
-            throw new ArgumentException("Torrent hash cannot be null or empty", nameof(hash));
-        }
-
         if (string.IsNullOrWhiteSpace(oldPath))
         {
             throw new ArgumentException("Old path cannot be null or empty", nameof(oldPath));
@@ -1554,6 +1466,7 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
             throw new ArgumentException("New path cannot be null or empty", nameof(newPath));
         }
 
+        hash = StringUtils.NormalizeHash(hash);
         if (apiVersion < ApiVersion.V2_7_0)
         {
             var fileList = await GetTorrentFiles(hash);
@@ -1582,11 +1495,6 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
     /// <param name="newPath">新文件路径。<br/>New file path.</param>
     public async Task RenameTorrentFile(string hash, int index, string newPath)
     {
-        if (string.IsNullOrWhiteSpace(hash))
-        {
-            throw new ArgumentException("Torrent hash cannot be null or empty", nameof(hash));
-        }
-
         if (index < 0)
         {
             throw new ArgumentException("Index should start from 0", nameof(index));
@@ -1597,6 +1505,7 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
             throw new ArgumentException("New path cannot be null or empty", nameof(newPath));
         }
 
+        hash = StringUtils.NormalizeHash(hash);
         if (apiVersion >= ApiVersion.V2_7_0)
         {
             var fileList = await GetTorrentFiles(hash);
@@ -1624,11 +1533,6 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
     /// <param name="newPath">新文件夹路径。<br/>New folder path.</param>
     public async Task RenameTorrentFolder(string hash, string oldPath, string newPath)
     {
-        if (string.IsNullOrWhiteSpace(hash))
-        {
-            throw new ArgumentException("Torrent hash cannot be null or empty", nameof(hash));
-        }
-
         if (string.IsNullOrWhiteSpace(oldPath))
         {
             throw new ArgumentException("Old path cannot be null or empty", nameof(oldPath));
@@ -1639,6 +1543,7 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
             throw new ArgumentException("New path cannot be null or empty", nameof(newPath));
         }
 
+        hash = StringUtils.NormalizeHash(hash);
         var parameters = new Dictionary<string, string>
         {
             { "hash", hash },
@@ -1649,13 +1554,39 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
         await netService.Post($"{BaseUrl}/renameFolder", parameters);
     }
 
+    /// <summary>
+    /// 为多个种子设置备注（Comment）。<br/>
+    /// Set the comment for multiple torrents.
+    /// </summary>
+    /// <param name="hashes">种子哈希值列表。<br/>List of torrent hash values.</param>
+    /// <param name="comment">要设置的备注内容。<br/>The comment text to set.</param>
+    public async Task SetTorrentsComment(List<string> hashes, string comment) =>
+        await SetTorrentComment(StringUtils.Join('|', hashes), comment);
+
+    /// <summary>
+    /// 为指定种子设置备注（Comment）。<br/>
+    /// Set the comment for the specified torrent.
+    /// </summary>
+    /// <param name="hash">
+    /// 种子哈希值，可为单个或多个哈希值。<br/>
+    /// Torrent hash value, can be a single hash or multiple hashes separated by '|'.
+    /// </param>
+    /// <param name="comment">要设置的备注内容。<br/>The comment text to set.</param>
+    public async Task SetTorrentComment(string hash, string comment)
+    {
+        hash = StringUtils.NormalizeHash(hash);
+        var parameters = new Dictionary<string, string>
+        {
+            { "hash", hash },
+            { "comment", comment }
+        };
+
+        await netService.Post($"{BaseUrl}/setComment", parameters, ApiVersion.V2_12_1);
+    }
+
     private async Task<string> Put(string subPath, string hash, ApiVersion? targetVersion = null)
     {
-        if (string.IsNullOrWhiteSpace(hash))
-        {
-            throw new ArgumentException("Torrent hash cannot be null or empty", nameof(hash));
-        }
-
+        hash = StringUtils.NormalizeHash(hash);
         var parameters = new Dictionary<string, string>
         {
             { "hash", hash },
@@ -1665,12 +1596,7 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
 
     private async Task<string> PutHashes(string subPath, string hash, ApiVersion? targetVersion = null)
     {
-        if (string.IsNullOrWhiteSpace(hash)
-         || hash.Split('|').All(string.IsNullOrWhiteSpace))
-        {
-            throw new ArgumentException("Torrent hash cannot be null or empty", nameof(hash));
-        }
-
+        hash = StringUtils.NormalizeHash(hash);
         var parameters = new Dictionary<string, string>
         {
             { "hashes", hash },

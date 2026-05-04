@@ -29,6 +29,7 @@ public readonly struct ApiVersion(int major, int minor = 0, int patch = 0)
     public static readonly ApiVersion V2_11_0 = new(2, 11);
     public static readonly ApiVersion V2_11_3 = new(2, 11, 3);
     public static readonly ApiVersion V2_11_5 = new(2, 11, 5);
+    public static readonly ApiVersion V2_12_1 = new(2, 12, 1);
 
     #endregion
 

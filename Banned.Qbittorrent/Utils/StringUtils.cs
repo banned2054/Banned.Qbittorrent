@@ -9,6 +9,61 @@ namespace Banned.Qbittorrent.Utils;
 public static class StringUtils
 {
     /// <summary>
+    /// 规范化并校验种子哈希字符串。<br/>
+    /// Normalize and validate torrent hash string.
+    /// </summary>
+    /// <param name="hash">
+    /// 种子哈希，可为单个或多个（使用 '|' 分隔）。<br/>
+    /// Torrent hash, single or multiple separated by '|'.
+    /// </param>
+    /// <returns>规范化后的哈希字符串。<br/>Normalized hash string.</returns>
+    /// <exception cref="ArgumentException">
+    /// 当为空或无有效哈希时抛出。<br/>
+    /// Thrown if empty or no valid hashes remain.
+    /// </exception>
+    public static string NormalizeHash(string hash)
+    {
+        if (string.IsNullOrWhiteSpace(hash))
+        {
+            throw new ArgumentException("Torrent hash cannot be null or empty", nameof(hash));
+        }
+
+        var normalizedHash = Join('|', hash.Split('|'));
+
+        if (string.IsNullOrWhiteSpace(normalizedHash))
+        {
+            throw new ArgumentException("Torrent hash cannot be null or empty", nameof(hash));
+        }
+
+        return normalizedHash;
+    }
+
+    /// <summary>
+    /// 规范化并校验种子哈希集合。<br/>
+    /// Normalize and validate torrent hashes.
+    /// </summary>
+    /// <param name="hashes">
+    /// 种子哈希集合（支持 List、数组等）。<br/>
+    /// Collection of hashes (List, array, etc.).
+    /// </param>
+    /// <returns>规范化后的哈希字符串。<br/>Normalized hash string.</returns>
+    /// <exception cref="ArgumentException">
+    /// 当为空或无有效哈希时抛出。<br/>
+    /// Thrown if empty or no valid hashes remain.
+    /// </exception>
+    public static string NormalizeHash(IEnumerable<string> hashes)
+    {
+        var normalizedHash = Join('|', hashes);
+
+        if (string.IsNullOrWhiteSpace(normalizedHash))
+        {
+            throw new ArgumentException("Torrent hash cannot be null or empty", nameof(hashes));
+        }
+
+        return normalizedHash;
+    }
+
+    /// <summary>
     /// 使用指定分隔符连接集合中的元素，并自动忽略空值。<br/>
     /// Joins elements of a collection using a specified separator, automatically ignoring null or whitespace.
     /// </summary>
