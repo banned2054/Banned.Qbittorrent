@@ -6,6 +6,7 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## 📘 Versions
 
+- [v1.2.0](#-release-v120--qbittorrent-v520-support)
 - [v1.1.0](#-release-v110--performance-optimizations--flexibility-enhancements)
 - [v1.0.0](#-release-v100--full-api-completion--unified-standard)
 - [v0.1.1](#-release-v011--authentication-service--network-refactoring)
@@ -15,6 +16,35 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 - [v0.0.7](#-release-v007--qbittorrent-net-client-refinement)
 - [v0.0.6](#-release-v006--qbittorrent-net-client-enhancement)
 - [v0.0.5](#-release-v005--qbittorrent-net-client-update)
+
+## 🚀 Release v1.2.0 — qBittorrent v5.2.0 Support
+
+**Release Date:** 2026-05-04
+
+This release adds support for **qBittorrent v5.2.0**, including newly introduced API endpoints.
+
+---
+
+### ✨ Added
+
+* **Set Torrent Comment API**
+  - Added `SetTorrentComment` for setting comment on a single torrent
+  - Added `SetTorrentsComment` for setting comment on multiple torrents
+  - Supports qBittorrent Web API `torrents/setComment` endpoint (v2.12.1)
+
+---
+
+### 🔧 Changed
+
+* **API Version Support**
+  - Updated internal API version mapping to support qBittorrent v5.2.0
+
+---
+
+### 📦 Notes
+
+This is a minor update adding compatibility with the latest qBittorrent version.  
+No breaking changes are introduced.
 
 ## 🚀 Release v1.1.0 — Performance Optimizations & Flexibility Enhancements
 
