@@ -102,9 +102,8 @@ public class NetService : IDisposable
 
         await CheckAuth(skipAuthCheck).ConfigureAwait(false);
 
-        return await ExecuteWithRetry(
-                                      () => new HttpRequestMessage(HttpMethod.Get, CombineUrl(subPath)),
-                                      ct).ConfigureAwait(false);
+        return await ExecuteWithRetry(() => new HttpRequestMessage(HttpMethod.Get, CombineUrl(subPath)), null, ct)
+           .ConfigureAwait(false);
     }
 
     /// <summary>
@@ -140,7 +139,7 @@ public class NetService : IDisposable
             }
 
             return request;
-        }, ct).ConfigureAwait(false);
+        }, null, ct).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -199,7 +198,7 @@ public class NetService : IDisposable
             {
                 return Task.FromException<HttpRequestMessage>(exception);
             }
-        }, ct).ConfigureAwait(false);
+        }, null, ct).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -224,7 +223,7 @@ public class NetService : IDisposable
         }).ToList();
 
         var results = await Task.WhenAll(tasks);
-        return results.ToList();
+        return [.. results];
     }
 
     /// <summary>
@@ -248,8 +247,8 @@ public class NetService : IDisposable
     /// <param name="maxRetries">最大重试次数。 / Maximum number of retries.</param>
     /// <returns>响应体内容。 / Response body content.</returns>
     private async Task<string> ExecuteWithRetry(Func<HttpRequestMessage> requestFactory,
-                                                CancellationToken        ct         = default,
-                                                int?                     maxRetries = null)
+                                                int?                     maxRetries = null,
+                                                CancellationToken        ct         = default)
     {
         return await ExecuteWithRetry(() =>
         {
@@ -261,12 +260,12 @@ public class NetService : IDisposable
             {
                 return Task.FromException<HttpRequestMessage>(exception);
             }
-        }, ct, maxRetries);
+        }, maxRetries, ct);
     }
 
     private async Task<string> ExecuteWithRetry(Func<Task<HttpRequestMessage>> requestFactory,
-                                                CancellationToken              ct         = default,
-                                                int?                           maxRetries = null)
+                                                int?                           maxRetries = null,
+                                                CancellationToken              ct         = default)
     {
         Exception?           lastException    = null;
         HttpResponseMessage? lastResponse     = null;
@@ -348,7 +347,7 @@ public class NetService : IDisposable
     /// 将 HTTP 状态码映射为特定的业务异常。<br/>
     /// Maps HTTP status codes to specific business exceptions.
     /// </summary>
-    private static Exception MapToException(HttpResponseMessage response, string body)
+    private static QbittorrentException MapToException(HttpResponseMessage response, string body)
     {
         return response.StatusCode switch
         {
