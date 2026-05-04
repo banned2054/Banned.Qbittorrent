@@ -14,28 +14,28 @@ public class Cookie
     /// The name of the cookie.
     /// </summary>
     [JsonPropertyName("name")]
-    public string Name { get; set; }
+    public required string Name { get; set; }
 
     /// <summary>
     /// Cookie 所属的域名。<br/>
     /// The domain of the cookie.
     /// </summary>
     [JsonPropertyName("domain")]
-    public string Domain { get; set; }
+    public required string Domain { get; set; }
 
     /// <summary>
     /// Cookie 的有效路径。<br/>
     /// The path of the cookie.
     /// </summary>
     [JsonPropertyName("path")]
-    public string Path { get; set; }
+    public required string Path { get; set; }
 
     /// <summary>
     /// Cookie 的值。<br/>
     /// The value of the cookie.
     /// </summary>
     [JsonPropertyName("value")]
-    public string Value { get; set; }
+    public required string Value { get; set; }
 
     /// <summary>
     /// Cookie 的过期时间。<br/>

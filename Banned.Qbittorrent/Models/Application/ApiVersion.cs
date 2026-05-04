@@ -105,7 +105,7 @@ public readonly struct ApiVersion(int major, int minor = 0, int patch = 0)
     /// <exception cref="FormatException">当字符串格式无效时抛出。<br/>Thrown when the version string format is invalid.</exception>
     public static ApiVersion Parse(string versionString)
     {
-        if (versionString is null) throw new ArgumentNullException(nameof(versionString));
+        ArgumentNullException.ThrowIfNull(versionString);
         if (TryParse(versionString.AsSpan(), out var v)) return v;
         throw new FormatException($"Invalid version string: '{versionString}'.");
     }
