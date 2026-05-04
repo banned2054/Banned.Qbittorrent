@@ -15,7 +15,7 @@ public class TorrentUnitTest
         var url  = Environment.GetEnvironmentVariable("QBT_URL");
         var user = Environment.GetEnvironmentVariable("QBT_USER");
         var pass = Environment.GetEnvironmentVariable("QBT_PASS");
-        _client = await QBittorrentClient.Create(url, user, pass);
+        _client = await QBittorrentClient.Create(url!, user!, pass!);
     }
 
 
@@ -25,7 +25,7 @@ public class TorrentUnitTest
         var data = await _client.Torrent.GetTorrentInfos();
         foreach (var t in data)
         {
-            Console.WriteLine($"{t.Name} {string.Join(',', t.TagList)}");
+            Console.WriteLine($"{t.Name} {string.Join(',', t.TagList!)}");
         }
     }
 
@@ -82,9 +82,8 @@ public class TorrentUnitTest
     [Test]
     public async Task TestGetPieceStates()
     {
-        var result =
-            await _client.Torrent.GetTorrentPiecesStates(Hash);
-        foreach (var pState in result)
+        var result = await _client.Torrent.GetTorrentPiecesStates(Hash);
+        foreach (var pState in result!)
         {
             Console.WriteLine(pState.ToString());
         }
@@ -93,9 +92,8 @@ public class TorrentUnitTest
     [Test]
     public async Task TestGetTorrentWebSeed()
     {
-        var result =
-            await _client.Torrent.GetTorrentWebSeeds(Hash);
-        foreach (var seed in result)
+        var result = await _client.Torrent.GetTorrentWebSeeds(Hash);
+        foreach (var seed in result!)
         {
             Console.WriteLine(seed.Url);
         }
