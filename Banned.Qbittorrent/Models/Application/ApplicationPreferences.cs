@@ -452,7 +452,7 @@ public sealed class ApplicationPreferences
     /// <summary>磁盘缓存到期时间。<br/>Disk cache expiry time.</summary>
     [JsonPropertyName("disk_cache_ttl")]
     [JsonConverter(typeof(SecondsTimeSpanConverter))]
-    public TimeSpan DiskCacheTtlSeconds { get; set; }
+    public TimeSpan? DiskCacheTtlSeconds { get; set; }
 
     [JsonPropertyName("embedded_tracker_port")]
     public int? EmbeddedTrackerPort { get; set; }

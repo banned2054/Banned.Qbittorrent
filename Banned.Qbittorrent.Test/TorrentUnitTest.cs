@@ -6,7 +6,7 @@ public class TorrentUnitTest
 {
     private QBittorrentClient _client;
 
-    public readonly string Hash = "83dc9bac00c24a1a023abb2d09839a495b3c688e";
+    public readonly string Hash = "0c49d18f698b3f80ea5de7a1d02247443a286245";
 
     [SetUp]
     public async Task SetUp()
@@ -71,7 +71,11 @@ public class TorrentUnitTest
     [Test]
     public async Task GetTorrentTrackers()
     {
-        var trackers = await _client.Torrent.GetTorrentInfo(Hash);
+        var trackers = await _client.Torrent.GetTorrentTrackers(Hash);
+        foreach (var tracker in trackers!)
+        {
+            Console.WriteLine(tracker.Url);
+        }
     }
 
     [Test]

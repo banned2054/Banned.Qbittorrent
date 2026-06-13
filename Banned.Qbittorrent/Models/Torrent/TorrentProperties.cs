@@ -74,7 +74,7 @@ public class TorrentProperties
     /// </summary>
     [JsonPropertyName("eta")]
     [JsonConverter(typeof(SecondsTimeSpanConverter))]
-    public TimeSpan EstimatedTimeArrival { get; set; }
+    public TimeSpan? EstimatedTimeArrival { get; set; }
 
     /// <summary>
     /// 是否启用私有模式。<br/>
@@ -160,7 +160,7 @@ public class TorrentProperties
     /// </summary>
     [JsonPropertyName("seeding_time")]
     [JsonConverter(typeof(SecondsTimeSpanConverter))]
-    public TimeSpan SeedingTime { get; set; }
+    public TimeSpan? SeedingTime { get; set; }
 
     /// <summary>
     /// 当前连接的做种者数量。<br/>
@@ -189,7 +189,7 @@ public class TorrentProperties
     /// </summary>
     [JsonPropertyName("time_elapsed")]
     [JsonConverter(typeof(SecondsTimeSpanConverter))]
-    public TimeSpan TimeElapsed { get; set; }
+    public TimeSpan? TimeElapsed { get; set; }
 
     /// <summary>
     /// 累计下载字节数。<br/>
