@@ -15,7 +15,7 @@ public class TorrentProperties
     /// </summary>
     [JsonPropertyName("addition_date")]
     [JsonConverter(typeof(UnixTimestampConverter))]
-    public DateTimeOffset AdditionDate { get; set; }
+    public DateTimeOffset? AdditionDate { get; set; }
 
     /// <summary>
     /// 种子注释。<br/>
@@ -30,7 +30,7 @@ public class TorrentProperties
     /// </summary>
     [JsonPropertyName("completion_date")]
     [JsonConverter(typeof(UnixTimestampConverter))]
-    public DateTimeOffset CompletionDate { get; set; }
+    public DateTimeOffset? CompletionDate { get; set; }
 
     /// <summary>
     /// 种子创建者。<br/>
@@ -45,7 +45,7 @@ public class TorrentProperties
     /// </summary>
     [JsonPropertyName("creation_date")]
     [JsonConverter(typeof(UnixTimestampConverter))]
-    public DateTimeOffset CreationDate { get; set; }
+    public DateTimeOffset? CreationDate { get; set; }
 
     /// <summary>
     /// 下载速度限制（字节/秒）。<br/>
@@ -89,7 +89,7 @@ public class TorrentProperties
     /// </summary>
     [JsonPropertyName("last_seen")]
     [JsonConverter(typeof(UnixTimestampConverter))]
-    public DateTimeOffset LastSeen { get; set; }
+    public DateTimeOffset? LastSeen { get; set; }
 
     /// <summary>
     /// 当前连接数。<br/>

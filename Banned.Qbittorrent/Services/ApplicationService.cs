@@ -61,6 +61,21 @@ public class ApplicationService(NetService netService)
     }
 
     /// <summary>
+    /// 获取 qBittorrent 进程信息。<br/>
+    /// Get qBittorrent process information.
+    /// </summary>
+    /// <returns>
+    /// qBittorrent 进程信息。<br/>
+    /// qBittorrent process information.
+    /// </returns>
+    public async Task<ProcessInfo?> GetProcessInfo()
+    {
+        var response = await netService.Get($"{BaseUrl}/processInfo", ApiVersion.V2_15_1);
+        var result   = JsonSerializer.Deserialize<ProcessInfo>(response);
+        return result;
+    }
+
+    /// <summary>
     /// 关闭 qBittorrent 客户端。<br/>
     /// Shut down the qBittorrent client.
     /// </summary>

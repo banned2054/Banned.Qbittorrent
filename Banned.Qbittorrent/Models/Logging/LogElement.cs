@@ -30,7 +30,7 @@ public class LogElement
     /// </summary>
     [JsonPropertyName("timestamp")]
     [JsonConverter(typeof(UnixTimestampConverter))]
-    public DateTimeOffset TimeStamp { get; set; }
+    public DateTimeOffset? TimeStamp { get; set; }
 
     /// <summary>
     /// 日志的类型（如：普通、警告、错误等）。<br/>

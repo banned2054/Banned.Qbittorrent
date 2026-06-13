@@ -29,7 +29,7 @@ public class UserLogElement
     /// </summary>
     [JsonPropertyName("timestamp")]
     [JsonConverter(typeof(UnixTimestampConverter))]
-    public DateTimeOffset TimeStamp { get; set; }
+    public DateTimeOffset? TimeStamp { get; set; }
 
     /// <summary>
     /// 是否已被封锁。<br/>
