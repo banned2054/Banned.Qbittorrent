@@ -1,6 +1,6 @@
 # Banned.Qbittorrent
 
-[中文文档](https://github.com/banned2054/Banned.Qbittorrent/blob/main/Docs/README.md)
+[简体中文](https://github.com/banned2054/Banned.Qbittorrent/blob/main/Docs/README.md)
 
 [![License](https://img.shields.io/badge/license-Apache_2.0-green)](./LICENSE) [![NuGet](https://img.shields.io/nuget/v/Banned.Qbittorrent.svg)](https://www.nuget.org/packages/Banned.Qbittorrent)
 
@@ -8,14 +8,14 @@
 
 ## ✨ Key Features
 
-* **Full API Implementation**: Complete coverage of Torrent management, Application settings, RSS, Search, and Sync modules.
-* **Automatic Version Negotiation**: Automatically detects the Web API version and enforces compatibility checks for specific features.
-* **Smart Auth Handling**: Built-in session keep-alive and automatic re-login logic.
-* **Resilient Networking**: Includes an exponential backoff retry mechanism to handle transient network issues.
-* **Asynchronous First**: First-class support for `Task`-based asynchronous patterns and `CancellationToken`.
-* **Parallel Request Execution**: Execute multiple requests concurrently for improved performance.
-* **Enhanced Configuration**: Flexible options for customizing retry behavior, timeouts, and logging.
-* **Memory Optimization**: Improved file upload mechanism to reduce memory usage for large torrent files.
+- **Full API Implementation**: Complete coverage of Torrent management, Application settings, RSS, Search, and Sync modules.
+- **Automatic Version Negotiation**: Automatically detects the Web API version and enforces compatibility checks for specific features.
+- **Smart Auth Handling**: Built-in session keep-alive and automatic re-login logic.
+- **Resilient Networking**: Includes an exponential backoff retry mechanism to handle transient network issues.
+- **Asynchronous First**: First-class support for `Task`-based asynchronous patterns and `CancellationToken`.
+- **Parallel Request Execution**: Execute multiple requests concurrently for improved performance.
+- **Enhanced Configuration**: Flexible options for customizing retry behavior, timeouts, and logging.
+- **Memory Optimization**: Improved file upload mechanism to reduce memory usage for large torrent files.
 
 ## 📦 Installation
 
@@ -28,7 +28,7 @@ dotnet add package Banned.Qbittorrent
 ## 🚀 Quick Start
 
 1. Initialize the Client
-    Use the static Create factory method to handle initial authentication and API version negotiation automatically.
+   Use the static Create factory method to handle initial authentication and API version negotiation automatically.
 
 ```csharp
 using Banned.Qbittorrent;
@@ -47,7 +47,9 @@ var client = await QBittorrentClient.Create(
     enableDetailedLogging: true      // Enable detailed logging
 );
 ```
+
 2. Torrent Management
+
 ```csharp
 // Get all torrents
 var torrents = await client.Torrent.GetInfos();
@@ -63,7 +65,9 @@ var hashes = new[] { "hash1", "hash2" };
 await client.Torrent.Pause(hashes);
 await client.Torrent.Resume(hashes);
 ```
+
 3. Application Preferences
+
 ```csharp
 // Retrieve current settings
 var prefs = await client.Application.GetApplicationPreferences();
@@ -75,16 +79,16 @@ await client.Application.SetApplicationPreferences(prefs);
 
 ## 🛠 Project Architecture
 
-|Service|Description|
-|----------|-----------|
-|Application|App versions, Build info, Preferences, and Cookie management.|
-|Authentication|Login, Logout, and Session persistence.|
-|Torrent|Management of torrents, categories, tags, and file priority.|
-|Transfer|Global speed limits, transfer statistics, and info.|
-|Sync|Main data synchronization and incremental status updates.|
-|Rss|Management of RSS feeds and automated download rules.|
-|Search|Search engine tasks and plugin management.|
-|Log|System events and peer-to-peer connection logs.|
+| Service        | Description                                                   |
+| -------------- | ------------------------------------------------------------- |
+| Application    | App versions, Build info, Preferences, and Cookie management. |
+| Authentication | Login, Logout, and Session persistence.                       |
+| Torrent        | Management of torrents, categories, tags, and file priority.  |
+| Transfer       | Global speed limits, transfer statistics, and info.           |
+| Sync           | Main data synchronization and incremental status updates.     |
+| Rss            | Management of RSS feeds and automated download rules.         |
+| Search         | Search engine tasks and plugin management.                    |
+| Log            | System events and peer-to-peer connection logs.               |
 
 ## 📜 Changelog
 
@@ -92,11 +96,14 @@ await client.Application.SetApplicationPreferences(prefs);
 
 ## ⚖️ License
 
-This project is licensed under the Apache License 2.0. See the [LICENSE](https://github.com/banned2054/Banned.Qbittorrent/blob/main/LICENSE.txt) file for details.
+Copyright (c) 2026 banned.
+
+This project is licensed under the Apache License 2.0. See the [LICENSE](https://github.com/banned2054/Banned.Qbittorrent/blob/main/LICENSE) file for details. See [NOTICE](https://github.com/banned2054/Banned.Qbittorrent/blob/main/NOTICE) for upstream acknowledgements and third-party notices.
 
 ## 🤝 Contributing
 
 Contributions are welcome! If you encounter a bug or have a feature request, please open an issue. Pull requests are highly appreciated.
 
 ---
-Inspired by [qbittorrent-api](https://github.com/rmartin16/qbittorrent-api) and [official qBittorrent WebUI Wiki](https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-5.0)).
+
+Inspired by [qbittorrent-api](https://github.com/rmartin16/qbittorrent-api) and [official qBittorrent WebUI Wiki](<https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-5.0)>).

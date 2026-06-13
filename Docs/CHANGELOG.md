@@ -6,6 +6,7 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## 📘 Versions
 
+- [v1.3.0](#-release-v130--process-info-api--metadata-maintenance)
 - [v1.2.0](#-release-v120--qbittorrent-v520-support)
 - [v1.1.0](#-release-v110--performance-optimizations--flexibility-enhancements)
 - [v1.0.0](#-release-v100--full-api-completion--unified-standard)
@@ -16,6 +17,55 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 - [v0.0.7](#-release-v007--qbittorrent-net-client-refinement)
 - [v0.0.6](#-release-v006--qbittorrent-net-client-enhancement)
 - [v0.0.5](#-release-v005--qbittorrent-net-client-update)
+
+## 🚀 Release v1.3.0 — Process Info API & Metadata Maintenance
+
+**Release Date:** 2026-06-13
+
+This release focuses on qBittorrent Web API coverage, nullable timestamp consistency, converter correctness, request handling cleanup, and project legal metadata.
+
+---
+
+### ✨ Added
+
+* **Application Process Info API**
+  - Added `ProcessInfo` model for `/api/v2/app/processInfo`.
+  - Added `ApplicationService.GetProcessInfo`.
+  - Added `ApiVersion.V2_15_1` for newer qBittorrent Web API compatibility checks.
+
+* **Legal and Package Notices**
+  - Added project copyright metadata to the NuGet package.
+  - Added `NOTICE` for upstream acknowledgements and third-party license notices.
+
+---
+
+### 🔧 Changed
+
+* **Nullable Time Value Consistency**
+  - Updated Unix timestamp-backed model properties to use `DateTimeOffset?`.
+  - Applied the existing `UnixTimestampConverter` to the new `ProcessInfo.LaunchTime` property.
+  - Aligned `TimeSpan`-backed duration model properties and converters around nullable `TimeSpan?` values.
+
+* **Project Metadata and Documentation**
+  - Updated README license sections with copyright and notice references.
+  - Refreshed package metadata and documentation links.
+
+* **Internal Cleanup**
+  - Modernized small pieces of code style and request handling in `NetService`.
+  - Improved test code null handling and formatting consistency.
+
+---
+
+### 🐞 Fixed
+
+* **TimeSpan Converter Type Mismatch**
+  - Fixed converter generic type mismatches that could affect nullable duration serialization and deserialization.
+
+---
+
+### 📦 Notes
+
+This update includes minor API additions and metadata improvements. The timestamp nullability cleanup may affect consumers that previously treated some timestamp properties as non-nullable.
 
 ## 🚀 Release v1.2.0 — qBittorrent v5.2.0 Support
 

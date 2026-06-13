@@ -3,17 +3,31 @@
 	<PropertyGroup>
 		<TargetFrameworks>net10.0;net9.0;net8.0</TargetFrameworks>
 		<PackageId>Banned.Qbittorrent</PackageId>
-		<Version>1.2.0</Version>
+		<Version>1.3.0</Version>
 		<RepositoryUrl>https://github.com/banned2054/Banned.Qbittorrent</RepositoryUrl>
 		<Authors>banned</Authors>
+		<Copyright>Copyright (c) 2026 banned</Copyright>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
 		<Nullable>enable</Nullable>
 		<Description>A .NET client library for qBittorrent's Web API</Description>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PackageReleaseNotes>
+			Version 1.3.0 adds qBittorrent process info API support and refreshes package metadata.
+
+			- Added ProcessInfo and ApplicationService.GetProcessInfo for /api/v2/app/processInfo.
+			- Added ApiVersion.V2_15_1 for newer Web API compatibility checks.
+			- Added copyright metadata and NOTICE references.
+			- Updated Unix timestamp-backed properties to nullable DateTimeOffset?.
+			- Aligned duration properties and converters around nullable TimeSpan?.
+			- Fixed TimeSpan converter generic type mismatches for nullable duration serialization.
+
+			Note: timestamp nullability changes may affect consumers that previously treated some timestamp properties as non-nullable.
+		</PackageReleaseNotes>
 		<PackageTags>qbittorrent;api;dotnet;httpclient</PackageTags>
 	</PropertyGroup>
 	<ItemGroup>
 		<None Include="..\README.md" Pack="true" PackagePath="" />
+		<None Include="..\NOTICE" Pack="true" PackagePath="" />
 	</ItemGroup>
 </Project>
