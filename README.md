@@ -1,8 +1,8 @@
 # Banned.Qbittorrent
 
-[简体中文](https://github.com/banned2054/Banned.Qbittorrent/blob/main/Docs/README.md)
+English | [简体中文](https://github.com/banned2054/Banned.Qbittorrent/blob/main/Docs/README.md)
 
-[![License](https://img.shields.io/badge/license-Apache_2.0-green)](./LICENSE) [![NuGet](https://img.shields.io/nuget/v/Banned.Qbittorrent.svg)](https://www.nuget.org/packages/Banned.Qbittorrent)
+[![NuGet](https://img.shields.io/nuget/v/Banned.Qbittorrent.svg)](https://www.nuget.org/packages/Banned.Qbittorrent)[![Downloads](https://img.shields.io/nuget/dt/Banned.Qbittorrent.svg)](https://www.nuget.org/packages/Banned.Qbittorrent)[![License](https://img.shields.io/badge/license-Apache_2.0-green)](./LICENSE)
 
 **Banned.Qbittorrent** is a high-performance, strongly-typed .NET client library for qBittorrent's Web API. It is designed to be modern, asynchronous, and robust, providing full coverage of the qBittorrent feature set.
 

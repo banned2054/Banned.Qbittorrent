@@ -1,8 +1,8 @@
 # Banned.Qbittorrent
 
-[English](https://github.com/banned2054/Banned.Qbittorrent/blob/main/README.md)
+[English](https://github.com/banned2054/Banned.Qbittorrent/blob/main/README.md) | 简体中文
 
-[![License](https://img.shields.io/badge/license-Apache_2.0-green)](../LICENSE) [![NuGet](https://img.shields.io/nuget/v/Banned.Qbittorrent.svg)](https://www.nuget.org/packages/Banned.Qbittorrent)
+[![NuGet](https://img.shields.io/nuget/v/Banned.Qbittorrent.svg)](https://www.nuget.org/packages/Banned.Qbittorrent)[![Downloads](https://img.shields.io/nuget/dt/Banned.Qbittorrent.svg)](https://www.nuget.org/packages/Banned.Qbittorrent)[![License](https://img.shields.io/badge/license-Apache_2.0-green)](./LICENSE)
 
 **Banned.Qbittorrent** 是一个高性能、强类型的 qBittorrent Web API .NET 客户端库。它采用现代异步设计，功能强大且稳健，实现了对 qBittorrent 功能集的完整覆盖。
 
