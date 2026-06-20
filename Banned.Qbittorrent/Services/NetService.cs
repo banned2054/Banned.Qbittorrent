@@ -100,9 +100,8 @@ public class NetService : IDisposable
         if (_apiVersion < targetVersion)
             throw new QbittorrentNotSupportedException(opName ?? subPath, targetVersion.Value, _apiVersion);
 
-        await CheckAuth(skipAuthCheck).ConfigureAwait(false);
-
-        return await ExecuteWithRetry(() => new HttpRequestMessage(HttpMethod.Get, CombineUrl(subPath)), null, ct)
+        return await ExecuteWithRetry(() => new HttpRequestMessage(HttpMethod.Get, CombineUrl(subPath)), null, ct,
+                                      skipAuthRetry : IsAuthenticationEndpoint(subPath))
            .ConfigureAwait(false);
     }
 
@@ -127,8 +126,6 @@ public class NetService : IDisposable
         if (_apiVersion < targetVersion)
             throw new QbittorrentNotSupportedException(opName ?? subPath, targetVersion.Value, _apiVersion);
 
-        await CheckAuth(skipAuthCheck).ConfigureAwait(false);
-
         return await ExecuteWithRetry(() =>
         {
             var request = new HttpRequestMessage(HttpMethod.Post, CombineUrl(subPath));
@@ -139,7 +136,7 @@ public class NetService : IDisposable
             }
 
             return request;
-        }, null, ct).ConfigureAwait(false);
+        }, null, ct, skipAuthRetry : IsAuthenticationEndpoint(subPath)).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -157,8 +154,6 @@ public class NetService : IDisposable
                                             List<string>                filePaths,
                                             CancellationToken           ct = default)
     {
-        await CheckAuth(false).ConfigureAwait(false);
-
         return await ExecuteWithRetry(() =>
         {
             try
@@ -227,18 +222,6 @@ public class NetService : IDisposable
     }
 
     /// <summary>
-    /// 检查并确保身份验证状态。<br/>
-    /// Checks and ensures the authentication status.
-    /// </summary>
-    private async Task CheckAuth(bool skipAuthCheck)
-    {
-        if (!skipAuthCheck && EnsureLoggedInHandler != null)
-        {
-            await EnsureLoggedInHandler.Invoke().ConfigureAwait(false);
-        }
-    }
-
-    /// <summary>
     /// 执行请求并包含指数退避重试机制。<br/>
     /// Executes the request with an exponential backoff retry mechanism.
     /// </summary>
@@ -248,7 +231,8 @@ public class NetService : IDisposable
     /// <returns>响应体内容。 / Response body content.</returns>
     private async Task<string> ExecuteWithRetry(Func<HttpRequestMessage> requestFactory,
                                                 int?                     maxRetries = null,
-                                                CancellationToken        ct         = default)
+                                                CancellationToken        ct         = default,
+                                                bool                     skipAuthRetry = false)
     {
         return await ExecuteWithRetry(() =>
         {
@@ -260,23 +244,27 @@ public class NetService : IDisposable
             {
                 return Task.FromException<HttpRequestMessage>(exception);
             }
-        }, maxRetries, ct);
+        }, maxRetries, ct, skipAuthRetry);
     }
 
     private async Task<string> ExecuteWithRetry(Func<Task<HttpRequestMessage>> requestFactory,
                                                 int?                           maxRetries = null,
-                                                CancellationToken              ct         = default)
+                                                CancellationToken              ct         = default,
+                                                bool                           skipAuthRetry = false)
     {
         Exception?           lastException    = null;
         HttpResponseMessage? lastResponse     = null;
         var                  lastBody         = string.Empty;
         var                  actualMaxRetries = maxRetries ?? MaxRetries;
+        var                  lastRequestInfo  = "unknown request";
+        var                  authRetryAttempted = false;
 
         for (var attempt = 1; attempt <= actualMaxRetries; attempt++)
         {
             try
             {
                 using var request = await requestFactory().ConfigureAwait(false);
+                lastRequestInfo = $"{request.Method} {request.RequestUri}";
                 if (EnableDetailedLogging)
                     Console.WriteLine($"Attempt {attempt}/{actualMaxRetries}: Sending {request.Method} request to {request.RequestUri}");
 
@@ -291,6 +279,18 @@ public class NetService : IDisposable
                     Console.WriteLine($"Attempt {attempt}/{actualMaxRetries}: Received response with status code: {response.StatusCode}");
 
                 if (response.IsSuccessStatusCode) return lastBody;
+
+                if (!skipAuthRetry && !authRetryAttempted &&
+                    IsAuthenticationFailure(response.StatusCode) && EnsureLoggedInHandler != null)
+                {
+                    authRetryAttempted = true;
+                    if (EnableDetailedLogging)
+                        Console.WriteLine($"Attempt {attempt}/{actualMaxRetries}: {lastRequestInfo} was not authorized; logging in and retrying");
+
+                    await EnsureLoggedInHandler.Invoke().ConfigureAwait(false);
+                    attempt--;
+                    continue;
+                }
 
                 if (!RetryableStatusCodes.Contains(response.StatusCode))
                     throw MapToException(response, lastBody);
@@ -307,12 +307,12 @@ public class NetService : IDisposable
             {
                 lastException = ex;
                 if (EnableDetailedLogging)
-                    Console.WriteLine($"Attempt {attempt}/{actualMaxRetries}: Task canceled: {ex.Message}");
+                    Console.WriteLine($"Attempt {attempt}/{actualMaxRetries}: {lastRequestInfo} canceled: {ex.Message}");
                 if (attempt == actualMaxRetries) break;
 
                 var delay = ComputeBackoff(attempt);
                 if (EnableDetailedLogging)
-                    Console.WriteLine($"Attempt {attempt}/{actualMaxRetries}: Retrying in {delay.TotalMilliseconds}ms due to cancellation");
+                    Console.WriteLine($"Attempt {attempt}/{actualMaxRetries}: Retrying {lastRequestInfo} in {delay.TotalMilliseconds}ms due to cancellation");
 
                 await Task.Delay(delay, ct).ConfigureAwait(false);
             }
@@ -320,12 +320,12 @@ public class NetService : IDisposable
             {
                 lastException = ex;
                 if (EnableDetailedLogging)
-                    Console.WriteLine($"Attempt {attempt}/{actualMaxRetries}: HTTP request failed: {ex.Message}");
+                    Console.WriteLine($"Attempt {attempt}/{actualMaxRetries}: {lastRequestInfo} failed: {ex.Message}");
                 if (attempt == actualMaxRetries) break;
 
                 var delay = ComputeBackoff(attempt);
                 if (EnableDetailedLogging)
-                    Console.WriteLine($"Attempt {attempt}/{actualMaxRetries}: Retrying in {delay.TotalMilliseconds}ms due to network error");
+                    Console.WriteLine($"Attempt {attempt}/{actualMaxRetries}: Retrying {lastRequestInfo} in {delay.TotalMilliseconds}ms due to network error");
 
                 await Task.Delay(delay, ct).ConfigureAwait(false);
             }
@@ -340,7 +340,8 @@ public class NetService : IDisposable
 
         if (lastResponse != null) throw MapToException(lastResponse, lastBody);
         throw new QbittorrentServerErrorException(
-                                                  $"Network error after {actualMaxRetries} attempts: {lastException?.Message ?? "unknown error"}");
+                                                  $"Network error after {actualMaxRetries} attempts while sending {lastRequestInfo}: {lastException?.Message ?? "unknown error"}",
+                                                  lastException);
     }
 
     /// <summary>
@@ -400,6 +401,16 @@ public class NetService : IDisposable
         HttpStatusCode.RequestTimeout,      // 408
         HttpStatusCode.TooManyRequests
     ];
+
+    private static bool IsAuthenticationFailure(HttpStatusCode statusCode)
+    {
+        return statusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden;
+    }
+
+    private static bool IsAuthenticationEndpoint(string subPath)
+    {
+        return subPath.TrimStart('/').StartsWith("api/v2/auth/", StringComparison.OrdinalIgnoreCase);
+    }
 
     /// <summary>
     /// 释放 <see cref="NetService"/> 使用的资源。<br/>

@@ -28,7 +28,7 @@ public class AuthenticationService : IDisposable
         _userName   = userName;
         _password   = password;
 
-        _netService.EnsureLoggedInHandler = EnsureLoggedIn;
+        _netService.EnsureLoggedInHandler = () => EnsureLoggedIn(force : true);
     }
 
     /// <summary>
@@ -96,7 +96,8 @@ public class AuthenticationService : IDisposable
 
             var response = await _netService.Post("api/v2/auth/login", parameters, skipAuthCheck : true);
 
-            if (!response.Contains("Ok.", StringComparison.OrdinalIgnoreCase))
+            if (!string.IsNullOrWhiteSpace(response) &&
+                !response.Contains("Ok.", StringComparison.OrdinalIgnoreCase))
             {
                 _isLoggedIn = false;
                 throw new QbittorrentLoginFailedException("Login response was not 'Ok.'", 200);

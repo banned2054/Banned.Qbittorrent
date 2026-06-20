@@ -28,7 +28,7 @@ public class ApplicationService(NetService netService)
     /// </returns>
     public async Task<ApiVersion> GetApiVersion()
     {
-        var result = await netService.Get($"{BaseUrl}/webapiVersion");
+        var result = await netService.Get($"{BaseUrl}/webapiVersion", skipAuthCheck : true);
         return ApiVersion.Parse(result);
     }
 

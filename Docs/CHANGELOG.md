@@ -6,6 +6,7 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## 📘 Versions
 
+- [v1.3.1](#-release-v131--authentication-recovery-fixes)
 - [v1.3.0](#-release-v130--process-info-api--metadata-maintenance)
 - [v1.2.0](#-release-v120--qbittorrent-v520-support)
 - [v1.1.0](#-release-v110--performance-optimizations--flexibility-enhancements)
@@ -17,6 +18,37 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 - [v0.0.7](#-release-v007--qbittorrent-net-client-refinement)
 - [v0.0.6](#-release-v006--qbittorrent-net-client-enhancement)
 - [v0.0.5](#-release-v005--qbittorrent-net-client-update)
+
+## 🚀 Release v1.3.1 — Authentication Recovery Fixes
+
+**Release Date:** 2026-06-20
+
+This patch release improves qBittorrent Web API authentication recovery, especially after qBittorrent container restarts or session invalidation.
+
+---
+
+### 🐞 Fixed
+
+* **Authentication Retry Flow**
+  - Requests that receive `401` or `403` now force a fresh login and retry once.
+  - API version negotiation can now recover when `/api/v2/app/webapiVersion` initially returns `403`.
+  - Authentication endpoints are excluded from auth retry to avoid recursive login attempts.
+
+* **Login Response Compatibility**
+  - Empty login responses are now treated as successful, matching qBittorrent behavior handled by mature clients such as `qbittorrent-api`.
+
+---
+
+### 🧪 Tests
+
+* Added coverage for `403 -> login -> retry` behavior.
+* Added coverage for Web API version negotiation recovering from an initial `403`.
+
+---
+
+### 📦 Notes
+
+This is a backward-compatible patch release. No public API changes are required for consumers.
 
 ## 🚀 Release v1.3.0 — Process Info API & Metadata Maintenance
 
