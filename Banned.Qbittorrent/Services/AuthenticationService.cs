@@ -8,12 +8,14 @@ namespace Banned.Qbittorrent.Services;
 /// </summary>
 public class AuthenticationService : IDisposable
 {
-    private readonly NetService     _netService;
-    private readonly string         _userName;
-    private readonly string         _password;
-    private readonly SemaphoreSlim  _loginLock = new(1, 1);
-    private volatile bool           _isLoggedIn;
-    private          DateTimeOffset _loginExpiry = DateTimeOffset.MinValue;
+    private readonly NetService    _netService;
+    private readonly SemaphoreSlim _loginLock = new(1, 1);
+
+    private readonly string _userName;
+    private readonly string _password;
+    private volatile bool   _isLoggedIn;
+
+    private DateTimeOffset _loginExpiry = DateTimeOffset.MinValue;
 
     /// <summary>
     /// 初始化 <see cref="AuthenticationService"/> 类的新实例。<br/>
@@ -24,11 +26,17 @@ public class AuthenticationService : IDisposable
     /// <param name="password">密码。 / Password.</param>
     public AuthenticationService(NetService netService, string userName, string password)
     {
+        ArgumentNullException.ThrowIfNull(netService);
+        ArgumentNullException.ThrowIfNull(userName);
+        ArgumentNullException.ThrowIfNull(password);
+
         _netService = netService;
         _userName   = userName;
         _password   = password;
 
-        _netService.EnsureLoggedInHandler = () => EnsureLoggedIn(force : true);
+        _netService.EnsureLoggedInAsyncHandler = EnsureLoggedIn;
+        _netService.EnsureLoggedInHandler =
+            () => EnsureLoggedIn(force : false, ct : CancellationToken.None);
     }
 
     /// <summary>
@@ -39,10 +47,7 @@ public class AuthenticationService : IDisposable
     /// 此方法会强制触发登录流程，无论当前是否已登录。<br/>
     /// This method forces the login process regardless of the current login status.
     /// </remarks>
-    public async Task Login()
-    {
-        await EnsureLoggedIn(force : true);
-    }
+    public Task Login() => EnsureLoggedIn(force : true, ct : CancellationToken.None);
 
     /// <summary>
     /// 登出 qBittorrent 客户端。<br/>
@@ -68,25 +73,21 @@ public class AuthenticationService : IDisposable
     }
 
     /// <summary>
-    /// 供 NetService 调用的保活检查方法，确保当前处于登录状态。<br/>
-    /// Keep-alive check method called by NetService to ensure the current session is logged in.
-    /// </summary>
-    private async Task EnsureLoggedIn() => await EnsureLoggedIn(false);
-
-    /// <summary>
     /// 确保用户已登录，并在必要时执行登录操作。<br/>
     /// Ensures the user is logged in and performs the login operation if necessary.
     /// </summary>
     /// <param name="force">是否强制重新登录。 / Whether to force re-login.</param>
-    /// <exception cref="QbittorrentLoginFailedException">登录响应不为 "Ok." 时抛出。 / Thrown when the login response is not "Ok.".</exception>
-    private async Task EnsureLoggedIn(bool force)
+    /// <exception cref="QbittorrentLoginFailedException">登录响应不为 "Ok." 时抛出。 / Thrown when the login response is not "Ok."</exception>
+    private async Task EnsureLoggedIn(bool force, CancellationToken ct)
     {
-        if (!force && _isLoggedIn && DateTimeOffset.UtcNow < _loginExpiry) return;
+        if (!force && _isLoggedIn && DateTimeOffset.UtcNow < _loginExpiry)
+            return;
 
-        await _loginLock.WaitAsync().ConfigureAwait(false);
+        await _loginLock.WaitAsync(ct).ConfigureAwait(false);
         try
         {
-            if (!force && _isLoggedIn && DateTimeOffset.UtcNow < _loginExpiry) return;
+            if (!force && _isLoggedIn && DateTimeOffset.UtcNow < _loginExpiry)
+                return;
 
             var parameters = new Dictionary<string, string>
             {
@@ -94,7 +95,7 @@ public class AuthenticationService : IDisposable
                 { "password", _password }
             };
 
-            var response = await _netService.Post("api/v2/auth/login", parameters, skipAuthCheck : true);
+            var response = await _netService.Post("api/v2/auth/login", parameters, skipAuthCheck : true, ct : ct);
 
             if (!string.IsNullOrWhiteSpace(response) &&
                 !response.Contains("Ok.", StringComparison.OrdinalIgnoreCase))
@@ -106,7 +107,7 @@ public class AuthenticationService : IDisposable
             _isLoggedIn  = true;
             _loginExpiry = DateTimeOffset.UtcNow.AddHours(1);
         }
-        catch (QbittorrentException)
+        catch
         {
             _isLoggedIn = false;
             throw;

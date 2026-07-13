@@ -1,3 +1,4 @@
+using Banned.Qbittorrent.Models;
 using Banned.Qbittorrent.Services;
 
 namespace Banned.Qbittorrent;
@@ -94,7 +95,7 @@ public class QBittorrentClient : IDisposable
     /// <param name="httpClient">自定义的 HttpClient 实例，为 null 时使用默认实例。 / Custom HttpClient instance, uses default instance when null.</param>
     /// <param name="maxRetries">最大重试次数。 / Maximum number of retries.</param>
     /// <param name="timeout">请求超时时间，为 null 时默认 15 秒。 / Request timeout, default 15 seconds when null.</param>
-    /// <param name="enableDetailedLogging">是否启用详细日志。 / Whether to enable detailed logging.</param>
+    /// <param name="enableDetailedLogging">是否在网络故障异常中包含额外诊断信息。 / Whether network failure exceptions include additional diagnostics.</param>
     /// <returns>已完成 API 版本协商的客户端实例。 / A client instance with API version negotiation completed.</returns>
     /// <remarks>
     /// 此方法会自动调用 <c>GetApiVersion</c> 并将其配置到网络服务中，以确保后续请求的版本兼容性。<br/>
@@ -104,24 +105,73 @@ public class QBittorrentClient : IDisposable
                                                        HttpClient? httpClient = null, int? maxRetries = null,
                                                        TimeSpan?   timeout = null, bool? enableDetailedLogging = null)
     {
-        var net = new NetService(url, httpClient, timeout);
-        if (maxRetries.HasValue)
-            net.MaxRetries = maxRetries.Value;
-        if (enableDetailedLogging.HasValue)
-            net.EnableDetailedLogging = enableDetailedLogging.Value;
+        return await Create(
+                            url,
+                            userName,
+                            password,
+                            new QBittorrentClientOptions
+                            {
+                                HttpClient            = httpClient,
+                                MaxRetries            = maxRetries ?? 3,
+                                Timeout               = timeout    ?? NetService.DefaultRequestTimeout,
+                                ConnectTimeout        = NetService.DefaultConnectTimeout,
+                                EnableDetailedLogging = enableDetailedLogging ?? false
+                            })
+           .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// 使用指定选项创建并初始化一个新的 <see cref="QBittorrentClient"/> 实例。<br/>
+    /// Creates and initializes a new <see cref="QBittorrentClient"/> instance with the specified options.
+    /// </summary>
+    /// <param name="url">qBittorrent Web UI 地址。 / qBittorrent Web UI URL.</param>
+    /// <param name="userName">用户名。 / Username.</param>
+    /// <param name="password">密码。 / Password.</param>
+    /// <param name="options">网络与重试选项。 / Networking and retry options.</param>
+    /// <returns>已完成登录和 API 版本协商的客户端实例。 / An initialized client instance.</returns>
+    public static async Task<QBittorrentClient> Create(string                   url, string userName, string password,
+                                                       QBittorrentClientOptions options)
+    {
+        return await CreateCore(url, userName, password, options,
+                                static (baseUrl, clientOptions) => new NetService(baseUrl, clientOptions))
+           .ConfigureAwait(false);
+    }
+
+    internal static async Task<QBittorrentClient> CreateCore(string url, string userName, string password,
+                                                             QBittorrentClientOptions options,
+                                                             Func<string, QBittorrentClientOptions, NetService>
+                                                                 netServiceFactory)
+    {
+        ArgumentNullException.ThrowIfNull(url);
+        ArgumentNullException.ThrowIfNull(userName);
+        ArgumentNullException.ThrowIfNull(password);
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(netServiceFactory);
+
+        var net = netServiceFactory(url, options);
 
         var application = new ApplicationService(net);
         var auth        = new AuthenticationService(net, userName, password);
-        var apiVersion  = await application.GetApiVersion().ConfigureAwait(false);
-        net.SetApiVersion(apiVersion);
-        var log      = new LogService(net);
-        var rss      = new RssService(net);
-        var search   = new SearchService(net);
-        var sync     = new SyncService(net);
-        var torrent  = new TorrentService(net, apiVersion);
-        var transfer = new TransferService(net);
+        try
+        {
+            await auth.Login().ConfigureAwait(false);
+            var apiVersion = await application.GetApiVersion().ConfigureAwait(false);
+            net.SetApiVersion(apiVersion);
+            var log      = new LogService(net);
+            var rss      = new RssService(net);
+            var search   = new SearchService(net);
+            var sync     = new SyncService(net);
+            var torrent  = new TorrentService(net, apiVersion);
+            var transfer = new TransferService(net);
 
-        return new QBittorrentClient(application, auth, log, rss, search, sync, torrent, transfer, net);
+            return new QBittorrentClient(application, auth, log, rss, search, sync, torrent, transfer, net);
+        }
+        catch
+        {
+            auth.Dispose();
+            net.Dispose();
+            throw;
+        }
     }
 
     /// <summary>

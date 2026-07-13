@@ -32,6 +32,8 @@ dotnet add package Banned.Qbittorrent
 
 ```csharp
 using Banned.Qbittorrent;
+using Banned.Qbittorrent.Models;
+using Banned.Qbittorrent.Models.Enums;
 
 // Automatically logs in and configures version compatibility
 var client = await QBittorrentClient.Create("http://localhost:8080", "admin", "adminadmin");
@@ -44,8 +46,31 @@ var client = await QBittorrentClient.Create(
     httpClient: customHttpClient,    // Custom HttpClient instance
     maxRetries: 5,                   // Maximum number of retries
     timeout: TimeSpan.FromSeconds(30), // Request timeout
-    enableDetailedLogging: true      // Enable detailed logging
+    enableDetailedLogging: true      // Include additional network failure diagnostics
 );
+
+// Configure dual-stack connection behavior
+var dualStackClient = await QBittorrentClient.Create(
+    "https://qbittorrent.example.com:8443",
+    "admin",
+    "adminadmin",
+    new QBittorrentClientOptions
+    {
+        AddressFamilyPreference = AddressFamilyPreference.System,
+        EnableAutomaticIPv4Fallback = true,
+        ConnectTimeout = TimeSpan.FromSeconds(5)
+    });
+```
+
+The internally created client first follows the system connection policy. If connection or TLS establishment fails and DNS is dual-stack, it upgrades once to an IPv4-first handler while preserving authentication cookies. `PreferIPv4` and `PreferIPv6` can be selected explicitly. A caller-provided `HttpClient` remains entirely caller-owned: the library does not change or dispose it, and proxy/address-family policy must be configured on that client by the caller.
+
+For temporary troubleshooting, set `DiagnosticSink` when using the options overload. It is `null` by default and adds no logging dependency:
+
+```csharp
+var diagnosticOptions = new QBittorrentClientOptions
+{
+    DiagnosticSink = message => Console.Error.WriteLine(message)
+};
 ```
 
 2. Torrent Management

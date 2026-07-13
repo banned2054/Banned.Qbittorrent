@@ -32,6 +32,8 @@ dotnet add package Banned.Qbittorrent
 
 ```csharp
 using Banned.Qbittorrent;
+using Banned.Qbittorrent.Models;
+using Banned.Qbittorrent.Models.Enums;
 
 // 自动登录并配置版本兼容性
 var client = await QBittorrentClient.Create("http://localhost:8080", "admin", "adminadmin");
@@ -44,8 +46,31 @@ var client = await QBittorrentClient.Create(
     httpClient: customHttpClient,    // 自定义HttpClient实例
     maxRetries: 5,                   // 最大重试次数
     timeout: TimeSpan.FromSeconds(30), // 请求超时时间
-    enableDetailedLogging: true      // 启用详细日志
+    enableDetailedLogging: true      // 在网络故障异常中包含额外诊断信息
 );
+
+// 配置双栈连接行为
+var dualStackClient = await QBittorrentClient.Create(
+    "https://qbittorrent.example.com:8443",
+    "admin",
+    "adminadmin",
+    new QBittorrentClientOptions
+    {
+        AddressFamilyPreference = AddressFamilyPreference.System,
+        EnableAutomaticIPv4Fallback = true,
+        ConnectTimeout = TimeSpan.FromSeconds(5)
+    });
+```
+
+内部创建的客户端会先遵循系统连接策略；当连接或 TLS 建立失败且 DNS 同时包含 IPv4/IPv6 时，只升级一次为 IPv4 优先 handler，并复用认证 Cookie。也可以显式选择 `PreferIPv4` 或 `PreferIPv6`。调用者传入的 `HttpClient` 完全由调用者管理：库不会修改或释放它，代理和地址族策略也应由调用者在该客户端上配置。
+
+临时排障时，可通过 options 重载设置 `DiagnosticSink`。该属性默认为 `null`，不会引入日志依赖：
+
+```csharp
+var diagnosticOptions = new QBittorrentClientOptions
+{
+    DiagnosticSink = message => Console.Error.WriteLine(message)
+};
 ```
 
 2. 种子管理
