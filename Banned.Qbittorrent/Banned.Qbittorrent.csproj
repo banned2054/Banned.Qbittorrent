@@ -3,7 +3,7 @@
 	<PropertyGroup>
 		<TargetFrameworks>net10.0;net9.0;net8.0</TargetFrameworks>
 		<PackageId>Banned.Qbittorrent</PackageId>
-		<Version>1.3.1</Version>
+		<Version>1.4.0</Version>
 		<RepositoryUrl>https://github.com/banned2054/Banned.Qbittorrent</RepositoryUrl>
 		<Authors>banned</Authors>
 		<Copyright>Copyright (c) 2026 banned</Copyright>
@@ -13,12 +13,14 @@
 		<Description>A .NET client library for qBittorrent's Web API</Description>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageReleaseNotes>
-			Version 1.3.1 improves qBittorrent Web API authentication recovery.
+			Version 1.4.0 fixes cold-start connection failures and adds configurable dual-stack networking.
 
-			- Retried requests once after 401/403 responses by forcing a fresh login.
-			- Allowed Web API version negotiation to recover from 403 responses after qBittorrent restarts.
-			- Treated empty login responses as successful, matching newer qBittorrent behavior.
-			- Added request URL context to network timeout errors.
+			- Added automatic IPv4 fallback when the system connection policy fails against a dual-stack endpoint.
+			- Added QBittorrentClientOptions and AddressFamilyPreference for retry, timeout, diagnostics, and address-family configuration.
+			- Added zero-dependency real-time network diagnostics through DiagnosticSink.
+			- Authenticated before Web API version negotiation to make initialization reliable after cold starts and restarts.
+			- Preserved cookies when switching connection handlers and kept caller-provided HttpClient instances caller-owned.
+			- Improved retry safety and cleaned up network resources when client initialization fails.
 		</PackageReleaseNotes>
 		<PackageTags>qbittorrent;api;dotnet;httpclient</PackageTags>
 	</PropertyGroup>

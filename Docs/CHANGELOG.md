@@ -6,6 +6,7 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## 📘 Versions
 
+- [v1.4.0](#-release-v140--dual-stack-connection-recovery--diagnostics)
 - [v1.3.1](#-release-v131--authentication-recovery-fixes)
 - [v1.3.0](#-release-v130--process-info-api--metadata-maintenance)
 - [v1.2.0](#-release-v120--qbittorrent-v520-support)
@@ -18,6 +19,61 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 - [v0.0.7](#-release-v007--qbittorrent-net-client-refinement)
 - [v0.0.6](#-release-v006--qbittorrent-net-client-enhancement)
 - [v0.0.5](#-release-v005--qbittorrent-net-client-update)
+
+## 🚀 Release v1.4.0 — Dual-Stack Connection Recovery & Diagnostics
+
+**Release Date:** 2026-07-13
+
+This release resolves cold-start connection failures by strengthening client initialization and adding configurable dual-stack connection recovery. It also introduces zero-dependency diagnostics for troubleshooting network failures without requiring a logging framework.
+
+---
+
+### ✨ Added
+
+* **Client Network Options**
+  - Added `QBittorrentClientOptions` and a corresponding `QBittorrentClient.Create` overload.
+  - Added configuration for request retries, overall request timeout, TCP connection timeout, detailed diagnostics, and automatic IPv4 fallback.
+  - Added `AddressFamilyPreference` with `System`, `PreferIPv4`, and `PreferIPv6` policies.
+
+* **Dual-Stack Connection Recovery**
+  - Added automatic fallback from the system connection policy to IPv4-first when connection or TLS establishment fails and DNS resolves both IPv4 and IPv6 addresses.
+  - Preserved authentication cookies when replacing the internally managed HTTP handler during fallback.
+
+* **Zero-Dependency Diagnostics**
+  - Added `DiagnosticSink` for receiving real-time network diagnostics without introducing a logging dependency.
+  - Added request, retry, DNS, connection, address-family, and timing context to detailed failure diagnostics.
+  - Protected sensitive authentication and cookie headers from diagnostic output.
+
+---
+
+### 🔧 Changed
+
+* **Client Initialization**
+  - Client creation now authenticates before negotiating the qBittorrent Web API version.
+  - Failed initialization now disposes internally created authentication and network resources.
+
+* **HTTP Client Ownership**
+  - Internally created clients use a dedicated cookie container and configurable connection handler.
+  - Caller-provided `HttpClient` instances remain entirely caller-owned and are neither modified nor disposed by the library.
+
+* **Retry Behavior**
+  - Requests are recreated for each retry attempt.
+  - Transient HTTP responses respect `Retry-After` when supplied by the server.
+  - Potentially side-effecting requests are not automatically replayed after ambiguous connection failures.
+
+---
+
+### 🐞 Fixed
+
+* **Cold-Start Connectivity**
+  - Fixed initialization failures where the system selected an unusable address family for a dual-stack qBittorrent endpoint.
+  - Fixed cold-start and restart scenarios in which API version negotiation ran before a valid authenticated session was established.
+
+---
+
+### 📦 Notes
+
+This is a backward-compatible minor release. Existing `QBittorrentClient.Create` calls continue to work without changes. Automatic address-family fallback is available only for internally created HTTP clients; consumers supplying their own `HttpClient` retain full responsibility for its proxy, handler, cookie, and address-family configuration.
 
 ## 🚀 Release v1.3.1 — Authentication Recovery Fixes
 
