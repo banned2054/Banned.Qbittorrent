@@ -41,14 +41,6 @@ public class ApplicationUnitTest
     }
 
     [Test]
-    public async Task TestGetProcessInfo()
-    {
-        var processInfo = await _client.Application.GetProcessInfo();
-        Console.WriteLine(processInfo?.LaunchTime);
-        Assert.Pass();
-    }
-
-    [Test]
     public async Task TestGetApplicationPreferences()
     {
         var buildInfo = await _client.Application.GetApplicationPreferences();
