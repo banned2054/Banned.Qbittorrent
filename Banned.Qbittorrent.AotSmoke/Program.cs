@@ -4,11 +4,7 @@ using System.Net;
 using System.Text;
 
 using var httpClient = new HttpClient(new StubQbittorrentHandler());
-using var client = await QBittorrentClient.Create(
-    "http://localhost:8080",
-    "admin",
-    "password",
-    httpClient);
+using var client     = await QBittorrentClient.Create("http://localhost:8080", "admin", "password", httpClient);
 
 var preferences = await client.Application.GetApplicationPreferences();
 if (preferences?.Locale != "en")
@@ -16,18 +12,18 @@ if (preferences?.Locale != "en")
 
 await client.Application.SetApplicationPreferences(new ApplicationPreferences { Locale = "en" });
 
-var torrents = await client.Torrent.GetTorrentInfos();
-var logs = await client.Log.GetLogs();
-var rules = await client.Rss.GetAllAutoDownloadingRule();
+var torrents       = await client.Torrent.GetTorrentInfos();
+var logs           = await client.Log.GetLogs();
+var rules          = await client.Rss.GetAllAutoDownloadingRule();
 var searchStatuses = await client.Search.SearchStatus();
-var mainData = await client.Sync.GetMainData();
+var mainData       = await client.Sync.GetMainData();
 _ = await client.Transfer.GetTransferInfo();
 
-if (torrents.Count != 0 ||
-    logs.Count != 0 ||
-    rules?.Count != 0 ||
+if (torrents.Count         != 0 ||
+    logs.Count             != 0 ||
+    rules?.Count           != 0 ||
     searchStatuses?.Length != 0 ||
-    mainData == null)
+    mainData               == null)
     throw new InvalidOperationException("A source-generated JSON contract failed the NativeAOT smoke test.");
 
 Console.WriteLine("NativeAOT smoke test passed.");
@@ -36,7 +32,7 @@ file sealed class StubQbittorrentHandler : HttpMessageHandler
 {
     protected override Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request,
-        CancellationToken cancellationToken)
+        CancellationToken  cancellationToken)
     {
         var responseBody = request.RequestUri?.AbsolutePath switch
         {
@@ -49,12 +45,12 @@ file sealed class StubQbittorrentHandler : HttpMessageHandler
             "/api/v2/search/status"     => "[]",
             "/api/v2/sync/maindata"     => "{}",
             "/api/v2/transfer/info"     => "{}",
-            _                            => string.Empty
+            _                           => string.Empty
         };
 
         var response = new HttpResponseMessage(HttpStatusCode.OK)
         {
-            Content = new StringContent(responseBody, Encoding.UTF8, "application/json"),
+            Content        = new StringContent(responseBody, Encoding.UTF8, "application/json"),
             RequestMessage = request
         };
         return Task.FromResult(response);
