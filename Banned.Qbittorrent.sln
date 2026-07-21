@@ -6,6 +6,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Banned.Qbittorrent", "Banne
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Banned.Qbittorrent.Test", "Banned.Qbittorrent.Test\Banned.Qbittorrent.Test.csproj", "{0D8AEB57-5B00-34A7-D14B-6638618F4A85}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Banned.Qbittorrent.AotSmoke", "Banned.Qbittorrent.AotSmoke\Banned.Qbittorrent.AotSmoke.csproj", "{2EDDF97E-AFEC-4D10-B5CF-95D2E3976EBB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -20,6 +22,10 @@ Global
 		{0D8AEB57-5B00-34A7-D14B-6638618F4A85}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0D8AEB57-5B00-34A7-D14B-6638618F4A85}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0D8AEB57-5B00-34A7-D14B-6638618F4A85}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2EDDF97E-AFEC-4D10-B5CF-95D2E3976EBB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2EDDF97E-AFEC-4D10-B5CF-95D2E3976EBB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2EDDF97E-AFEC-4D10-B5CF-95D2E3976EBB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2EDDF97E-AFEC-4D10-B5CF-95D2E3976EBB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

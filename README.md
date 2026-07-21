@@ -13,6 +13,7 @@ English | [简体中文](https://github.com/banned2054/Banned.Qbittorrent/blob/m
 - **Smart Auth Handling**: Built-in session keep-alive and automatic re-login logic.
 - **Resilient Networking**: Includes an exponential backoff retry mechanism to handle transient network issues.
 - **Asynchronous First**: First-class support for `Task`-based asynchronous patterns and `CancellationToken`.
+- **NativeAOT Ready**: Uses source-generated JSON contracts and is validated with trimming and NativeAOT analyzers.
 - **Parallel Request Execution**: Execute multiple requests concurrently for improved performance.
 - **Enhanced Configuration**: Flexible options for customizing retry behavior, timeouts, and logging.
 - **Memory Optimization**: Improved file upload mechanism to reduce memory usage for large torrent files.

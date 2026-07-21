@@ -1,6 +1,6 @@
 using Banned.Qbittorrent.Models.Transfer;
+using Banned.Qbittorrent.Serialization;
 using Banned.Qbittorrent.Utils;
-using System.Text.Json;
 
 namespace Banned.Qbittorrent.Services;
 
@@ -23,7 +23,7 @@ public class TransferService(NetService netService)
     public async Task<TransferInfo> GetTransferInfo()
     {
         var response = await netService.Get($"{BaseUrl}/info");
-        return JsonSerializer.Deserialize<TransferInfo>(response) ?? new TransferInfo();
+        return QBittorrentJsonSerializer.Deserialize<TransferInfo>(response) ?? new TransferInfo();
     }
 
     /// <summary>

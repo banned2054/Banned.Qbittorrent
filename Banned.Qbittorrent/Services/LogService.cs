@@ -1,5 +1,5 @@
 using Banned.Qbittorrent.Models.Logging;
-using System.Text.Json;
+using Banned.Qbittorrent.Serialization;
 
 namespace Banned.Qbittorrent.Services;
 
@@ -38,7 +38,7 @@ public class LogService(NetService netService)
                   $"last_known_id={lastId}";
 
         var response = await netService.Get(url);
-        return JsonSerializer.Deserialize<List<LogElement>>(response) ?? [];
+        return QBittorrentJsonSerializer.Deserialize<List<LogElement>>(response) ?? [];
     }
 
     /// <summary>
@@ -54,7 +54,7 @@ public class LogService(NetService netService)
     {
         var url      = $"{BaseUrl}/peer?last_known_id={lastId}";
         var response = await netService.Get(url);
-        return JsonSerializer.Deserialize<List<UserLogElement>>(response) ?? [];
+        return QBittorrentJsonSerializer.Deserialize<List<UserLogElement>>(response) ?? [];
     }
 
     /// <summary>

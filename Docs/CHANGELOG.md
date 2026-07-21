@@ -6,6 +6,7 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## 📘 Versions
 
+- [v1.5.0](#-release-v150--nativeaot--trimming-support)
 - [v1.4.0](#-release-v140--dual-stack-connection-recovery--diagnostics)
 - [v1.3.1](#-release-v131--authentication-recovery-fixes)
 - [v1.3.0](#-release-v130--process-info-api--metadata-maintenance)
@@ -19,6 +20,38 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 - [v0.0.7](#-release-v007--qbittorrent-net-client-refinement)
 - [v0.0.6](#-release-v006--qbittorrent-net-client-enhancement)
 - [v0.0.5](#-release-v005--qbittorrent-net-client-update)
+
+## 🚀 Release v1.5.0 — NativeAOT & Trimming Support
+
+**Release Date:** 2026-07-21
+
+This release makes the library compatible with NativeAOT and trimmed applications without changing its public API.
+
+---
+
+### ✨ Added
+
+* **Source-Generated JSON Contracts**
+  - Added static `System.Text.Json` metadata for every request and response type used internally.
+  - Preserved the existing null-value handling used for application preferences and cookies.
+
+* **NativeAOT Validation**
+  - Added a self-contained smoke application that exercises authentication and representative service responses.
+  - Added CI coverage that publishes and runs the smoke application as a native Linux executable.
+
+---
+
+### 🔧 Changed
+
+* **AOT and Trimming Analysis**
+  - Enabled `IsAotCompatible` for all supported target frameworks.
+  - Replaced reflection-based JSON calls with generated `JsonTypeInfo` contracts, eliminating AOT and trimming warnings from the library.
+
+---
+
+### 📦 Notes
+
+This is a backward-compatible minor release. Existing consumers do not need to change their code. NativeAOT consumers can reference the package directly without enabling reflection-based JSON serialization.
 
 ## 🚀 Release v1.4.0 — Dual-Stack Connection Recovery & Diagnostics
 

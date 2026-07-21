@@ -1,7 +1,7 @@
 using Banned.Qbittorrent.Models.Application;
 using Banned.Qbittorrent.Models.Search;
+using Banned.Qbittorrent.Serialization;
 using Banned.Qbittorrent.Utils;
-using System.Text.Json;
 
 namespace Banned.Qbittorrent.Services;
 
@@ -30,7 +30,7 @@ public class SearchService(NetService netService)
             { "category", category },
         };
         var result = await netService.Post(BaseUrl, parameters, ApiVersion.V2_1_1);
-        return JsonSerializer.Deserialize<SearchJob>(result);
+        return QBittorrentJsonSerializer.Deserialize<SearchJob>(result);
     }
 
     /// <summary>
@@ -67,7 +67,7 @@ public class SearchService(NetService netService)
         if (id.HasValue) url += $"?id={id.Value}";
 
         var response = await netService.Get(url, ApiVersion.V2_1_1);
-        return JsonSerializer.Deserialize<SearchStatus[]>(response);
+        return QBittorrentJsonSerializer.Deserialize<SearchStatus[]>(response);
     }
 
     /// <summary>
@@ -87,7 +87,7 @@ public class SearchService(NetService netService)
             { "offset", offset.ToString() }
         };
         var response = await netService.Post($"{BaseUrl}/results", parameters, ApiVersion.V2_1_1);
-        return JsonSerializer.Deserialize<SearchResult>(response);
+        return QBittorrentJsonSerializer.Deserialize<SearchResult>(response);
     }
 
     /// <summary>
@@ -119,7 +119,7 @@ public class SearchService(NetService netService)
     public async Task<SearchPlugins?> GetSearchPlugins()
     {
         var response = await netService.Get($"{BaseUrl}/plugins", ApiVersion.V2_1_1);
-        return JsonSerializer.Deserialize<SearchPlugins>(response);
+        return QBittorrentJsonSerializer.Deserialize<SearchPlugins>(response);
     }
 
     /// <summary>

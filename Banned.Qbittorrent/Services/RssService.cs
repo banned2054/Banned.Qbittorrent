@@ -1,5 +1,6 @@
 using Banned.Qbittorrent.Models.Application;
 using Banned.Qbittorrent.Models.Rss;
+using Banned.Qbittorrent.Serialization;
 using System.Text.Json;
 
 namespace Banned.Qbittorrent.Services;
@@ -131,7 +132,7 @@ public class RssService(NetService netService)
         }
 
         var response = await netService.Get(path);
-        var rawData  = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(response);
+        var rawData  = QBittorrentJsonSerializer.Deserialize<Dictionary<string, JsonElement>>(response);
         if (rawData == null) return null;
         return ProcessRssElement(rawData);
     }
@@ -181,7 +182,7 @@ public class RssService(NetService netService)
         var parameters = new Dictionary<string, string>
         {
             { "ruleName", ruleName },
-            { "ruleRef", JsonSerializer.Serialize(rule) }
+            { "ruleRef", QBittorrentJsonSerializer.Serialize(rule) }
         };
         await netService.Post($"{BaseUrl}/setRule", parameters);
     }
@@ -224,7 +225,7 @@ public class RssService(NetService netService)
     public async Task<IReadOnlyDictionary<string, AutoDownloadRule>?> GetAllAutoDownloadingRule()
     {
         var response = await netService.Get($"{BaseUrl}/rules");
-        return JsonSerializer.Deserialize<Dictionary<string, AutoDownloadRule>>(response);
+        return QBittorrentJsonSerializer.Deserialize<Dictionary<string, AutoDownloadRule>>(response);
     }
 
     /// <summary>
@@ -239,7 +240,7 @@ public class RssService(NetService netService)
         var parameters = new Dictionary<string, string> { { "ruleName", ruleName } };
         var response =
             await netService.Post($"{BaseUrl}/matchingArticles", parameters, targetVersion : ApiVersion.V2_5_1);
-        return JsonSerializer.Deserialize<Dictionary<string, string[]>>(response);
+        return QBittorrentJsonSerializer.Deserialize<Dictionary<string, string[]>>(response);
     }
 
     /// <summary>
@@ -257,7 +258,8 @@ public class RssService(NetService netService)
             }
             else if (kvp.Value.ValueKind == JsonValueKind.Object)
             {
-                var subItems = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(kvp.Value.GetRawText());
+                var subItems = QBittorrentJsonSerializer.Deserialize<Dictionary<string, JsonElement>>(
+                    kvp.Value.GetRawText());
                 if (subItems != null)
                 {
                     result.Add(kvp.Key, ProcessRssElement(subItems));

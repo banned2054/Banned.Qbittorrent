@@ -1,6 +1,5 @@
 using Banned.Qbittorrent.Models.Application;
-using System.Text.Json;
-using System.Text.Json.Serialization;
+using Banned.Qbittorrent.Serialization;
 
 namespace Banned.Qbittorrent.Services;
 
@@ -11,12 +10,6 @@ namespace Banned.Qbittorrent.Services;
 public class ApplicationService(NetService netService)
 {
     private const string BaseUrl = "/api/v2/app";
-
-    private readonly JsonSerializerOptions _serializerOptions = new()
-    {
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-        WriteIndented          = false
-    };
 
     /// <summary>
     /// 获取 Web API 版本。<br/>
@@ -71,7 +64,7 @@ public class ApplicationService(NetService netService)
     public async Task<ProcessInfo?> GetProcessInfo()
     {
         var response = await netService.Get($"{BaseUrl}/processInfo", ApiVersion.V2_15_1);
-        var result   = JsonSerializer.Deserialize<ProcessInfo>(response);
+        var result   = QBittorrentJsonSerializer.Deserialize<ProcessInfo>(response);
         return result;
     }
 
@@ -103,7 +96,7 @@ public class ApplicationService(NetService netService)
     public async Task<ApplicationPreferences?> GetApplicationPreferences()
     {
         var response = await netService.Get($"{BaseUrl}/preferences");
-        var result   = JsonSerializer.Deserialize<ApplicationPreferences>(response);
+        var result   = QBittorrentJsonSerializer.Deserialize<ApplicationPreferences>(response);
         return result;
     }
 
@@ -121,7 +114,7 @@ public class ApplicationService(NetService netService)
     /// </remarks>
     public async Task SetApplicationPreferences(ApplicationPreferences applicationPreferences)
     {
-        var request = JsonSerializer.Serialize(applicationPreferences, options : _serializerOptions);
+        var request = QBittorrentJsonSerializer.SerializeIgnoringNulls(applicationPreferences);
         var parameters = new Dictionary<string, string>
         {
             { "json", request }
@@ -155,7 +148,7 @@ public class ApplicationService(NetService netService)
     public async Task<List<Cookie>> GetCookies()
     {
         var response = await netService.Get($"{BaseUrl}/cookies", ApiVersion.V2_11_3);
-        var result   = JsonSerializer.Deserialize<List<Cookie>>(response);
+        var result   = QBittorrentJsonSerializer.Deserialize<List<Cookie>>(response);
         return result ?? [];
     }
 
@@ -173,7 +166,7 @@ public class ApplicationService(NetService netService)
     /// </remarks>
     public async Task SetCookies(List<Cookie> cookies)
     {
-        var request = JsonSerializer.Serialize(cookies, options : _serializerOptions);
+        var request = QBittorrentJsonSerializer.SerializeIgnoringNulls(cookies);
         var parameters = new Dictionary<string, string>
         {
             { "json", request }

@@ -1,5 +1,5 @@
 using Banned.Qbittorrent.Models.Sync;
-using System.Text.Json;
+using Banned.Qbittorrent.Serialization;
 
 namespace Banned.Qbittorrent.Services;
 
@@ -31,7 +31,7 @@ public class SyncService(NetService netService)
         };
 
         var response = await netService.Post($"{BaseUrl}/maindata", parameters);
-        return JsonSerializer.Deserialize<MainData>(response);
+        return QBittorrentJsonSerializer.Deserialize<MainData>(response);
     }
 
     /// <summary>
@@ -53,6 +53,6 @@ public class SyncService(NetService netService)
         };
 
         var response = await netService.Post($"{BaseUrl}/torrentPeers", parameters);
-        return JsonSerializer.Deserialize<PeerData>(response);
+        return QBittorrentJsonSerializer.Deserialize<PeerData>(response);
     }
 }

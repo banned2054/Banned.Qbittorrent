@@ -3,9 +3,9 @@ using Banned.Qbittorrent.Models.Application;
 using Banned.Qbittorrent.Models.Enums;
 using Banned.Qbittorrent.Models.Requests;
 using Banned.Qbittorrent.Models.Torrent;
+using Banned.Qbittorrent.Serialization;
 using Banned.Qbittorrent.Utils;
 using System.Globalization;
-using System.Text.Json;
 
 namespace Banned.Qbittorrent.Services;
 
@@ -88,7 +88,7 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
         if (hashes is { Count: > 0 }) parameters.Add("hashes", StringUtils.NormalizeHash(hashes));
 
         var response = await netService.Post($"{BaseUrl}/info", parameters);
-        return JsonSerializer.Deserialize<List<TorrentInfo>>(response) ?? [];
+        return QBittorrentJsonSerializer.Deserialize<List<TorrentInfo>>(response) ?? [];
     }
 
     /// <summary>
@@ -115,7 +115,7 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
         if (request.Offset > 0) parameters.Add("offset", request.Offset.ToString());
         if (request.HashList is { Count: > 0 }) parameters.Add("hashes", StringUtils.NormalizeHash(request.HashList));
         var response = await netService.Post($"{BaseUrl}/info", parameters);
-        return JsonSerializer.Deserialize<List<TorrentInfo>>(response) ?? [];
+        return QBittorrentJsonSerializer.Deserialize<List<TorrentInfo>>(response) ?? [];
     }
 
     /// <summary>
@@ -128,7 +128,7 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
     /// A <see cref="TorrentProperties"/> if successful; otherwise <c>null</c>.
     /// </returns>
     public async Task<TorrentProperties?> GetTorrentGenericProperties(string hash) =>
-        JsonSerializer.Deserialize<TorrentProperties>(await Put("properties", hash));
+        QBittorrentJsonSerializer.Deserialize<TorrentProperties>(await Put("properties", hash));
 
     /// <summary>
     /// 获取指定种子的 Tracker 信息。<br/>
@@ -140,7 +140,7 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
     /// A list of <see cref="TrackerInfo"/>; an empty list if no data is available.
     /// </returns>
     public async Task<List<TrackerInfo>?> GetTorrentTrackers(string hash) =>
-        JsonSerializer.Deserialize<List<TrackerInfo>>(await Put("trackers", hash));
+        QBittorrentJsonSerializer.Deserialize<List<TrackerInfo>>(await Put("trackers", hash));
 
     /// <summary>
     /// 获取指定种子的 Web 种子列表。<br/>
@@ -152,7 +152,7 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
     /// A list of <see cref="TorrentWebSeed"/> representing web seed information; <c>null</c> if retrieval fails.
     /// </returns>
     public async Task<List<TorrentWebSeed>?> GetTorrentWebSeeds(string hash) =>
-        JsonSerializer.Deserialize<List<TorrentWebSeed>>(await Put("webseeds", hash));
+        QBittorrentJsonSerializer.Deserialize<List<TorrentWebSeed>>(await Put("webseeds", hash));
 
     /// <summary>
     /// 获取种子的文件列表。<br/>
@@ -178,7 +178,7 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
             parameters["indexes"] = StringUtils.Join('|', indexes);
         }
 
-        return JsonSerializer.Deserialize<List<TorrentFileInfo>>(await netService.Post(requestUrl, parameters));
+        return QBittorrentJsonSerializer.Deserialize<List<TorrentFileInfo>>(await netService.Post(requestUrl, parameters));
     }
 
     /// <summary>
@@ -191,7 +191,7 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
     /// A list of <see cref="EnumPieceState"/> representing the state of each piece; <c>null</c> if retrieval fails.
     /// </returns>
     public async Task<List<EnumPieceState>?> GetTorrentPiecesStates(string hash) =>
-        JsonSerializer.Deserialize<List<EnumPieceState>>(await Put("pieceStates", hash));
+        QBittorrentJsonSerializer.Deserialize<List<EnumPieceState>>(await Put("pieceStates", hash));
 
     /// <summary>
     /// 获取指定种子的每个分片哈希值。<br/>
@@ -203,7 +203,7 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
     /// A list of piece hash strings; <c>null</c> if retrieval fails.
     /// </returns>
     public async Task<List<string>?> GetTorrentPiecesHashes(string hash) =>
-        JsonSerializer.Deserialize<List<string>>(await Put("pieceHashes", hash));
+        QBittorrentJsonSerializer.Deserialize<List<string>>(await Put("pieceHashes", hash));
 
     /// <summary>
     /// 暂停指定种子。<br/>
@@ -683,7 +683,7 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
     public async Task<List<SpeedInfo>?> GetTorrentsDownloadLimit(List<string> hashes)
     {
         var response = await PutHashes("downloadLimit", string.Join('|', hashes));
-        var dict     = JsonSerializer.Deserialize<Dictionary<string, long>>(response);
+        var dict     = QBittorrentJsonSerializer.Deserialize<Dictionary<string, long>>(response);
         return dict?.Select(kv => new SpeedInfo { Hash = kv.Key, Speed = kv.Value }).ToList();
     }
 
@@ -842,7 +842,7 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
     public async Task<List<SpeedInfo>?> GetTorrentsUploadLimit(List<string> hashes)
     {
         var response = await PutHashes("uploadLimit", string.Join('|', hashes));
-        var dict     = JsonSerializer.Deserialize<Dictionary<string, long>>(response);
+        var dict     = QBittorrentJsonSerializer.Deserialize<Dictionary<string, long>>(response);
         return dict?.Select(kv => new SpeedInfo { Hash = kv.Key, Speed = kv.Value }).ToList();
     }
 
@@ -971,7 +971,7 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
     /// 分类信息列表；获取失败返回 <c>null</c>。<br/>
     /// A list of <see cref="TorrentCategory"/> objects; <c>null</c> if retrieval fails.
     /// </returns>
-    public async Task<List<TorrentCategory>?> GetAllCategories() => JsonSerializer.Deserialize<List<TorrentCategory>>(
+    public async Task<List<TorrentCategory>?> GetAllCategories() => QBittorrentJsonSerializer.Deserialize<List<TorrentCategory>>(
          await netService.Get($"{BaseUrl}/categories", targetVersion : ApiVersion.V2_1_1));
 
     /// <summary>
@@ -1201,7 +1201,7 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
     /// 标签名称列表；获取失败返回 <c>null</c>。<br/>
     /// A list of tag names; <c>null</c> if retrieval fails.
     /// </returns>
-    public async Task<List<string>?> GetAllTags() => JsonSerializer.Deserialize<List<string>>(
+    public async Task<List<string>?> GetAllTags() => QBittorrentJsonSerializer.Deserialize<List<string>>(
          await netService.Get($"{BaseUrl}/tags", targetVersion : ApiVersion.V2_3_0));
 
     /// <summary>
