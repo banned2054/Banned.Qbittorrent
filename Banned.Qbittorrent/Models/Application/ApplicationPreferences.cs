@@ -1,5 +1,5 @@
 using Banned.Qbittorrent.Models.Enums;
-using Banned.Qbittorrent.Utils;
+using Banned.Qbittorrent.Serialization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -250,7 +250,7 @@ public sealed class ApplicationPreferences
     public bool? AnonymousMode { get; set; }
 
     [JsonPropertyName("proxy_type")]
-    [JsonConverter(typeof(ProxyTypeJsonConverter))]
+    [JsonConverter(typeof(ProxyTypeConverter))]
     public EnumProxyType? ProxyType { get; set; }
 
     [JsonPropertyName("proxy_ip")]

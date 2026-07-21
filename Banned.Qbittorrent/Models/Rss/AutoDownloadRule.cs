@@ -1,5 +1,5 @@
 using Banned.Qbittorrent.Models.Enums;
-using Banned.Qbittorrent.Utils;
+using Banned.Qbittorrent.Serialization;
 using System.Text.Json.Serialization;
 
 namespace Banned.Qbittorrent.Models.Rss;

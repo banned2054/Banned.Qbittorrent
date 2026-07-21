@@ -2,13 +2,13 @@ using Banned.Qbittorrent.Models.Enums;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Banned.Qbittorrent.Utils;
+namespace Banned.Qbittorrent.Serialization;
 
 /// <summary>
 /// 将代理类型（数字或字符串名）与 <see cref="EnumProxyType"/> 枚举相互转换。<br/>
 /// Converts between proxy types (numeric or string name) and the <see cref="EnumProxyType"/> enum.
 /// </summary>
-public sealed class ProxyTypeJsonConverter : JsonConverter<EnumProxyType?>
+public sealed class ProxyTypeConverter : JsonConverter<EnumProxyType?>
 {
     /// <summary>
     /// 读取并转换 JSON 数据为 <see cref="EnumProxyType"/>。<br/>

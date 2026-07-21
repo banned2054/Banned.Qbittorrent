@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Banned.Qbittorrent.Utils;
+namespace Banned.Qbittorrent.Serialization;
 
 /// <summary>
 /// 将 Unix 时间戳（秒）与 <see cref="DateTimeOffset"/> 相互转换。<br/>

@@ -1,8 +1,9 @@
 using Banned.Qbittorrent.Models.Enums;
+using Banned.Qbittorrent.Utils;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Banned.Qbittorrent.Utils;
+namespace Banned.Qbittorrent.Serialization;
 
 /// <summary>
 /// 将 qBittorrent 种子状态字符串与 <see cref="EnumTorrentState"/> 枚举相互转换。<br/>

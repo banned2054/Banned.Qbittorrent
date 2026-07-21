@@ -1,4 +1,4 @@
-using Banned.Qbittorrent.Utils;
+using Banned.Qbittorrent.Serialization;
 using System.Text.Json.Serialization;
 
 namespace Banned.Qbittorrent.Models.Logging;

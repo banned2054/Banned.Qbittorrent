@@ -1,8 +1,9 @@
 using Banned.Qbittorrent.Models.Enums;
+using Banned.Qbittorrent.Utils;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Banned.Qbittorrent.Utils;
+namespace Banned.Qbittorrent.Serialization;
 
 /// <summary>
 /// 将 qBittorrent 停止条件字符串与 <see cref="EnumStopCondition"/> 枚举相互转换。<br/>

@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Banned.Qbittorrent.Utils;
+namespace Banned.Qbittorrent.Serialization;
 
 /// <summary>
 /// 将逗号分隔的字符串（如 "tag1,tag2"）与 <see cref="List{T}"/> 相互转换。<br/>

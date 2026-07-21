@@ -1,14 +1,14 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Banned.Qbittorrent.Utils;
+namespace Banned.Qbittorrent.Serialization;
 
 /// <summary>
 /// 处理时间跨度转换的抽象基类，支持秒或分钟与 <see cref="TimeSpan"/> 的相互转换。<br/>
 /// Abstract base class for TimeSpan conversion, supporting mapping between seconds or minutes and <see cref="TimeSpan"/>.
 /// </summary>
 /// <param name="isMinutes">是否以分钟为单位。 / Whether the unit is minutes.</param>
-public abstract class BaseTimeSpanConverter(bool isMinutes) : JsonConverter<TimeSpan?>
+public abstract class TimeSpanConverterBase(bool isMinutes) : JsonConverter<TimeSpan?>
 {
     /// <summary>
     /// 读取并解析 JSON 数值为 <see cref="TimeSpan"/>。<br/>
@@ -62,10 +62,10 @@ public abstract class BaseTimeSpanConverter(bool isMinutes) : JsonConverter<Time
 /// 将以“秒”为单位的数值与 <see cref="TimeSpan"/> 相互转换。<br/>
 /// Converts between numeric values in "seconds" and <see cref="TimeSpan"/>.
 /// </summary>
-public class SecondsTimeSpanConverter() : BaseTimeSpanConverter(false);
+public class SecondsTimeSpanConverter() : TimeSpanConverterBase(false);
 
 /// <summary>
 /// 将以“分钟”为单位的数值与 <see cref="TimeSpan"/> 相互转换。<br/>
 /// Converts between numeric values in "minutes" and <see cref="TimeSpan"/>.
 /// </summary>
-public class MinutesTimeSpanConverter() : BaseTimeSpanConverter(true);
+public class MinutesTimeSpanConverter() : TimeSpanConverterBase(true);

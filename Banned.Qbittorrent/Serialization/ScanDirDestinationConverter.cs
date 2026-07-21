@@ -2,7 +2,7 @@ using Banned.Qbittorrent.Models.Application;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Banned.Qbittorrent.Utils;
+namespace Banned.Qbittorrent.Serialization;
 
 /// <summary>
 /// 将监控目录保存位置（数字模式或自定义字符串路径）与 <see cref="ScanDirDestination"/> 相互转换。<br/>
