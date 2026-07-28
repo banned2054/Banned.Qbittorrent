@@ -9,6 +9,7 @@
 		<Authors>banned</Authors>
 		<Copyright>Copyright (c) 2026 banned</Copyright>
 		<ImplicitUsings>enable</ImplicitUsings>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
 		<Nullable>enable</Nullable>
 		<Description>A .NET client library for qBittorrent's Web API</Description>

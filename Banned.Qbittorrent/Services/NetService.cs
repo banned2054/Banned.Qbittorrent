@@ -270,6 +270,7 @@ public class NetService : IDisposable
     /// <param name="opName">操作名称，用于异常显示。 / The operation name used for exception display.</param>
     /// <param name="skipAuthCheck">是否跳过登录状态检查。 / Whether to skip the authentication check.</param>
     /// <param name="ct">取消令牌。 / Cancellation token.</param>
+    /// <param name="maxRetries">覆盖此请求的最大重试次数。 / Maximum retry count override for this request.</param>
     /// <returns>响应体字符串。 / The response body string.</returns>
     /// <exception cref="QbittorrentNotSupportedException">当前 API 版本低于目标版本时抛出。 / Thrown when the current API version is lower than the target version.</exception>
     public async Task<string> Get(string            subPath,
@@ -300,6 +301,7 @@ public class NetService : IDisposable
     /// <param name="opName">操作名称，用于异常显示。 / The operation name used for exception display.</param>
     /// <param name="skipAuthCheck">是否跳过登录状态检查。 / Whether to skip the authentication check.</param>
     /// <param name="ct">取消令牌。 / Cancellation token.</param>
+    /// <param name="maxRetries">覆盖此请求的最大重试次数。 / Maximum retry count override for this request.</param>
     /// <returns>响应体字符串。 / The response body string.</returns>
     public async Task<string> Post(string                      subPath,
                                    Dictionary<string, string>? parameters    = null,
@@ -415,6 +417,7 @@ public class NetService : IDisposable
     /// <param name="requestFactory">用于创建请求消息的工厂方法。 / Factory method to create the request message.</param>
     /// <param name="ct">取消令牌。 / Cancellation token.</param>
     /// <param name="maxRetries">最大重试次数。 / Maximum number of retries.</param>
+    /// <param name="skipAuthRetry">是否跳过身份验证失败后的重新登录重试。 / Whether to skip the login retry after an authentication failure.</param>
     /// <returns>响应体内容。 / Response body content.</returns>
     private async Task<string> ExecuteWithRetry(Func<HttpRequestMessage> requestFactory,
                                                 int?                     maxRetries    = null,

@@ -77,6 +77,7 @@ public class AuthenticationService : IDisposable
     /// Ensures the user is logged in and performs the login operation if necessary.
     /// </summary>
     /// <param name="force">是否强制重新登录。 / Whether to force re-login.</param>
+    /// <param name="ct">取消令牌。 / Cancellation token.</param>
     /// <exception cref="QbittorrentLoginFailedException">登录响应不为 "Ok." 时抛出。 / Thrown when the login response is not "Ok."</exception>
     private async Task EnsureLoggedIn(bool force, CancellationToken ct)
     {

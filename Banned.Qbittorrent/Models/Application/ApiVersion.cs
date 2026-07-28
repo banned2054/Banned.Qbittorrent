@@ -18,18 +18,43 @@ public readonly struct ApiVersion(int major, int minor = 0, int patch = 0)
 
     #region Known Versions
 
+    /// <summary>qBittorrent Web API 2.0.2。<br/>qBittorrent Web API version 2.0.2.</summary>
     public static readonly ApiVersion V2_0_2  = new(2, 0, 2);
+
+    /// <summary>qBittorrent Web API 2.1.0。<br/>qBittorrent Web API version 2.1.0.</summary>
     public static readonly ApiVersion V2_1_0  = new(2, 1);
+
+    /// <summary>qBittorrent Web API 2.1.1。<br/>qBittorrent Web API version 2.1.1.</summary>
     public static readonly ApiVersion V2_1_1  = new(2, 1, 1);
+
+    /// <summary>qBittorrent Web API 2.2.0。<br/>qBittorrent Web API version 2.2.0.</summary>
     public static readonly ApiVersion V2_2_0  = new(2, 2);
+
+    /// <summary>qBittorrent Web API 2.3.0。<br/>qBittorrent Web API version 2.3.0.</summary>
     public static readonly ApiVersion V2_3_0  = new(2, 3);
+
+    /// <summary>qBittorrent Web API 2.5.1。<br/>qBittorrent Web API version 2.5.1.</summary>
     public static readonly ApiVersion V2_5_1  = new(2, 5, 1);
+
+    /// <summary>qBittorrent Web API 2.7.0。<br/>qBittorrent Web API version 2.7.0.</summary>
     public static readonly ApiVersion V2_7_0  = new(2, 7);
+
+    /// <summary>qBittorrent Web API 2.9.1。<br/>qBittorrent Web API version 2.9.1.</summary>
     public static readonly ApiVersion V2_9_1  = new(2, 9, 1);
+
+    /// <summary>qBittorrent Web API 2.11.0。<br/>qBittorrent Web API version 2.11.0.</summary>
     public static readonly ApiVersion V2_11_0 = new(2, 11);
+
+    /// <summary>qBittorrent Web API 2.11.3。<br/>qBittorrent Web API version 2.11.3.</summary>
     public static readonly ApiVersion V2_11_3 = new(2, 11, 3);
+
+    /// <summary>qBittorrent Web API 2.11.5。<br/>qBittorrent Web API version 2.11.5.</summary>
     public static readonly ApiVersion V2_11_5 = new(2, 11, 5);
+
+    /// <summary>qBittorrent Web API 2.12.1。<br/>qBittorrent Web API version 2.12.1.</summary>
     public static readonly ApiVersion V2_12_1 = new(2, 12, 1);
+
+    /// <summary>qBittorrent Web API 2.15.1。<br/>qBittorrent Web API version 2.15.1.</summary>
     public static readonly ApiVersion V2_15_1 = new(2, 15, 1);
 
     #endregion
@@ -127,11 +152,40 @@ public readonly struct ApiVersion(int major, int minor = 0, int patch = 0)
     /// <inheritdoc />
     public override int GetHashCode() => HashCode.Combine(Major, Minor, Patch);
 
+    /// <summary>判断左侧版本是否高于右侧版本。<br/>Determines whether the left version is greater than the right version.</summary>
+    /// <param name="a">左侧版本。 / The left version.</param>
+    /// <param name="b">右侧版本。 / The right version.</param>
+    /// <returns>左侧版本较高时为 <see langword="true"/>。 / <see langword="true"/> when the left version is greater.</returns>
     public static bool operator >(ApiVersion  a, ApiVersion b) => a.CompareTo(b) > 0;
+
+    /// <summary>判断左侧版本是否低于右侧版本。<br/>Determines whether the left version is less than the right version.</summary>
+    /// <param name="a">左侧版本。 / The left version.</param>
+    /// <param name="b">右侧版本。 / The right version.</param>
+    /// <returns>左侧版本较低时为 <see langword="true"/>。 / <see langword="true"/> when the left version is less.</returns>
     public static bool operator <(ApiVersion  a, ApiVersion b) => a.CompareTo(b) < 0;
+
+    /// <summary>判断左侧版本是否不低于右侧版本。<br/>Determines whether the left version is greater than or equal to the right version.</summary>
+    /// <param name="a">左侧版本。 / The left version.</param>
+    /// <param name="b">右侧版本。 / The right version.</param>
+    /// <returns>左侧版本不低于右侧版本时为 <see langword="true"/>。 / <see langword="true"/> when the left version is greater than or equal.</returns>
     public static bool operator >=(ApiVersion a, ApiVersion b) => a.CompareTo(b) >= 0;
+
+    /// <summary>判断左侧版本是否不高于右侧版本。<br/>Determines whether the left version is less than or equal to the right version.</summary>
+    /// <param name="a">左侧版本。 / The left version.</param>
+    /// <param name="b">右侧版本。 / The right version.</param>
+    /// <returns>左侧版本不高于右侧版本时为 <see langword="true"/>。 / <see langword="true"/> when the left version is less than or equal.</returns>
     public static bool operator <=(ApiVersion a, ApiVersion b) => a.CompareTo(b) <= 0;
+
+    /// <summary>判断两个版本是否相等。<br/>Determines whether two versions are equal.</summary>
+    /// <param name="a">左侧版本。 / The left version.</param>
+    /// <param name="b">右侧版本。 / The right version.</param>
+    /// <returns>两个版本相等时为 <see langword="true"/>。 / <see langword="true"/> when the versions are equal.</returns>
     public static bool operator ==(ApiVersion a, ApiVersion b) => a.Equals(b);
+
+    /// <summary>判断两个版本是否不相等。<br/>Determines whether two versions are not equal.</summary>
+    /// <param name="a">左侧版本。 / The left version.</param>
+    /// <param name="b">右侧版本。 / The right version.</param>
+    /// <returns>两个版本不相等时为 <see langword="true"/>。 / <see langword="true"/> when the versions are not equal.</returns>
     public static bool operator !=(ApiVersion a, ApiVersion b) => !a.Equals(b);
 
     /// <inheritdoc />

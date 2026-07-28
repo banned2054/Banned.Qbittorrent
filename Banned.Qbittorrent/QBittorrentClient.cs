@@ -60,8 +60,8 @@ public class QBittorrentClient : IDisposable
     private readonly NetService _network;
 
     /// <summary>
-    /// 私有构造函数，通过静态工厂方法 <see cref="Create"/> 进行初始化。<br/>
-    /// Private constructor, initialized via the static factory method <see cref="Create"/>.
+    /// 私有构造函数，通过静态工厂方法 <see cref="Create(string, string, string, QBittorrentClientOptions)"/> 进行初始化。<br/>
+    /// Private constructor, initialized via the static factory method <see cref="Create(string, string, string, QBittorrentClientOptions)"/>.
     /// </summary>
     private QBittorrentClient(
         ApplicationService    app,
