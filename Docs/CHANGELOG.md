@@ -6,6 +6,7 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## 📘 Versions
 
+- [v1.5.1](#-release-v151--xml-documentation-support)
 - [v1.5.0](#-release-v150--nativeaot--trimming-support)
 - [v1.4.0](#-release-v140--dual-stack-connection-recovery--diagnostics)
 - [v1.3.1](#-release-v131--authentication-recovery-fixes)
@@ -20,6 +21,39 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 - [v0.0.7](#-release-v007--qbittorrent-net-client-refinement)
 - [v0.0.6](#-release-v006--qbittorrent-net-client-enhancement)
 - [v0.0.5](#-release-v005--qbittorrent-net-client-update)
+
+## 🚀 Release v1.5.1 — XML Documentation Support
+
+**Release Date:** 2026-07-28
+
+This patch release adds XML documentation files to package builds and completes the documentation coverage of the public API.
+
+---
+
+### ✨ Added
+
+* **NuGet IntelliSense Documentation**
+  - Enabled XML documentation generation for every supported target framework.
+  - Package builds now produce documentation alongside the library assembly for IDE IntelliSense.
+
+* **Public API Documentation**
+  - Added bilingual documentation for all `ApplicationPreferences` properties.
+  - Documented known `ApiVersion` values, comparison operators, and public exception types.
+
+---
+
+### 🐞 Fixed
+
+* **XML Documentation Diagnostics**
+  - Completed missing parameter documentation.
+  - Disambiguated overloaded factory method references in documentation links.
+  - Eliminated all XML documentation warnings from library builds.
+
+---
+
+### 📦 Notes
+
+This is a backward-compatible documentation and packaging update. It does not change runtime behavior or require consumer code changes.
 
 ## 🚀 Release v1.5.0 — NativeAOT & Trimming Support
 

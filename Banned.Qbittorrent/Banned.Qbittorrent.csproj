@@ -3,7 +3,7 @@
 	<PropertyGroup>
 		<TargetFrameworks>net10.0;net9.0;net8.0</TargetFrameworks>
 		<PackageId>Banned.Qbittorrent</PackageId>
-		<Version>1.5.0</Version>
+		<Version>1.5.1</Version>
 		<IsAotCompatible>true</IsAotCompatible>
 		<RepositoryUrl>https://github.com/banned2054/Banned.Qbittorrent</RepositoryUrl>
 		<Authors>banned</Authors>
@@ -15,11 +15,11 @@
 		<Description>A .NET client library for qBittorrent's Web API</Description>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageReleaseNotes>
-			Version 1.5.0 adds NativeAOT and trimming support.
+			Version 1.5.1 adds XML documentation to package builds.
 
-			- Replaced reflection-based JSON serialization with source-generated metadata for every internal API contract.
-			- Enabled AOT and trimming compatibility analyzers for all target frameworks.
-			- Added a NativeAOT smoke application and CI validation that publishes and runs a native executable.
+			- Generates XML documentation for every supported target framework.
+			- Completes documentation coverage for public application preferences, API versions, and exception types.
+			- Fixes parameter documentation and overloaded method references.
 		</PackageReleaseNotes>
 		<PackageTags>qbittorrent;api;dotnet;httpclient</PackageTags>
 	</PropertyGroup>
