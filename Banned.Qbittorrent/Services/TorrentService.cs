@@ -119,6 +119,17 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
     }
 
     /// <summary>
+    /// 获取当前种子数量。<br/>
+    /// Gets the current torrent count.
+    /// </summary>
+    /// <returns>种子数量。<br/>The torrent count.</returns>
+    public async Task<int> GetTorrentCount()
+    {
+        var response = await netService.Post($"{BaseUrl}/count", targetVersion : ApiVersion.V2_9_3);
+        return int.Parse(response, CultureInfo.InvariantCulture);
+    }
+
+    /// <summary>
     /// 获取指定种子的通用属性。<br/>
     /// Get generic properties of the specified torrent.
     /// </summary>
@@ -155,6 +166,65 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
         QBittorrentJsonSerializer.Deserialize<List<TorrentWebSeed>>(await Put("webseeds", hash));
 
     /// <summary>
+    /// 向指定种子添加 Web 种子。<br/>
+    /// Adds web seeds to the specified torrent.
+    /// </summary>
+    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
+    /// <param name="urls">Web 种子 URL 列表。<br/>Web seed URL list.</param>
+    public async Task AddTorrentWebSeeds(string hash, List<string> urls)
+    {
+        ArgumentNullException.ThrowIfNull(urls);
+        if (urls.Count == 0) throw new ArgumentException("At least one web seed URL is required.", nameof(urls));
+
+        var parameters = new Dictionary<string, string>
+        {
+            { "hash", StringUtils.NormalizeHash(hash) },
+            { "urls", StringUtils.Join('|', urls) }
+        };
+        await netService.Post($"{BaseUrl}/addWebSeeds", parameters, ApiVersion.V2_11_3);
+    }
+
+    /// <summary>
+    /// 编辑指定种子的 Web 种子。<br/>
+    /// Edits a web seed for the specified torrent.
+    /// </summary>
+    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
+    /// <param name="originalUrl">要替换的 Web 种子 URL。<br/>Web seed URL to replace.</param>
+    /// <param name="newUrl">新的 Web 种子 URL。<br/>New web seed URL.</param>
+    public async Task EditTorrentWebSeed(string hash, string originalUrl, string newUrl)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(originalUrl);
+        ArgumentException.ThrowIfNullOrWhiteSpace(newUrl);
+
+        var parameters = new Dictionary<string, string>
+        {
+            { "hash", StringUtils.NormalizeHash(hash) },
+            { "origUrl", originalUrl },
+            { "newUrl", newUrl }
+        };
+        await netService.Post($"{BaseUrl}/editWebSeed", parameters, ApiVersion.V2_11_3);
+    }
+
+    /// <summary>
+    /// 从指定种子移除 Web 种子。<br/>
+    /// Removes web seeds from the specified torrent.
+    /// </summary>
+    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
+    /// <param name="urls">要移除的 Web 种子 URL 列表。<br/>Web seed URL list to remove.</param>
+    public async Task RemoveTorrentWebSeeds(string hash, List<string> urls)
+    {
+        ArgumentNullException.ThrowIfNull(urls);
+        if (urls.Count == 0) throw new ArgumentException("At least one web seed URL is required.", nameof(urls));
+
+        var parameters = new Dictionary<string, string>
+        {
+            { "hash", StringUtils.NormalizeHash(hash) },
+            { "urls", StringUtils.Join('|', urls) }
+        };
+        await netService.Post($"{BaseUrl}/removeWebSeeds", parameters, ApiVersion.V2_11_3);
+    }
+
+    /// <summary>
     /// 获取种子的文件列表。<br/>
     /// Get the file list of a torrent.
     /// </summary>
@@ -178,7 +248,8 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
             parameters["indexes"] = StringUtils.Join('|', indexes);
         }
 
-        return QBittorrentJsonSerializer.Deserialize<List<TorrentFileInfo>>(await netService.Post(requestUrl, parameters));
+        return QBittorrentJsonSerializer.Deserialize<List<TorrentFileInfo>>(await netService.Post(requestUrl,
+                                                                                parameters));
     }
 
     /// <summary>
@@ -204,6 +275,18 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
     /// </returns>
     public async Task<List<string>?> GetTorrentPiecesHashes(string hash) =>
         QBittorrentJsonSerializer.Deserialize<List<string>>(await Put("pieceHashes", hash));
+
+    /// <summary>
+    /// 导出指定种子的 .torrent 文件。<br/>
+    /// Exports the .torrent file for the specified torrent.
+    /// </summary>
+    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
+    /// <returns>.torrent 文件内容。<br/>The .torrent file content.</returns>
+    public async Task<byte[]> ExportTorrent(string hash)
+    {
+        var parameters = new Dictionary<string, string> { { "hash", StringUtils.NormalizeHash(hash) } };
+        return await netService.PostBytes($"{BaseUrl}/export", parameters, ApiVersion.V2_8_14);
+    }
 
     /// <summary>
     /// 暂停指定种子。<br/>
@@ -911,6 +994,57 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
         await SetTorrentLocation(StringUtils.Join('|', hashes), newLocation);
 
     /// <summary>
+    /// 设置指定种子的最终保存路径。<br/>
+    /// Sets the final save path for the specified torrent.
+    /// </summary>
+    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
+    /// <param name="savePath">最终保存路径。<br/>Final save path.</param>
+    public async Task SetTorrentSavePath(string hash, string savePath) =>
+        await SetTorrentPath("setSavePath", hash, savePath);
+
+    /// <summary>
+    /// 设置多个种子的最终保存路径。<br/>
+    /// Sets the final save path for multiple torrents.
+    /// </summary>
+    /// <param name="hashes">种子哈希值列表。<br/>Torrent hash value list.</param>
+    /// <param name="savePath">最终保存路径。<br/>Final save path.</param>
+    public async Task SetTorrentsSavePath(List<string> hashes, string savePath) =>
+        await SetTorrentSavePath(StringUtils.NormalizeHash(hashes), savePath);
+
+    /// <summary>
+    /// 设置所有种子的最终保存路径。<br/>
+    /// Sets the final save path for all torrents.
+    /// </summary>
+    /// <param name="savePath">最终保存路径。<br/>Final save path.</param>
+    public async Task SetAllTorrentsSavePath(string savePath) => await SetTorrentSavePath("all", savePath);
+
+    /// <summary>
+    /// 设置指定种子完成下载前使用的下载路径。<br/>
+    /// Sets the download path used by the specified torrent before completion.
+    /// </summary>
+    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
+    /// <param name="downloadPath">下载路径。<br/>Download path.</param>
+    public async Task SetTorrentDownloadPath(string hash, string downloadPath) =>
+        await SetTorrentPath("setDownloadPath", hash, downloadPath);
+
+    /// <summary>
+    /// 设置多个种子完成下载前使用的下载路径。<br/>
+    /// Sets the download path used by multiple torrents before completion.
+    /// </summary>
+    /// <param name="hashes">种子哈希值列表。<br/>Torrent hash value list.</param>
+    /// <param name="downloadPath">下载路径。<br/>Download path.</param>
+    public async Task SetTorrentsDownloadPath(List<string> hashes, string downloadPath) =>
+        await SetTorrentDownloadPath(StringUtils.NormalizeHash(hashes), downloadPath);
+
+    /// <summary>
+    /// 设置所有种子完成下载前使用的下载路径。<br/>
+    /// Sets the download path used by all torrents before completion.
+    /// </summary>
+    /// <param name="downloadPath">下载路径。<br/>Download path.</param>
+    public async Task SetAllTorrentsDownloadPath(string downloadPath) =>
+        await SetTorrentDownloadPath("all", downloadPath);
+
+    /// <summary>
     /// 重命名指定种子。<br/>
     /// Rename the specified torrent.
     /// </summary>
@@ -968,10 +1102,11 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
     /// Get all categories.
     /// </summary>
     /// <returns>
-    /// 分类信息列表；获取失败返回 <c>null</c>。<br/>
-    /// A list of <see cref="TorrentCategory"/> objects; <c>null</c> if retrieval fails.
+    /// 以分类名称为键的分类信息字典；获取失败返回 <c>null</c>。<br/>
+    /// A dictionary of category information keyed by category name; <c>null</c> if retrieval fails.
     /// </returns>
-    public async Task<List<TorrentCategory>?> GetAllCategories() => QBittorrentJsonSerializer.Deserialize<List<TorrentCategory>>(
+    public async Task<Dictionary<string, TorrentCategory>?> GetAllCategories() =>
+        QBittorrentJsonSerializer.Deserialize<Dictionary<string, TorrentCategory>>(
          await netService.Get($"{BaseUrl}/categories", targetVersion : ApiVersion.V2_1_1));
 
     /// <summary>
@@ -1145,6 +1280,39 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
         await AddTorrentTag(StringUtils.Join('|', hashes), StringUtils.Join(',', tags));
 
     /// <summary>
+    /// 替换指定种子的标签，并自动创建尚不存在的标签。<br/>
+    /// Replaces tags for the specified torrent and creates missing tags automatically.
+    /// </summary>
+    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
+    /// <param name="tags">新的标签列表。<br/>New tag list.</param>
+    public async Task SetTorrentTags(string hash, List<string> tags)
+    {
+        ArgumentNullException.ThrowIfNull(tags);
+        var parameters = new Dictionary<string, string>
+        {
+            { "hashes", StringUtils.NormalizeHash(hash) },
+            { "tags", StringUtils.Join(',', tags) }
+        };
+        await netService.Post($"{BaseUrl}/setTags", parameters, ApiVersion.V2_11_4);
+    }
+
+    /// <summary>
+    /// 替换多个种子的标签。<br/>
+    /// Replaces tags for multiple torrents.
+    /// </summary>
+    /// <param name="hashes">种子哈希值列表。<br/>Torrent hash value list.</param>
+    /// <param name="tags">新的标签列表。<br/>New tag list.</param>
+    public async Task SetTorrentsTags(List<string> hashes, List<string> tags) =>
+        await SetTorrentTags(StringUtils.NormalizeHash(hashes), tags);
+
+    /// <summary>
+    /// 替换所有种子的标签。<br/>
+    /// Replaces tags for all torrents.
+    /// </summary>
+    /// <param name="tags">新的标签列表。<br/>New tag list.</param>
+    public async Task SetAllTorrentsTags(List<string> tags) => await SetTorrentTags("all", tags);
+
+    /// <summary>
     /// 移除指定种子的标签。<br/>
     /// Remove a tag from the specified torrent.
     /// </summary>
@@ -1202,7 +1370,7 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
     /// A list of tag names; <c>null</c> if retrieval fails.
     /// </returns>
     public async Task<List<string>?> GetAllTags() => QBittorrentJsonSerializer.Deserialize<List<string>>(
-         await netService.Get($"{BaseUrl}/tags", targetVersion : ApiVersion.V2_3_0));
+     await netService.Get($"{BaseUrl}/tags", targetVersion : ApiVersion.V2_3_0));
 
     /// <summary>
     /// 创建一个标签。<br/>
@@ -1582,6 +1750,17 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
         };
 
         await netService.Post($"{BaseUrl}/setComment", parameters, ApiVersion.V2_12_1);
+    }
+
+    private async Task SetTorrentPath(string subPath, string hash, string path)
+    {
+        ArgumentNullException.ThrowIfNull(path);
+        var parameters = new Dictionary<string, string>
+        {
+            { "id", StringUtils.NormalizeHash(hash) },
+            { "path", path }
+        };
+        await netService.Post($"{BaseUrl}/{subPath}", parameters, ApiVersion.V2_8_4);
     }
 
     private async Task<string> Put(string subPath, string hash, ApiVersion? targetVersion = null)

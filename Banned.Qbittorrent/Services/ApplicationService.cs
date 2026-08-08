@@ -1,5 +1,6 @@
 using Banned.Qbittorrent.Models.Application;
 using Banned.Qbittorrent.Serialization;
+using System.Text.Json;
 
 namespace Banned.Qbittorrent.Services;
 
@@ -47,10 +48,10 @@ public class ApplicationService(NetService netService)
     /// 构建信息。<br/>
     /// Build information.
     /// </returns>
-    public async Task<string> GetBuildInfo()
+    public async Task<BuildInfo?> GetBuildInfo()
     {
-        var result = await netService.Get($"{BaseUrl}/buildInfo", ApiVersion.V2_3_0);
-        return result;
+        var response = await netService.Get($"{BaseUrl}/buildInfo", ApiVersion.V2_3_0);
+        return QBittorrentJsonSerializer.Deserialize<BuildInfo>(response);
     }
 
     /// <summary>
@@ -172,5 +173,72 @@ public class ApplicationService(NetService netService)
             { "json", request }
         };
         await netService.Post($"{BaseUrl}/setCookies", parameters, ApiVersion.V2_11_3);
+    }
+
+    /// <summary>
+    /// 获取 qBittorrent 主机上的网络接口。<br/>
+    /// Gets the network interfaces on the qBittorrent host.
+    /// </summary>
+    /// <returns>网络接口列表。<br/>The network interface list.</returns>
+    public async Task<List<NetworkInterfaceInfo>> GetNetworkInterfaces()
+    {
+        var response = await netService.Get($"{BaseUrl}/networkInterfaceList", ApiVersion.V2_3_0);
+        return QBittorrentJsonSerializer.Deserialize<List<NetworkInterfaceInfo>>(response) ?? [];
+    }
+
+    /// <summary>
+    /// 获取指定网络接口的地址；接口名为空时返回所有地址。<br/>
+    /// Gets addresses for a network interface, or all addresses when the interface name is empty.
+    /// </summary>
+    /// <param name="interfaceName">网络接口名称。<br/>Network interface name.</param>
+    /// <returns>网络地址列表。<br/>The network address list.</returns>
+    public async Task<List<string>> GetNetworkInterfaceAddresses(string interfaceName = "")
+    {
+        var parameters = new Dictionary<string, string> { { "iface", interfaceName } };
+        var response   = await netService.Post($"{BaseUrl}/networkInterfaceAddressList", parameters, ApiVersion.V2_3_0);
+        return QBittorrentJsonSerializer.Deserialize<List<string>>(response) ?? [];
+    }
+
+    /// <summary>
+    /// 使用当前应用程序设置发送测试邮件。<br/>
+    /// Sends a test email using the current application settings.
+    /// </summary>
+    public async Task SendTestEmail() =>
+        await netService.Post($"{BaseUrl}/sendTestEmail", targetVersion : ApiVersion.V2_10_4);
+
+    /// <summary>
+    /// 获取目录中的文件和子目录路径。<br/>
+    /// Gets file and subdirectory paths in a directory.
+    /// </summary>
+    /// <param name="directoryPath">qBittorrent 主机上的目录路径。<br/>Directory path on the qBittorrent host.</param>
+    /// <returns>目录内容路径列表。<br/>The directory content paths.</returns>
+    public async Task<List<string>> GetDirectoryContent(string directoryPath)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(directoryPath);
+        var parameters = new Dictionary<string, string>
+        {
+            { "dirPath", directoryPath },
+            { "withMetadata", "false" }
+        };
+        var response = await netService.Post($"{BaseUrl}/getDirectoryContent", parameters, ApiVersion.V2_11_0);
+        return QBittorrentJsonSerializer.Deserialize<List<string>>(response) ?? [];
+    }
+
+    /// <summary>
+    /// 获取包含元数据的目录内容。<br/>
+    /// Gets directory contents including metadata.
+    /// </summary>
+    /// <param name="directoryPath">qBittorrent 主机上的目录路径。<br/>Directory path on the qBittorrent host.</param>
+    /// <returns>每个目录项的元数据。<br/>Metadata for each directory entry.</returns>
+    public async Task<List<Dictionary<string, JsonElement>>> GetDirectoryContentWithMetadata(string directoryPath)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(directoryPath);
+        var parameters = new Dictionary<string, string>
+        {
+            { "dirPath", directoryPath },
+            { "withMetadata", "true" }
+        };
+        var response = await netService.Post($"{BaseUrl}/getDirectoryContent", parameters, ApiVersion.V2_11_8);
+        return QBittorrentJsonSerializer.Deserialize<List<Dictionary<string, JsonElement>>>(response) ?? [];
     }
 }

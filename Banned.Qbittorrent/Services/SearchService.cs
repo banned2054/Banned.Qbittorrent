@@ -29,7 +29,7 @@ public class SearchService(NetService netService)
             { "plugins", StringUtils.Join('|', plugins) },
             { "category", category },
         };
-        var result = await netService.Post(BaseUrl, parameters, ApiVersion.V2_1_1);
+        var result = await netService.Post($"{BaseUrl}/start", parameters, ApiVersion.V2_1_1);
         return QBittorrentJsonSerializer.Deserialize<SearchJob>(result);
     }
 
@@ -116,10 +116,10 @@ public class SearchService(NetService netService)
     /// Get all installed search plugins.
     /// </summary>
     /// <returns>搜索插件列表。A list of search plugins.</returns>
-    public async Task<SearchPlugins?> GetSearchPlugins()
+    public async Task<List<SearchPlugins>> GetSearchPlugins()
     {
         var response = await netService.Get($"{BaseUrl}/plugins", ApiVersion.V2_1_1);
-        return QBittorrentJsonSerializer.Deserialize<SearchPlugins>(response);
+        return QBittorrentJsonSerializer.Deserialize<List<SearchPlugins>>(response) ?? [];
     }
 
     /// <summary>
@@ -186,4 +186,23 @@ public class SearchService(NetService netService)
     /// </summary>
     public async Task UpdateSearchPlugins() =>
         await netService.Post($"{BaseUrl}/updatePlugins", null, ApiVersion.V2_1_1);
+
+    /// <summary>
+    /// 通过搜索插件下载种子文件或磁力链接。<br/>
+    /// Downloads a torrent file or magnet link through a search plugin.
+    /// </summary>
+    /// <param name="torrentUrl">种子文件 URL 或磁力链接。<br/>Torrent file URL or magnet link.</param>
+    /// <param name="pluginName">搜索插件名称。<br/>Search plugin name.</param>
+    public async Task DownloadTorrent(string torrentUrl, string pluginName)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(torrentUrl);
+        ArgumentException.ThrowIfNullOrWhiteSpace(pluginName);
+
+        var parameters = new Dictionary<string, string>
+        {
+            { "torrentUrl", torrentUrl },
+            { "pluginName", pluginName }
+        };
+        await netService.Post($"{BaseUrl}/downloadTorrent", parameters, ApiVersion.V2_11_0);
+    }
 }

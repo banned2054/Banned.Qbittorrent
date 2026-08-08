@@ -13,6 +13,8 @@ using System.Text.Json.Serialization.Metadata;
 namespace Banned.Qbittorrent.Serialization;
 
 [JsonSerializable(typeof(ProcessInfo))]
+[JsonSerializable(typeof(BuildInfo))]
+[JsonSerializable(typeof(List<NetworkInterfaceInfo>))]
 [JsonSerializable(typeof(ApplicationPreferences))]
 [JsonSerializable(typeof(List<Cookie>))]
 [JsonSerializable(typeof(TransferInfo))]
@@ -24,14 +26,15 @@ namespace Banned.Qbittorrent.Serialization;
 [JsonSerializable(typeof(List<EnumPieceState>))]
 [JsonSerializable(typeof(List<string>))]
 [JsonSerializable(typeof(Dictionary<string, long>))]
-[JsonSerializable(typeof(List<TorrentCategory>))]
+[JsonSerializable(typeof(Dictionary<string, TorrentCategory>))]
 [JsonSerializable(typeof(MainData))]
 [JsonSerializable(typeof(PeerData))]
 [JsonSerializable(typeof(SearchJob))]
 [JsonSerializable(typeof(SearchStatus[]))]
 [JsonSerializable(typeof(SearchResult))]
-[JsonSerializable(typeof(SearchPlugins))]
+[JsonSerializable(typeof(List<SearchPlugins>))]
 [JsonSerializable(typeof(Dictionary<string, JsonElement>))]
+[JsonSerializable(typeof(List<Dictionary<string, JsonElement>>))]
 [JsonSerializable(typeof(AutoDownloadRule))]
 [JsonSerializable(typeof(Dictionary<string, AutoDownloadRule>))]
 [JsonSerializable(typeof(Dictionary<string, string[]>))]
@@ -42,7 +45,11 @@ internal sealed partial class QBittorrentJsonContext : JsonSerializerContext;
 internal static class QBittorrentJsonSerializer
 {
     private static readonly QBittorrentJsonContext IgnoreNullContext = new(
-        new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull });
+                                                                           new JsonSerializerOptions
+                                                                           {
+                                                                               DefaultIgnoreCondition =
+                                                                                   JsonIgnoreCondition.WhenWritingNull
+                                                                           });
 
     public static T? Deserialize<T>(string json) =>
         JsonSerializer.Deserialize(json, GetTypeInfo<T>(QBittorrentJsonContext.Default));
@@ -55,5 +62,5 @@ internal static class QBittorrentJsonSerializer
 
     private static JsonTypeInfo<T> GetTypeInfo<T>(JsonSerializerContext context) =>
         context.GetTypeInfo(typeof(T)) as JsonTypeInfo<T>
-        ?? throw new InvalidOperationException($"No JSON metadata was generated for {typeof(T)}.");
+     ?? throw new InvalidOperationException($"No JSON metadata was generated for {typeof(T)}.");
 }

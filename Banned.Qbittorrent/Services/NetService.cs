@@ -88,7 +88,7 @@ public class NetService : IDisposable
     /// <param name="httpClient">可选的 HttpClient 实例。 / Optional HttpClient instance.</param>
     /// <param name="timeout">可选的请求超时时间，为 null 时默认 15 秒。 / Optional request timeout, default 15 seconds when null.</param>
     public NetService(string baseUrl, HttpClient? httpClient = null, TimeSpan? timeout = null) : this(baseUrl,
-             new QBittorrentClientOptions { HttpClient = httpClient, Timeout = timeout ?? DefaultRequestTimeout })
+        new QBittorrentClientOptions { HttpClient = httpClient, Timeout = timeout ?? DefaultRequestTimeout })
     {
     }
 
@@ -126,12 +126,12 @@ public class NetService : IDisposable
             _cookieContainer = new CookieContainer();
             _ownsHttpClient  = true;
             _httpClientFactory = httpClientFactory ?? (preference => HttpClientUtils.CreateDefaultHttpClient(
-                 _cookieContainer,
-                 _configuredTimeout,
-                 _connectTimeout,
-                 preference,
-                 _addressResolver,
-                 _diagnosticSink == null ? null : EmitConnectionDiagnostic));
+             _cookieContainer,
+             _configuredTimeout,
+             _connectTimeout,
+             preference,
+             _addressResolver,
+             _diagnosticSink == null ? null : EmitConnectionDiagnostic));
             _client = CreateDefaultHttpClient(_addressFamilyPreference);
         }
     }
@@ -168,9 +168,7 @@ public class NetService : IDisposable
         var hasIPv6 = addresses.Any(address => address.AddressFamily == AddressFamily.InterNetworkV6);
         if (!hasIPv4 || !hasIPv6)
         {
-            AppendDiagnostic(
-                             diagnostics,
-                             requestId,
+            AppendDiagnostic(diagnostics, requestId,
                              $"automatic IPv4 fallback skipped because DNS is not dual-stack; hasIPv4={hasIPv4} hasIPv6={hasIPv6}");
             return false;
         }
@@ -195,9 +193,7 @@ public class NetService : IDisposable
 
         if (upgraded)
         {
-            AppendDiagnostic(
-                             diagnostics,
-                             requestId,
+            AppendDiagnostic(diagnostics, requestId,
                              $"automatic IPv4 fallback activated oldPolicy={AddressFamilyPreference.System} " +
                              $"newPolicy={AddressFamilyPreference.PreferIPv4} generation={_clientGeneration} " +
                              $"oldHttpClientId={previous!.GetHashCode()} newHttpClientId={replacement!.GetHashCode()} " +
@@ -205,9 +201,7 @@ public class NetService : IDisposable
         }
         else
         {
-            AppendDiagnostic(
-                             diagnostics,
-                             requestId,
+            AppendDiagnostic(diagnostics, requestId,
                              $"automatic IPv4 fallback already activated by another request; generation={_clientGeneration}");
         }
 
@@ -229,9 +223,7 @@ public class NetService : IDisposable
             var addresses = await _addressResolver(_baseUrl.DnsSafeHost, timeoutCts.Token).ConfigureAwait(false);
             if (DetailedDiagnosticsEnabled)
             {
-                AppendDiagnostic(
-                                 diagnostics,
-                                 requestId,
+                AppendDiagnostic(diagnostics, requestId,
                                  $"fallback DNS candidates=[{string.Join(", ", addresses.Select(address => $"{address.AddressFamily}:{address}"))}]");
             }
 
@@ -244,9 +236,7 @@ public class NetService : IDisposable
         }
         catch (Exception exception) when (exception is SocketException or HttpRequestException)
         {
-            AppendDiagnostic(
-                             diagnostics,
-                             requestId,
+            AppendDiagnostic(diagnostics, requestId,
                              $"automatic IPv4 fallback DNS check failed: {DescribeException(exception)}");
             return [];
         }
@@ -328,6 +318,41 @@ public class NetService : IDisposable
 
             return request;
         }, maxRetries, ct, skipAuthRetry : IsAuthenticationEndpoint(subPath)).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// 发起异步 POST 请求并以字节数组读取响应。<br/>
+    /// Performs an asynchronous POST request and reads the response as a byte array.
+    /// </summary>
+    /// <param name="subPath">请求的子路径。 / The sub-path of the request.</param>
+    /// <param name="parameters">表单参数。 / Form parameters.</param>
+    /// <param name="targetVersion">该接口要求的最低 API 版本。 / The minimum API version required by this endpoint.</param>
+    /// <param name="opName">操作名称，用于异常显示。 / The operation name used for exception display.</param>
+    /// <param name="ct">取消令牌。 / Cancellation token.</param>
+    /// <returns>响应体字节数组。 / The response body byte array.</returns>
+    public async Task<byte[]> PostBytes(string                      subPath,
+                                        Dictionary<string, string>? parameters    = null,
+                                        ApiVersion?                 targetVersion = null,
+                                        string?                     opName        = null,
+                                        CancellationToken           ct            = default)
+    {
+        if (_apiVersion < targetVersion)
+            throw new QbittorrentNotSupportedException(opName ?? subPath, targetVersion.Value, _apiVersion);
+
+        if (!IsAuthenticationEndpoint(subPath))
+            await EnsureLoggedIn(force : false, ct).ConfigureAwait(false);
+
+        return await ExecuteWithRetry(() =>
+                                      {
+                                          var request =
+                                              new HttpRequestMessage(HttpMethod.Post, CombineUrl(subPath));
+                                          if (parameters != null)
+                                              request.Content = new FormUrlEncodedContent(parameters);
+                                          return Task.FromResult(request);
+                                      },
+                                      static (content, cancellationToken) =>
+                                          content.ReadAsByteArrayAsync(cancellationToken), ct : ct,
+                                      skipAuthRetry : IsAuthenticationEndpoint(subPath)).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -442,19 +467,31 @@ public class NetService : IDisposable
                                                 CancellationToken              ct            = default,
                                                 bool                           skipAuthRetry = false)
     {
-        Exception?           lastException      = null;
-        HttpResponseMessage? lastResponse       = null;
-        var                  lastBody           = string.Empty;
-        var                  actualMaxRetries   = maxRetries ?? MaxRetries;
-        var                  lastRequestInfo    = "unknown request";
-        var                  authRetryAttempted = false;
-        HttpMethod?          lastRequestMethod  = null;
-        var                  requestId          = Interlocked.Increment(ref _requestSequence);
-        var                  totalStopwatch     = Stopwatch.StartNew();
-        var                  diagnostics        = new StringBuilder();
+        return await ExecuteWithRetry(requestFactory,
+                                      static (content, cancellationToken) =>
+                                          content.ReadAsStringAsync(cancellationToken), maxRetries, ct, skipAuthRetry)
+           .ConfigureAwait(false);
+    }
 
-        AppendDiagnostic(
-                         diagnostics, requestId,
+    private async Task<T> ExecuteWithRetry<T>(Func<Task<HttpRequestMessage>>                requestFactory,
+                                              Func<HttpContent, CancellationToken, Task<T>> responseReader,
+                                              int?                                          maxRetries    = null,
+                                              CancellationToken                             ct            = default,
+                                              bool                                          skipAuthRetry = false)
+    {
+        Exception?           lastException     = null;
+        HttpResponseMessage? lastResponse      = null;
+        HttpMethod?          lastRequestMethod = null;
+
+        var lastBody           = string.Empty;
+        var actualMaxRetries   = maxRetries ?? MaxRetries;
+        var lastRequestInfo    = "unknown request";
+        var authRetryAttempted = false;
+        var requestId          = Interlocked.Increment(ref _requestSequence);
+        var totalStopwatch     = Stopwatch.StartNew();
+        var diagnostics        = new StringBuilder();
+
+        AppendDiagnostic(diagnostics, requestId,
                          $"BEGIN maxRetries={actualMaxRetries} configuredMaxRetries={MaxRetries} " +
                          $"overrideMaxRetries={(maxRetries.HasValue ? maxRetries.Value.ToString() : "<null>")} " +
                          $"httpClientTimeout={_client.Timeout} ownsHttpClient={_ownsHttpClient} " +
@@ -466,8 +503,7 @@ public class NetService : IDisposable
                          $"os={System.Runtime.InteropServices.RuntimeInformation.OSDescription} " +
                          $"processId={Environment.ProcessId} threadId={Environment.CurrentManagedThreadId}");
 
-        if (DetailedDiagnosticsEnabled)
-            await AppendDnsDiagnostic(diagnostics, requestId, ct).ConfigureAwait(false);
+        if (DetailedDiagnosticsEnabled) await AppendDnsDiagnostic(diagnostics, requestId, ct).ConfigureAwait(false);
 
         for (var attempt = 1; attempt <= actualMaxRetries; attempt++)
         {
@@ -478,37 +514,44 @@ public class NetService : IDisposable
                 using var request = await requestFactory().ConfigureAwait(false);
                 lastRequestInfo   = $"{request.Method} {RedactUri(request.RequestUri)}";
                 lastRequestMethod = request.Method;
-                AppendDiagnostic(
-                                 diagnostics, requestId,
+                AppendDiagnostic(diagnostics, requestId,
                                  $"attempt {attempt}/{actualMaxRetries}: sending {DescribeRequest(request)}");
 
                 var client = Volatile.Read(ref _client);
-                AppendDiagnostic(
-                                 diagnostics, requestId,
+                AppendDiagnostic(diagnostics, requestId,
                                  $"attempt {attempt}/{actualMaxRetries}: using httpClientId={client.GetHashCode()} " +
                                  $"timeout={client.Timeout} addressFamilyPreference={_addressFamilyPreference} "     +
                                  $"generation={_clientGeneration}");
 
-                using var response = await client.SendAsync(
-                                                            request, HttpCompletionOption.ResponseHeadersRead, ct)
+                using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct)
                                                  .ConfigureAwait(false);
 
                 lastResponse = response;
-                lastBody     = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
 
-                AppendDiagnostic(
-                                 diagnostics, requestId,
+                if (response.IsSuccessStatusCode)
+                {
+                    var result = await responseReader(response.Content, ct).ConfigureAwait(false);
+                    var responseDescription = result is string body
+                        ? body
+                        : $"<{typeof(T).Name}; contentLength={response.Content.Headers.ContentLength?.ToString() ?? "unknown"}>";
+
+                    AppendDiagnostic(diagnostics, requestId,
+                                     $"attempt {attempt}/{actualMaxRetries}: response after {attemptStopwatch.Elapsed} " +
+                                     $"{DescribeResponse(response, responseDescription)}");
+                    return result;
+                }
+
+                lastBody = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+
+                AppendDiagnostic(diagnostics, requestId,
                                  $"attempt {attempt}/{actualMaxRetries}: response after {attemptStopwatch.Elapsed} " +
                                  $"{DescribeResponse(response, lastBody)}");
 
-                if (response.IsSuccessStatusCode) return lastBody;
-
-                if (!skipAuthRetry                               && !authRetryAttempted &&
-                    IsAuthenticationFailure(response.StatusCode) && HasEnsureLoggedInHandler())
+                if (!skipAuthRetry && !authRetryAttempted && IsAuthenticationFailure(response.StatusCode) &&
+                    HasEnsureLoggedInHandler())
                 {
                     authRetryAttempted = true;
-                    AppendDiagnostic(
-                                     diagnostics, requestId,
+                    AppendDiagnostic(diagnostics, requestId,
                                      $"attempt {attempt}/{actualMaxRetries}: authentication failure " +
                                      $"{response.StatusCode}; forcing login and retrying same attempt");
 
@@ -523,8 +566,7 @@ public class NetService : IDisposable
                 if (attempt == actualMaxRetries) break;
 
                 var delay = GetRetryDelay(response, attempt);
-                AppendDiagnostic(
-                                 diagnostics, requestId,
+                AppendDiagnostic(diagnostics, requestId,
                                  $"attempt {attempt}/{actualMaxRetries}: retrying after {delay} because status={response.StatusCode}");
 
                 await Task.Delay(delay, ct).ConfigureAwait(false);
@@ -535,33 +577,25 @@ public class NetService : IDisposable
                     throw;
 
                 lastException = ex;
-                AppendDiagnostic(
-                                 diagnostics, requestId,
+                AppendDiagnostic(diagnostics, requestId,
                                  $"attempt {attempt}/{actualMaxRetries}: canceled after {attemptStopwatch.Elapsed} " +
                                  $"request={lastRequestInfo} exception={DescribeException(ex)}");
                 if (attempt == actualMaxRetries) break;
 
-                var fallbackActivated = await TryUpgradeToIPv4Fallback(
-                                                                       ex,
-                                                                       lastRequestMethod,
-                                                                       skipAuthRetry,
-                                                                       diagnostics,
-                                                                       requestId,
-                                                                       ct).ConfigureAwait(false);
+                var fallbackActivated =
+                    await TryUpgradeToIPv4Fallback(ex, lastRequestMethod, skipAuthRetry, diagnostics, requestId, ct)
+                       .ConfigureAwait(false);
 
                 if (!fallbackActivated &&
-                    !NetUtils.IsSafeToReplayAfterConnectionFailure(lastRequestMethod, skipAuthRetry))
+                    !IsSafeToReplayAfterConnectionFailure(lastRequestMethod, skipAuthRetry))
                 {
-                    AppendDiagnostic(
-                                     diagnostics,
-                                     requestId,
+                    AppendDiagnostic(diagnostics, requestId,
                                      $"attempt {attempt}/{actualMaxRetries}: retry suppressed because {lastRequestMethod} may have side effects");
                     break;
                 }
 
                 var delay = ComputeBackoff(attempt);
-                AppendDiagnostic(
-                                 diagnostics, requestId,
+                AppendDiagnostic(diagnostics, requestId,
                                  $"attempt {attempt}/{actualMaxRetries}: retrying after {delay} due to cancellation");
 
                 await Task.Delay(delay, ct).ConfigureAwait(false);
@@ -569,22 +603,16 @@ public class NetService : IDisposable
             catch (HttpRequestException ex)
             {
                 lastException = ex;
-                AppendDiagnostic(
-                                 diagnostics, requestId,
+                AppendDiagnostic(diagnostics, requestId,
                                  $"attempt {attempt}/{actualMaxRetries}: http request failed after {attemptStopwatch.Elapsed} " +
                                  $"request={lastRequestInfo} exception={DescribeException(ex)}");
                 if (attempt == actualMaxRetries) break;
 
-                var fallbackActivated = await TryUpgradeToIPv4Fallback(
-                                                                       ex,
-                                                                       lastRequestMethod,
-                                                                       skipAuthRetry,
-                                                                       diagnostics,
-                                                                       requestId,
-                                                                       ct).ConfigureAwait(false);
+                var fallbackActivated =
+                    await TryUpgradeToIPv4Fallback(ex, lastRequestMethod, skipAuthRetry, diagnostics, requestId, ct)
+                       .ConfigureAwait(false);
 
-                if (!fallbackActivated &&
-                    !NetUtils.IsSafeToReplayAfterConnectionFailure(lastRequestMethod, skipAuthRetry))
+                if (!fallbackActivated && !IsSafeToReplayAfterConnectionFailure(lastRequestMethod, skipAuthRetry))
                 {
                     AppendDiagnostic(
                                      diagnostics,
@@ -594,8 +622,7 @@ public class NetService : IDisposable
                 }
 
                 var delay = ComputeBackoff(attempt);
-                AppendDiagnostic(
-                                 diagnostics, requestId,
+                AppendDiagnostic(diagnostics, requestId,
                                  $"attempt {attempt}/{actualMaxRetries}: retrying after {delay} due to network error");
 
                 await Task.Delay(delay, ct).ConfigureAwait(false);
@@ -603,8 +630,7 @@ public class NetService : IDisposable
             catch (Exception ex)
             {
                 // 捕获其他异常，不进行重试
-                AppendDiagnostic(
-                                 diagnostics, requestId,
+                AppendDiagnostic(diagnostics, requestId,
                                  $"attempt {attempt}/{actualMaxRetries}: unexpected exception after {attemptStopwatch.Elapsed} " +
                                  $"request={lastRequestInfo} exception={DescribeException(ex)}");
                 throw;
@@ -612,17 +638,13 @@ public class NetService : IDisposable
         }
 
         if (lastResponse != null) throw MapToException(lastResponse, lastBody);
-        AppendDiagnostic(
-                         diagnostics, requestId,
+        AppendDiagnostic(diagnostics, requestId,
                          $"FAILED totalElapsed={totalStopwatch.Elapsed} lastRequest={lastRequestInfo} " +
                          $"lastException={DescribeException(lastException)}");
-        throw new QbittorrentServerErrorException(
-                                                  $"Network error after {actualMaxRetries} attempts while sending {lastRequestInfo}: {lastException?.Message ?? "unknown error"}" +
-                                                  Environment.NewLine +
-                                                  "qBittorrent network diagnostic timeline:" +
-                                                  Environment.NewLine +
-                                                  diagnostics,
-                                                  lastException);
+        throw new
+            QbittorrentServerErrorException($"Network error after {actualMaxRetries} attempts while sending {lastRequestInfo}: {lastException?.Message ?? "unknown error"}" +
+                                            Environment.NewLine + "qBittorrent network diagnostic timeline:" +
+                                            Environment.NewLine + diagnostics, lastException);
     }
 
     private bool HasEnsureLoggedInHandler() => EnsureLoggedInAsyncHandler != null || EnsureLoggedInHandler != null;
@@ -682,10 +704,7 @@ public class NetService : IDisposable
             var addresses = await _addressResolver(_baseUrl.DnsSafeHost, timeoutCts.Token).ConfigureAwait(false);
             var resolvedAddresses = addresses.Length == 0
                 ? "<none>"
-                : string.Join(
-                              ", ",
-                              addresses.Select(address =>
-                                                   $"{address.AddressFamily}:{address}"));
+                : string.Join(", ", addresses.Select(address => $"{address.AddressFamily}:{address}"));
 
             AppendDiagnostic(
                              diagnostics, requestId,
@@ -694,14 +713,12 @@ public class NetService : IDisposable
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)
         {
-            AppendDiagnostic(
-                             diagnostics, requestId,
+            AppendDiagnostic(diagnostics, requestId,
                              $"DNS diagnostic timed out after {stopwatch.Elapsed}; request will continue normally");
         }
         catch (Exception ex)
         {
-            AppendDiagnostic(
-                             diagnostics, requestId,
+            AppendDiagnostic(diagnostics, requestId,
                              $"DNS diagnostic failed after {stopwatch.Elapsed}; exception={DescribeException(ex)}; " +
                              "request will continue normally");
         }
