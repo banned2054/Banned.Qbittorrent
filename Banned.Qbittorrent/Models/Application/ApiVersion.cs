@@ -36,6 +36,9 @@ public readonly struct ApiVersion(int major, int minor = 0, int patch = 0)
     /// <summary>qBittorrent Web API 2.5.1。<br/>qBittorrent Web API version 2.5.1.</summary>
     public static readonly ApiVersion V2_5_1 = new(2, 5, 1);
 
+    /// <summary>qBittorrent Web API 2.6.0。<br/>qBittorrent Web API version 2.6.0.</summary>
+    public static readonly ApiVersion V2_6_0 = new(2, 6);
+
     /// <summary>qBittorrent Web API 2.7.0。<br/>qBittorrent Web API version 2.7.0.</summary>
     public static readonly ApiVersion V2_7_0 = new(2, 7);
 

@@ -13,6 +13,8 @@ public class SearchService(NetService netService)
 {
     private const string BaseUrl = "/api/v2/search";
 
+    private static readonly ApiVersionRange SearchCategoriesVersionRange = new(ApiVersion.V2_1_1, ApiVersion.V2_6_0);
+
     /// <summary>
     /// 开始一个新的搜索作业。<br/>
     /// Start a new search job.
@@ -110,6 +112,22 @@ public class SearchService(NetService netService)
     /// </summary>
     /// <param name="job">搜索作业对象。Search job object.</param>
     public async Task DeleteSearchResults(SearchJob job) => await DeleteSearchResults(job.Id);
+
+    /// <summary>
+    /// 获取搜索类别。此端点仅存在于 Web API 2.1.1 至 2.6.0 之前。<br/>
+    /// Gets search categories. This endpoint is available from Web API 2.1.1 until, but excluding, 2.6.0.
+    /// </summary>
+    /// <param name="pluginName">可选的插件筛选器，支持 "all" 和 "enabled"。<br/>Optional plugin filter; "all" and "enabled" are supported.</param>
+    /// <returns>搜索类别列表。A list of search categories.</returns>
+    public async Task<List<SearchCategory>> GetSearchCategories(string? pluginName = null)
+    {
+        Dictionary<string, string>? parameters = pluginName == null
+            ? null
+            : new Dictionary<string, string> { { "pluginName", pluginName } };
+
+        var response = await netService.Post($"{BaseUrl}/categories", parameters, SearchCategoriesVersionRange);
+        return QBittorrentJsonSerializer.Deserialize<List<SearchCategory>>(response) ?? [];
+    }
 
     /// <summary>
     /// 获取所有已安装的搜索插件。<br/>

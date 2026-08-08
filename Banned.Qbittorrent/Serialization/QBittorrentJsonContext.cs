@@ -35,6 +35,7 @@ namespace Banned.Qbittorrent.Serialization;
 [JsonSerializable(typeof(SearchJob))]
 [JsonSerializable(typeof(SearchStatus[]))]
 [JsonSerializable(typeof(SearchResult))]
+[JsonSerializable(typeof(List<SearchCategory>))]
 [JsonSerializable(typeof(List<SearchPlugins>))]
 [JsonSerializable(typeof(Dictionary<string, JsonElement>))]
 [JsonSerializable(typeof(List<Dictionary<string, JsonElement>>))]
@@ -47,12 +48,8 @@ internal sealed partial class QBittorrentJsonContext : JsonSerializerContext;
 
 internal static class QBittorrentJsonSerializer
 {
-    private static readonly QBittorrentJsonContext IgnoreNullContext = new(
-                                                                           new JsonSerializerOptions
-                                                                           {
-                                                                               DefaultIgnoreCondition =
-                                                                                   JsonIgnoreCondition.WhenWritingNull
-                                                                           });
+    private static readonly QBittorrentJsonContext IgnoreNullContext =
+        new(new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull });
 
     public static T? Deserialize<T>(string json) =>
         JsonSerializer.Deserialize(json, GetTypeInfo<T>(QBittorrentJsonContext.Default));
