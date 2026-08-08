@@ -63,6 +63,12 @@ public class QBittorrentClient : IDisposable
     /// </summary>
     public TransferService Transfer { get; }
 
+    /// <summary>
+    /// 获取服务器报告的 qBittorrent 应用版本。<br/>
+    /// Gets the qBittorrent application version reported by the server.
+    /// </summary>
+    public string QbittorrentVersion { get; }
+
     private readonly NetService _network;
 
     /// <summary>
@@ -78,6 +84,7 @@ public class QBittorrentClient : IDisposable
                               TorrentService        torrent,
                               TorrentCreatorService torrentCreator,
                               TransferService       transfer,
+                              string                qbittorrentVersion,
                               NetService            net)
     {
         Application    = app;
@@ -89,7 +96,8 @@ public class QBittorrentClient : IDisposable
         Torrent        = torrent;
         TorrentCreator = torrentCreator;
         Transfer       = transfer;
-        _network       = net;
+        QbittorrentVersion = qbittorrentVersion;
+        _network            = net;
     }
 
     /// <summary>
@@ -170,16 +178,18 @@ public class QBittorrentClient : IDisposable
             await auth.Login(cancellationToken).ConfigureAwait(false);
             var apiVersion = await application.GetApiVersion(cancellationToken).ConfigureAwait(false);
             net.SetApiVersion(apiVersion);
+            var qbittorrentVersion = await application.GetVersion(cancellationToken).ConfigureAwait(false);
+            var parsedApplicationVersion = ParseApplicationVersion(qbittorrentVersion);
             var log            = new LogService(net);
             var rss            = new RssService(net);
             var search         = new SearchService(net);
             var sync           = new SyncService(net);
-            var torrent        = new TorrentService(net, apiVersion);
+            var torrent        = new TorrentService(net, apiVersion, parsedApplicationVersion);
             var torrentCreator = new TorrentCreatorService(net);
             var transfer       = new TransferService(net);
 
             return new QBittorrentClient(application, auth, log, rss, search, sync, torrent, torrentCreator, transfer,
-                                         net);
+                                         qbittorrentVersion, net);
         }
         catch
         {
@@ -187,6 +197,20 @@ public class QBittorrentClient : IDisposable
             net.Dispose();
             throw;
         }
+    }
+
+    private static Version ParseApplicationVersion(string value)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(value);
+
+        var normalized = value.Trim();
+        if (normalized[0] is 'v' or 'V') normalized = normalized[1..];
+
+        var numericLength = normalized.TakeWhile(character => char.IsDigit(character) || character == '.').Count();
+        normalized = normalized[..numericLength].TrimEnd('.');
+        if (Version.TryParse(normalized, out var version)) return version;
+
+        throw new FormatException($"Invalid qBittorrent version string: '{value}'.");
     }
 
     /// <summary>

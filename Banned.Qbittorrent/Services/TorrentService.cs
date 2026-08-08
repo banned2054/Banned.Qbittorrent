@@ -15,7 +15,15 @@ namespace Banned.Qbittorrent.Services;
 /// </summary>
 public class TorrentService(NetService netService, ApiVersion apiVersion)
 {
-    private const string BaseUrl = "/api/v2/torrents";
+    private const           string   BaseUrl                = "/api/v2/torrents";
+    private static readonly Version  PathBasedRenameVersion = new(4, 3, 3);
+    private readonly        Version? _applicationVersion;
+
+    internal TorrentService(NetService netService, ApiVersion apiVersion, Version applicationVersion) :
+        this(netService, apiVersion)
+    {
+        _applicationVersion = applicationVersion;
+    }
 
     /// <summary>
     /// 获取单个种子信息列表。<br/>
@@ -79,7 +87,7 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
 
         if (filter != EnumTorrentFilter.All)
         {
-            parameters.Add("filter", filter.ToString().ToLower());
+            parameters.Add("filter", filter.TorrentFilter2String(apiVersion));
         }
 
         if (!string.IsNullOrEmpty(category)) parameters.Add("category", category);
@@ -108,9 +116,7 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
                                                          CancellationToken         cancellationToken = default)
     {
         var parameters = new Dictionary<string, string>
-        {
-            { "filter", request.Filter.ToString().ToLower() }
-        };
+            { { "filter", request.Filter.TorrentFilter2String(apiVersion) } };
 
         if (!string.IsNullOrEmpty(request.Category)) parameters.Add("category", request.Category);
         if (!string.IsNullOrEmpty(request.Tag)) parameters.Add("tag", request.Tag);
@@ -455,7 +461,7 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
         };
         try
         {
-            await netService.Post($"{BaseUrl}/editTracker", parameters, ct : cancellationToken);
+            await netService.Post($"{BaseUrl}/editTracker", parameters, ApiVersion.V2_2_0, ct : cancellationToken);
         }
         catch (QbittorrentConflictException)
         {
@@ -594,7 +600,7 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
     /// </returns>
     public async Task<string> AddTorrent(AddTorrentRequest request, CancellationToken cancellationToken = default)
     {
-        var parameters = request.ToDictionary();
+        var parameters = request.ToDictionary(apiVersion);
 
         if (request.FilePaths is { Count: > 0 })
         {
@@ -956,7 +962,7 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
         if (inactiveSeedingTimeLimit is not null)
             parameters["inactiveSeedingTimeLimit"] = inactiveSeedingTimeLimit.Value.ToString();
 
-        await netService.Post($"{BaseUrl}/setShareLimits", parameters, ct : cancellationToken);
+        await netService.Post($"{BaseUrl}/setShareLimits", parameters, ApiVersion.V2_0_1, ct : cancellationToken);
     }
 
     /// <summary>
@@ -1838,7 +1844,8 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
         }
 
         hash = StringUtils.NormalizeHash(hash);
-        if (apiVersion < ApiVersion.V2_7_0)
+        netService.EnsureApiVersionSupported($"{BaseUrl}/renameFile", new ApiVersionRange(ApiVersion.V2_4_0));
+        if (!UsesPathBasedRename)
         {
             var fileList = await GetTorrentFiles(hash, cancellationToken : cancellationToken);
             if (fileList == null || fileList.Count == 0) return;
@@ -1854,7 +1861,7 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
             { "oldPath", oldPath },
             { "newPath", newPath }
         };
-        await netService.Post($"{BaseUrl}/renameFile", parameters, ct : cancellationToken);
+        await netService.Post($"{BaseUrl}/renameFile", parameters, ApiVersion.V2_4_0, ct : cancellationToken);
     }
 
     /// <summary>
@@ -1880,7 +1887,8 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
         }
 
         hash = StringUtils.NormalizeHash(hash);
-        if (apiVersion >= ApiVersion.V2_7_0)
+        netService.EnsureApiVersionSupported($"{BaseUrl}/renameFile", new ApiVersionRange(ApiVersion.V2_4_0));
+        if (UsesPathBasedRename)
         {
             var fileList = await GetTorrentFiles(hash, cancellationToken : cancellationToken);
             if (fileList is { Count: > 0 })
@@ -1892,10 +1900,10 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
         {
             { "hash", hash },
             { "id", index.ToString() },
-            { "newPath", newPath }
+            { "name", newPath }
         };
 
-        await netService.Post($"{BaseUrl}/renameFile", parameters, ct : cancellationToken);
+        await netService.Post($"{BaseUrl}/renameFile", parameters, ApiVersion.V2_4_0, ct : cancellationToken);
     }
 
     /// <summary>
@@ -1921,6 +1929,11 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
         }
 
         hash = StringUtils.NormalizeHash(hash);
+        netService.EnsureApiVersionSupported($"{BaseUrl}/renameFolder", new ApiVersionRange(ApiVersion.V2_7_0));
+        if (_applicationVersion is not null && _applicationVersion < PathBasedRenameVersion)
+            throw new
+                NotSupportedException($"The endpoint '{BaseUrl}/renameFolder' requires qBittorrent >= {PathBasedRenameVersion}, but server is {_applicationVersion}.");
+
         var parameters = new Dictionary<string, string>
         {
             { "hash", hash },
@@ -1928,7 +1941,7 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
             { "newPath", newPath }
         };
 
-        await netService.Post($"{BaseUrl}/renameFolder", parameters, ct : cancellationToken);
+        await netService.Post($"{BaseUrl}/renameFolder", parameters, ApiVersion.V2_7_0, ct : cancellationToken);
     }
 
     /// <summary>
@@ -1974,6 +1987,11 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
         };
         await netService.Post($"{BaseUrl}/{subPath}", parameters, ApiVersion.V2_8_4, ct : cancellationToken);
     }
+
+    private bool UsesPathBasedRename =>
+        _applicationVersion is not null
+            ? _applicationVersion >= PathBasedRenameVersion
+            : apiVersion          >= ApiVersion.V2_7_0;
 
     private async Task<string> Put(string            subPath, string hash, ApiVersion? targetVersion = null,
                                    CancellationToken cancellationToken = default)

@@ -1,3 +1,4 @@
+using Banned.Qbittorrent.Models.Application;
 using Banned.Qbittorrent.Models.Enums;
 
 namespace Banned.Qbittorrent.Utils;
@@ -239,6 +240,28 @@ public static class StringUtils
 
             _ => throw new ArgumentOutOfRangeException(nameof(value), value, null)
         };
+    }
+
+    /// <summary>
+    /// 将种子过滤器枚举转换为指定 Web API 版本识别的字符串。<br/>
+    /// Converts a torrent filter enum to the string recognized by the specified Web API version.
+    /// </summary>
+    /// <param name="value">种子过滤器。 / Torrent filter.</param>
+    /// <param name="apiVersion">目标 Web API 版本。 / Target Web API version.</param>
+    /// <returns>API 识别的过滤器字符串。 / Filter string recognized by the API.</returns>
+    public static string TorrentFilter2String(this EnumTorrentFilter value, ApiVersion apiVersion)
+    {
+        if (apiVersion >= ApiVersion.V2_11_0)
+        {
+            return value switch
+            {
+                EnumTorrentFilter.Paused  => "stopped",
+                EnumTorrentFilter.Resumed => "running",
+                _                         => value.TorrentFilter2String()
+            };
+        }
+
+        return value.TorrentFilter2String();
     }
 
     /// <summary>

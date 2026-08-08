@@ -1,3 +1,6 @@
+using Banned.Qbittorrent.Models.Application;
+using Banned.Qbittorrent.Models.Enums;
+using Banned.Qbittorrent.Utils;
 using System.Globalization;
 
 namespace Banned.Qbittorrent.Models.Requests;
@@ -57,6 +60,12 @@ public class AddTorrentRequest
     public bool? RootFolderEnabled { get; set; }
 
     /// <summary>
+    /// Torrent 内容的目录布局。Web API 2.7 及更高版本使用此参数。<br/>
+    /// Directory layout for torrent content. This parameter is used by Web API 2.7 and later.
+    /// </summary>
+    public EnumContentLayout? ContentLayout { get; set; }
+
+    /// <summary>
     /// 重命名种子。<br/>
     /// Rename the torrent.
     /// </summary>
@@ -110,6 +119,15 @@ public class AddTorrentRequest
     /// </summary>
     /// <returns>包含所有设置参数的字典。 / A dictionary containing all set parameters.</returns>
     public Dictionary<string, string> ToDictionary()
+        => ToDictionary(default);
+
+    /// <summary>
+    /// 根据目标 Web API 版本将请求参数转换为字典格式。<br/>
+    /// Converts request parameters to a dictionary for the target Web API version.
+    /// </summary>
+    /// <param name="apiVersion">目标 Web API 版本。 / Target Web API version.</param>
+    /// <returns>包含所有设置参数的字典。 / A dictionary containing all set parameters.</returns>
+    public Dictionary<string, string> ToDictionary(ApiVersion apiVersion)
     {
         var parameters = new Dictionary<string, string>();
 
@@ -128,7 +146,24 @@ public class AddTorrentRequest
             parameters["stopped"] = PausedEnabled.Value.ToString().ToLower();
         }
 
-        if (RootFolderEnabled.HasValue) parameters["root_folder"] = RootFolderEnabled.Value.ToString().ToLower();
+        if (apiVersion >= ApiVersion.V2_7_0)
+        {
+            var contentLayout = ContentLayout;
+            if (contentLayout is null && RootFolderEnabled.HasValue)
+                contentLayout = RootFolderEnabled.Value ? EnumContentLayout.Original : EnumContentLayout.NoSubfolder;
+
+            if (contentLayout is not null and not EnumContentLayout.Unknown)
+                parameters["contentLayout"] = contentLayout.Value.ContentLayout2String();
+        }
+        else
+        {
+            var rootFolderEnabled = RootFolderEnabled;
+            if (!rootFolderEnabled.HasValue && ContentLayout is not null and not EnumContentLayout.Unknown)
+                rootFolderEnabled = ContentLayout is EnumContentLayout.Original or EnumContentLayout.Subfolder;
+
+            if (rootFolderEnabled.HasValue)
+                parameters["root_folder"] = rootFolderEnabled.Value.ToString().ToLower();
+        }
         if (!string.IsNullOrEmpty(Rename)) parameters["rename"] = Rename;
         if (UploadLimit.HasValue) parameters["upLimit"] = UploadLimit.Value.ToString();
         if (DownloadLimit.HasValue) parameters["dlLimit"] = DownloadLimit.Value.ToString();

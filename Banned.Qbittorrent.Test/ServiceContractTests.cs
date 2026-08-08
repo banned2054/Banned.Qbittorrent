@@ -242,6 +242,121 @@ public class ServiceContractTests
         }
     }
 
+    [TestCase(2, 10, EnumTorrentFilter.Paused, "paused")]
+    [TestCase(2, 11, EnumTorrentFilter.Paused, "stopped")]
+    [TestCase(2, 10, EnumTorrentFilter.Resumed, "resumed")]
+    [TestCase(2, 11, EnumTorrentFilter.Resumed, "running")]
+    [TestCase(2, 11, EnumTorrentFilter.StalledUploading, "stalled_uploading")]
+    [TestCase(2, 11, EnumTorrentFilter.Error, "errored")]
+    public async Task GetTorrentInfos_UsesVersionSpecificFilterName(int               major,
+                                                                   int               minor,
+                                                                   EnumTorrentFilter filter,
+                                                                   string            expected)
+    {
+        var apiVersion = new ApiVersion(major, minor);
+        var (netService, httpClient, handler) =
+            CreateNetService(_ => StubHttpMessageHandler.JsonResponse("[]"), apiVersion);
+        using (netService)
+        using (httpClient)
+        {
+            var service = new TorrentService(netService, apiVersion);
+
+            await service.GetTorrentInfos(filter : filter);
+            await service.GetTorrentInfos(new GetTorrentInfoListRequest { Filter = filter });
+
+            Multiple(() =>
+            {
+                That(handler.Requests, Has.Count.EqualTo(2));
+                That(DecodeForm(handler.Requests[0]), Does.Contain($"filter={expected}"));
+                That(DecodeForm(handler.Requests[1]), Does.Contain($"filter={expected}"));
+            });
+        }
+    }
+
+    [TestCase(true, "Original")]
+    [TestCase(false, "NoSubfolder")]
+    public async Task AddTorrent_ConvertsRootFolderToContentLayoutForWebApi27(bool enabled, string expected)
+    {
+        var (netService, httpClient, handler) =
+            CreateNetService(_ => StubHttpMessageHandler.JsonResponse("Ok."), ApiVersion.V2_7_0);
+        using (netService)
+        using (httpClient)
+        {
+            await new TorrentService(netService, ApiVersion.V2_7_0).AddTorrent(new AddTorrentRequest
+            {
+                Urls              = ["magnet:?xt=urn:btih:abc"],
+                RootFolderEnabled = enabled
+            });
+
+            var form = DecodeForm(handler.Requests.Single());
+            Multiple(() =>
+            {
+                That(form, Does.Contain($"contentLayout={expected}"));
+                That(form, Does.Not.Contain("root_folder="));
+            });
+        }
+    }
+
+    [TestCase(EnumContentLayout.Original, "true")]
+    [TestCase(EnumContentLayout.Subfolder, "true")]
+    [TestCase(EnumContentLayout.NoSubfolder, "false")]
+    public async Task AddTorrent_ConvertsContentLayoutToRootFolderBeforeWebApi27(EnumContentLayout layout,
+                                                                                string            expected)
+    {
+        var apiVersion = ApiVersion.V2_6_0;
+        var (netService, httpClient, handler) =
+            CreateNetService(_ => StubHttpMessageHandler.JsonResponse("Ok."), apiVersion);
+        using (netService)
+        using (httpClient)
+        {
+            await new TorrentService(netService, apiVersion).AddTorrent(new AddTorrentRequest
+            {
+                Urls          = ["magnet:?xt=urn:btih:abc"],
+                ContentLayout = layout
+            });
+
+            var form = DecodeForm(handler.Requests.Single());
+            Multiple(() =>
+            {
+                That(form, Does.Contain($"root_folder={expected}"));
+                That(form, Does.Not.Contain("contentLayout="));
+            });
+        }
+    }
+
+    [TestCase("setShareLimits", 2, 0, 0)]
+    [TestCase("editTracker", 2, 1, 1)]
+    [TestCase("renameFile", 2, 3, 0)]
+    [TestCase("renameFolder", 2, 6, 0)]
+    [TestCase("banPeers", 2, 2, 0)]
+    public void VersionedOperations_RejectUnsupportedApiVersionBeforeSendingRequest(string operation,
+                                                                                    int    major,
+                                                                                    int    minor,
+                                                                                    int    patch)
+    {
+        var apiVersion = new ApiVersion(major, minor, patch);
+        var (netService, httpClient, handler) =
+            CreateNetService(_ => StubHttpMessageHandler.JsonResponse(""), apiVersion);
+        using (netService)
+        using (httpClient)
+        {
+            var torrent  = new TorrentService(netService, apiVersion);
+            var transfer = new TransferService(netService);
+            Func<Task> action = operation switch
+            {
+                "setShareLimits" => async () => await torrent.SetTorrentShareLimit("abc", ratioLimit : 1),
+                "editTracker"    => async () => await torrent.EditTorrentTracker("abc", "old", "new"),
+                "renameFile"     => async () => await torrent.RenameTorrentFile("abc", 0, "new"),
+                "renameFolder"   => async () => await torrent.RenameTorrentFolder("abc", "old", "new"),
+                "banPeers"       => async () => await transfer.BanPeers(["127.0.0.1:6881"]),
+                _                => throw new ArgumentOutOfRangeException(nameof(operation), operation, null)
+            };
+
+            ThrowsAsync<QbittorrentNotSupportedException>(action);
+            That(handler.Requests, Is.Empty);
+        }
+    }
+
     [Test]
     public async Task TorrentCreatorOperations_UseDocumentedContractsAndPreserveTorrentBytes()
     {

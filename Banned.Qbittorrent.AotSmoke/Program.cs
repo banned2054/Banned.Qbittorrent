@@ -40,6 +40,7 @@ file sealed class StubQbittorrentHandler : HttpMessageHandler
         {
             "/api/v2/auth/login"            => "Ok.",
             "/api/v2/app/webapiVersion"     => "2.15.1",
+            "/api/v2/app/version"           => "5.1.2",
             "/api/v2/app/preferences"       => "{\"locale\":\"en\"}",
             "/api/v2/torrents/info"         => "[]",
             "/api/v2/log/main"              => "[]",

@@ -18,6 +18,9 @@ public readonly struct ApiVersion(int major, int minor = 0, int patch = 0)
 
     #region Known Versions
 
+    /// <summary>qBittorrent Web API 2.0.1。<br/>qBittorrent Web API version 2.0.1.</summary>
+    public static readonly ApiVersion V2_0_1 = new(2, 0, 1);
+
     /// <summary>qBittorrent Web API 2.0.2。<br/>qBittorrent Web API version 2.0.2.</summary>
     public static readonly ApiVersion V2_0_2 = new(2, 0, 2);
 
@@ -32,6 +35,9 @@ public readonly struct ApiVersion(int major, int minor = 0, int patch = 0)
 
     /// <summary>qBittorrent Web API 2.3.0。<br/>qBittorrent Web API version 2.3.0.</summary>
     public static readonly ApiVersion V2_3_0 = new(2, 3);
+
+    /// <summary>qBittorrent Web API 2.4.0。<br/>qBittorrent Web API version 2.4.0.</summary>
+    public static readonly ApiVersion V2_4_0 = new(2, 4);
 
     /// <summary>qBittorrent Web API 2.5.1。<br/>qBittorrent Web API version 2.5.1.</summary>
     public static readonly ApiVersion V2_5_1 = new(2, 5, 1);

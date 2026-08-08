@@ -1,3 +1,4 @@
+using Banned.Qbittorrent.Models.Application;
 using Banned.Qbittorrent.Models.Transfer;
 using Banned.Qbittorrent.Serialization;
 using Banned.Qbittorrent.Utils;
@@ -124,6 +125,6 @@ public class TransferService(NetService netService)
         {
             { "peers", StringUtils.Join('|', peers) }
         };
-        await netService.Post($"{BaseUrl}/banPeers", parameters, ct : cancellationToken);
+        await netService.Post($"{BaseUrl}/banPeers", parameters, ApiVersion.V2_3_0, ct : cancellationToken);
     }
 }

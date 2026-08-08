@@ -21,9 +21,10 @@ public class NetService : IDisposable
 
     private readonly Func<AddressFamilyPreference, HttpClient>?         _httpClientFactory;
     private readonly Func<string, CancellationToken, Task<IPAddress[]>> _addressResolver;
-    private readonly Action<string>?                                    _diagnosticSink;
-    private readonly List<HttpClient>                                   _retiredClients = [];
-    private readonly CookieContainer?                                   _cookieContainer;
+
+    private readonly Action<string>?  _diagnosticSink;
+    private readonly List<HttpClient> _retiredClients = [];
+    private readonly CookieContainer? _cookieContainer;
 
     private readonly Uri      _baseUrl;
     private readonly TimeSpan _configuredTimeout;
@@ -39,7 +40,6 @@ public class NetService : IDisposable
     private bool _disposed;
 
     private HttpClient _client;
-
     private ApiVersion _apiVersion;
 
     /// <summary>
@@ -96,11 +96,10 @@ public class NetService : IDisposable
     {
     }
 
-    internal NetService(
-        string                                              baseUrl,
-        QBittorrentClientOptions                            options,
-        Func<string, CancellationToken, Task<IPAddress[]>>? addressResolver,
-        Func<AddressFamilyPreference, HttpClient>?          httpClientFactory)
+    internal NetService(string                                              baseUrl,
+                        QBittorrentClientOptions                            options,
+                        Func<string, CancellationToken, Task<IPAddress[]>>? addressResolver,
+                        Func<AddressFamilyPreference, HttpClient>?          httpClientFactory)
     {
         ArgumentNullException.ThrowIfNull(baseUrl);
         ArgumentNullException.ThrowIfNull(options);
@@ -136,16 +135,14 @@ public class NetService : IDisposable
         }
     }
 
-    private HttpClient CreateDefaultHttpClient(AddressFamilyPreference preference) =>
-        _httpClientFactory!(preference);
+    private HttpClient CreateDefaultHttpClient(AddressFamilyPreference preference) => _httpClientFactory!(preference);
 
-    private async Task<bool> TryUpgradeToIPv4Fallback(
-        Exception         exception,
-        HttpMethod?       method,
-        bool              isAuthenticationEndpoint,
-        StringBuilder     diagnostics,
-        long              requestId,
-        CancellationToken cancellationToken)
+    private async Task<bool> TryUpgradeToIPv4Fallback(Exception         exception,
+                                                      HttpMethod?       method,
+                                                      bool              isAuthenticationEndpoint,
+                                                      StringBuilder     diagnostics,
+                                                      long              requestId,
+                                                      CancellationToken cancellationToken)
     {
         if (!_ownsHttpClient || _cookieContainer == null)
         {
@@ -158,8 +155,8 @@ public class NetService : IDisposable
         if (!_enableAutomaticIPv4Fallback                              ||
             _addressFamilyPreference != AddressFamilyPreference.System ||
             _automaticFallbackAttempted                                ||
-            !NetUtils.IsConnectionEstablishmentFailure(exception)      ||
-            !NetUtils.IsSafeToReplayAfterConnectionFailure(method, isAuthenticationEndpoint))
+            !IsConnectionEstablishmentFailure(exception)               ||
+            !IsSafeToReplayAfterConnectionFailure(method, isAuthenticationEndpoint))
             return false;
 
         var addresses = await ResolveAddressesForFallback(diagnostics, requestId, cancellationToken)
@@ -208,10 +205,9 @@ public class NetService : IDisposable
         return true;
     }
 
-    private async Task<IPAddress[]> ResolveAddressesForFallback(
-        StringBuilder     diagnostics,
-        long              requestId,
-        CancellationToken cancellationToken)
+    private async Task<IPAddress[]> ResolveAddressesForFallback(StringBuilder     diagnostics,
+                                                                long              requestId,
+                                                                CancellationToken cancellationToken)
     {
         if (Uri.CheckHostName(_baseUrl.Host) != UriHostNameType.Dns)
             return [];
@@ -249,7 +245,7 @@ public class NetService : IDisposable
     /// <param name="apiVersion">API 版本信息。 / API version information.</param>
     public void SetApiVersion(ApiVersion apiVersion) => _apiVersion = apiVersion;
 
-    private void EnsureApiVersionSupported(string endpoint, ApiVersionRange versionRange)
+    internal void EnsureApiVersionSupported(string endpoint, ApiVersionRange versionRange)
     {
         if (versionRange.Introduced is { } introduced && _apiVersion < introduced)
             throw new QbittorrentNotSupportedException(endpoint, introduced, _apiVersion);
