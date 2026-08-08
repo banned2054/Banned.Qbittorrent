@@ -17,12 +17,14 @@ var logs           = await client.Log.GetLogs();
 var rules          = await client.Rss.GetAllAutoDownloadingRule();
 var searchStatuses = await client.Search.SearchStatus();
 var mainData       = await client.Sync.GetMainData();
+var creatorTasks   = await client.TorrentCreator.GetStatuses();
 _ = await client.Transfer.GetTransferInfo();
 
 if (torrents.Count         != 0 ||
     logs.Count             != 0 ||
     rules?.Count           != 0 ||
     searchStatuses?.Length != 0 ||
+    creatorTasks.Count     != 0 ||
     mainData               == null)
     throw new InvalidOperationException("A source-generated JSON contract failed the NativeAOT smoke test.");
 
@@ -36,16 +38,17 @@ file sealed class StubQbittorrentHandler : HttpMessageHandler
     {
         var responseBody = request.RequestUri?.AbsolutePath switch
         {
-            "/api/v2/auth/login"        => "Ok.",
-            "/api/v2/app/webapiVersion" => "2.15.1",
-            "/api/v2/app/preferences"   => "{\"locale\":\"en\"}",
-            "/api/v2/torrents/info"     => "[]",
-            "/api/v2/log/main"          => "[]",
-            "/api/v2/rss/rules"         => "{}",
-            "/api/v2/search/status"     => "[]",
-            "/api/v2/sync/maindata"     => "{}",
-            "/api/v2/transfer/info"     => "{}",
-            _                           => string.Empty
+            "/api/v2/auth/login"            => "Ok.",
+            "/api/v2/app/webapiVersion"     => "2.15.1",
+            "/api/v2/app/preferences"       => "{\"locale\":\"en\"}",
+            "/api/v2/torrents/info"         => "[]",
+            "/api/v2/log/main"              => "[]",
+            "/api/v2/rss/rules"             => "{}",
+            "/api/v2/search/status"         => "[]",
+            "/api/v2/torrentcreator/status" => "[]",
+            "/api/v2/sync/maindata"         => "{}",
+            "/api/v2/transfer/info"         => "{}",
+            _                               => string.Empty
         };
 
         var response = new HttpResponseMessage(HttpStatusCode.OK)

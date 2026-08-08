@@ -52,6 +52,12 @@ public class QBittorrentClient : IDisposable
     public TorrentService Torrent { get; }
 
     /// <summary>
+    /// 获取种子创建任务相关服务。<br/>
+    /// Gets services related to torrent creation tasks.
+    /// </summary>
+    public TorrentCreatorService TorrentCreator { get; }
+
+    /// <summary>
     /// 获取传输状态相关服务（全局速度限制、总传输量）。<br/>
     /// Gets services related to transfer status (global speed limits, total transfer data).
     /// </summary>
@@ -71,6 +77,7 @@ public class QBittorrentClient : IDisposable
         SearchService         search,
         SyncService           sync,
         TorrentService        torrent,
+        TorrentCreatorService torrentCreator,
         TransferService       transfer,
         NetService            net)
     {
@@ -81,6 +88,7 @@ public class QBittorrentClient : IDisposable
         Search         = search;
         Sync           = sync;
         Torrent        = torrent;
+        TorrentCreator = torrentCreator;
         Transfer       = transfer;
         _network       = net;
     }
@@ -157,14 +165,16 @@ public class QBittorrentClient : IDisposable
             await auth.Login().ConfigureAwait(false);
             var apiVersion = await application.GetApiVersion().ConfigureAwait(false);
             net.SetApiVersion(apiVersion);
-            var log      = new LogService(net);
-            var rss      = new RssService(net);
-            var search   = new SearchService(net);
-            var sync     = new SyncService(net);
-            var torrent  = new TorrentService(net, apiVersion);
-            var transfer = new TransferService(net);
+            var log            = new LogService(net);
+            var rss            = new RssService(net);
+            var search         = new SearchService(net);
+            var sync           = new SyncService(net);
+            var torrent        = new TorrentService(net, apiVersion);
+            var torrentCreator = new TorrentCreatorService(net);
+            var transfer       = new TransferService(net);
 
-            return new QBittorrentClient(application, auth, log, rss, search, sync, torrent, transfer, net);
+            return new QBittorrentClient(application, auth, log, rss, search, sync, torrent, torrentCreator, transfer,
+                                         net);
         }
         catch
         {

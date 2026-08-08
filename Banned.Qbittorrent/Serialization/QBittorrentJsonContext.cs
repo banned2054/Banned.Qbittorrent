@@ -5,6 +5,7 @@ using Banned.Qbittorrent.Models.Rss;
 using Banned.Qbittorrent.Models.Search;
 using Banned.Qbittorrent.Models.Sync;
 using Banned.Qbittorrent.Models.Torrent;
+using Banned.Qbittorrent.Models.TorrentCreator;
 using Banned.Qbittorrent.Models.Transfer;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -23,6 +24,8 @@ namespace Banned.Qbittorrent.Serialization;
 [JsonSerializable(typeof(List<TrackerInfo>))]
 [JsonSerializable(typeof(List<TorrentWebSeed>))]
 [JsonSerializable(typeof(List<TorrentFileInfo>))]
+[JsonSerializable(typeof(TorrentCreatorTask))]
+[JsonSerializable(typeof(List<TorrentCreatorTaskStatus>))]
 [JsonSerializable(typeof(List<EnumPieceState>))]
 [JsonSerializable(typeof(List<string>))]
 [JsonSerializable(typeof(Dictionary<string, long>))]
