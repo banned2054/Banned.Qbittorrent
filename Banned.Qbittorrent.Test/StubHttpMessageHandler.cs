@@ -9,7 +9,7 @@ internal sealed class StubHttpMessageHandler(Func<HttpRequestMessage, HttpRespon
 
     protected override async Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request,
-        CancellationToken cancellationToken)
+        CancellationToken  cancellationToken)
     {
         var body = request.Content == null
             ? null

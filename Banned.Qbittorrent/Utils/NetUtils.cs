@@ -35,13 +35,12 @@ internal static class NetUtils
         if (exception is not TaskCanceledException)
             return false;
 
-        return EnumerateExceptionChain(exception).Any(current =>
-                                                          current is TimeoutException &&
-                                                          current.Message
-                                                                 .Contains("connection could not be established",
-                                                                           StringComparison.OrdinalIgnoreCase) &&
-                                                          current.Message.Contains("ConnectTimeout",
-                                                                   StringComparison.OrdinalIgnoreCase));
+        return EnumerateExceptionChain(exception).Any(current => current is TimeoutException &&
+                                                                 current.Message
+                                                                        .Contains("connection could not be established",
+                                                                                  StringComparison.OrdinalIgnoreCase) &&
+                                                                 current.Message.Contains("ConnectTimeout",
+                                                                          StringComparison.OrdinalIgnoreCase));
     }
 
     internal static bool IsSafeToReplayAfterConnectionFailure(
@@ -163,8 +162,7 @@ internal static class NetUtils
         {
             var value = IsSensitiveHeader(header.Key)
                 ? "<redacted>"
-                : string.Join("|", header.Value.Select(item =>
-                                                           item.Length > 128 ? item[..128] + "<truncated>" : item));
+                : string.Join("|", header.Value.Select(item => item.Length > 128 ? item[..128] + "<truncated>" : item));
             return $"{header.Key}={value}";
         });
         return string.Join("; ", values);
