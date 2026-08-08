@@ -249,6 +249,15 @@ public class NetService : IDisposable
     /// <param name="apiVersion">API 版本信息。 / API version information.</param>
     public void SetApiVersion(ApiVersion apiVersion) => _apiVersion = apiVersion;
 
+    private void EnsureApiVersionSupported(string endpoint, ApiVersionRange versionRange)
+    {
+        if (versionRange.Introduced is { } introduced && _apiVersion < introduced)
+            throw new QbittorrentNotSupportedException(endpoint, introduced, _apiVersion);
+
+        if (versionRange.Removed is { } removed && _apiVersion >= removed)
+            throw new QbittorrentEndpointRemovedException(endpoint, removed, _apiVersion);
+    }
+
     private Uri CombineUrl(string subPath) => new(_baseUrl, subPath.TrimStart('/'));
 
     /// <summary>
@@ -270,8 +279,7 @@ public class NetService : IDisposable
                                   CancellationToken ct            = default,
                                   int?              maxRetries    = null)
     {
-        if (_apiVersion < targetVersion)
-            throw new QbittorrentNotSupportedException(opName ?? subPath, targetVersion.Value, _apiVersion);
+        EnsureApiVersionSupported(opName ?? subPath, new ApiVersionRange(targetVersion));
 
         if (!skipAuthCheck && !IsAuthenticationEndpoint(subPath))
             await EnsureLoggedIn(force : false, ct).ConfigureAwait(false);
@@ -279,6 +287,29 @@ public class NetService : IDisposable
         return await ExecuteWithRetry(() => new HttpRequestMessage(HttpMethod.Get, CombineUrl(subPath)), maxRetries, ct,
                                       skipAuthRetry : IsAuthenticationEndpoint(subPath))
            .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// 发起具有完整版本区间约束的异步 GET 请求。<br/>
+    /// Performs an asynchronous GET request constrained by a complete API version range.
+    /// </summary>
+    /// <param name="subPath">请求的子路径。 / The sub-path of the request.</param>
+    /// <param name="versionRange">端点有效版本区间。 / Endpoint availability range.</param>
+    /// <param name="opName">操作名称。 / Operation name.</param>
+    /// <param name="skipAuthCheck">是否跳过登录状态检查。 / Whether to skip authentication checks.</param>
+    /// <param name="ct">取消令牌。 / Cancellation token.</param>
+    /// <param name="maxRetries">最大重试次数覆盖值。 / Maximum retry count override.</param>
+    /// <returns>响应体字符串。 / Response body string.</returns>
+    public async Task<string> Get(string subPath,               ApiVersionRange   versionRange, string? opName = null,
+                                  bool   skipAuthCheck = false, CancellationToken ct = default, int? maxRetries = null)
+    {
+        EnsureApiVersionSupported(opName ?? subPath, versionRange);
+
+        if (!skipAuthCheck && !IsAuthenticationEndpoint(subPath))
+            await EnsureLoggedIn(force : false, ct).ConfigureAwait(false);
+
+        return await ExecuteWithRetry(() => new HttpRequestMessage(HttpMethod.Get, CombineUrl(subPath)), maxRetries, ct,
+                                      skipAuthRetry : IsAuthenticationEndpoint(subPath)).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -301,8 +332,7 @@ public class NetService : IDisposable
                                    CancellationToken           ct            = default,
                                    int?                        maxRetries    = null)
     {
-        if (_apiVersion < targetVersion)
-            throw new QbittorrentNotSupportedException(opName ?? subPath, targetVersion.Value, _apiVersion);
+        EnsureApiVersionSupported(opName ?? subPath, new ApiVersionRange(targetVersion));
 
         if (!skipAuthCheck && !IsAuthenticationEndpoint(subPath))
             await EnsureLoggedIn(force : false, ct).ConfigureAwait(false);
@@ -316,6 +346,39 @@ public class NetService : IDisposable
                 request.Content = new FormUrlEncodedContent(parameters);
             }
 
+            return request;
+        }, maxRetries, ct, skipAuthRetry : IsAuthenticationEndpoint(subPath)).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// 发起具有完整版本区间约束的异步 POST 请求。<br/>
+    /// Performs an asynchronous POST request constrained by a complete API version range.
+    /// </summary>
+    /// <param name="subPath">请求的子路径。 / The sub-path of the request.</param>
+    /// <param name="parameters">表单参数。 / Form parameters.</param>
+    /// <param name="versionRange">端点有效版本区间。 / Endpoint availability range.</param>
+    /// <param name="opName">操作名称。 / Operation name.</param>
+    /// <param name="skipAuthCheck">是否跳过登录状态检查。 / Whether to skip authentication checks.</param>
+    /// <param name="ct">取消令牌。 / Cancellation token.</param>
+    /// <param name="maxRetries">最大重试次数覆盖值。 / Maximum retry count override.</param>
+    /// <returns>响应体字符串。 / Response body string.</returns>
+    public async Task<string> Post(string                      subPath,
+                                   Dictionary<string, string>? parameters,
+                                   ApiVersionRange             versionRange,
+                                   string?                     opName        = null,
+                                   bool                        skipAuthCheck = false,
+                                   CancellationToken           ct            = default,
+                                   int?                        maxRetries    = null)
+    {
+        EnsureApiVersionSupported(opName ?? subPath, versionRange);
+
+        if (!skipAuthCheck && !IsAuthenticationEndpoint(subPath))
+            await EnsureLoggedIn(force : false, ct).ConfigureAwait(false);
+
+        return await ExecuteWithRetry(() =>
+        {
+            var request                             = new HttpRequestMessage(HttpMethod.Post, CombineUrl(subPath));
+            if (parameters != null) request.Content = new FormUrlEncodedContent(parameters);
             return request;
         }, maxRetries, ct, skipAuthRetry : IsAuthenticationEndpoint(subPath)).ConfigureAwait(false);
     }
@@ -336,8 +399,41 @@ public class NetService : IDisposable
                                         string?                     opName        = null,
                                         CancellationToken           ct            = default)
     {
-        if (_apiVersion < targetVersion)
-            throw new QbittorrentNotSupportedException(opName ?? subPath, targetVersion.Value, _apiVersion);
+        EnsureApiVersionSupported(opName ?? subPath, new ApiVersionRange(targetVersion));
+
+        if (!IsAuthenticationEndpoint(subPath))
+            await EnsureLoggedIn(force : false, ct).ConfigureAwait(false);
+
+        return await ExecuteWithRetry(() =>
+                                      {
+                                          var request =
+                                              new HttpRequestMessage(HttpMethod.Post, CombineUrl(subPath));
+                                          if (parameters != null)
+                                              request.Content = new FormUrlEncodedContent(parameters);
+                                          return Task.FromResult(request);
+                                      },
+                                      static (content, cancellationToken) =>
+                                          content.ReadAsByteArrayAsync(cancellationToken), ct : ct,
+                                      skipAuthRetry : IsAuthenticationEndpoint(subPath)).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// 发起具有完整版本区间约束的异步 POST 请求并读取字节响应。<br/>
+    /// Performs an asynchronous POST request constrained by a complete API version range and reads bytes.
+    /// </summary>
+    /// <param name="subPath">请求的子路径。 / The sub-path of the request.</param>
+    /// <param name="parameters">表单参数。 / Form parameters.</param>
+    /// <param name="versionRange">端点有效版本区间。 / Endpoint availability range.</param>
+    /// <param name="opName">操作名称。 / Operation name.</param>
+    /// <param name="ct">取消令牌。 / Cancellation token.</param>
+    /// <returns>响应体字节数组。 / Response body byte array.</returns>
+    public async Task<byte[]> PostBytes(string                      subPath,
+                                        Dictionary<string, string>? parameters,
+                                        ApiVersionRange             versionRange,
+                                        string?                     opName = null,
+                                        CancellationToken           ct     = default)
+    {
+        EnsureApiVersionSupported(opName ?? subPath, versionRange);
 
         if (!IsAuthenticationEndpoint(subPath))
             await EnsureLoggedIn(force : false, ct).ConfigureAwait(false);
