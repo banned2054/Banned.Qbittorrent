@@ -2,25 +2,24 @@
 
 English | [简体中文](https://github.com/banned2054/Banned.Qbittorrent/blob/main/Docs/README.md)
 
-[![NuGet](https://img.shields.io/nuget/v/Banned.Qbittorrent.svg)](https://www.nuget.org/packages/Banned.Qbittorrent)[![Downloads](https://img.shields.io/nuget/dt/Banned.Qbittorrent.svg)](https://www.nuget.org/packages/Banned.Qbittorrent)[![License](https://img.shields.io/badge/license-Apache_2.0-green)](./LICENSE)
+[![NuGet](https://img.shields.io/nuget/v/Banned.Qbittorrent.svg)](https://www.nuget.org/packages/Banned.Qbittorrent) [![Downloads](https://img.shields.io/nuget/dt/Banned.Qbittorrent.svg)](https://www.nuget.org/packages/Banned.Qbittorrent) [![License](https://img.shields.io/badge/license-Apache_2.0-green)](./LICENSE)
 
-**Banned.Qbittorrent** is a high-performance, strongly-typed .NET client library for qBittorrent's Web API. It is designed to be modern, asynchronous, and robust, providing full coverage of the qBittorrent feature set.
+**Banned.Qbittorrent** is a strongly typed, asynchronous .NET client for qBittorrent's Web API. It covers the main application, torrent, transfer, sync, RSS, search, log, authentication, and torrent-creator workflows while handling important API differences between qBittorrent versions.
 
 ## ✨ Key Features
 
-- **Full API Implementation**: Complete coverage of Torrent management, Application settings, RSS, Search, and Sync modules.
-- **Automatic Version Negotiation**: Automatically detects the Web API version and enforces compatibility checks for specific features.
-- **Smart Auth Handling**: Built-in session keep-alive and automatic re-login logic.
-- **Resilient Networking**: Includes an exponential backoff retry mechanism to handle transient network issues.
-- **Asynchronous First**: First-class support for `Task`-based asynchronous patterns and `CancellationToken`.
-- **NativeAOT Ready**: Uses source-generated JSON contracts and is validated with trimming and NativeAOT analyzers.
-- **Parallel Request Execution**: Execute multiple requests concurrently for improved performance.
-- **Enhanced Configuration**: Flexible options for customizing retry behavior, timeouts, and logging.
-- **Memory Optimization**: Improved file upload mechanism to reduce memory usage for large torrent files.
+- **Broad Web API Support**: Service-oriented access to qBittorrent's major Web API modules.
+- **Version-Aware Compatibility**: Detects server versions, checks endpoint availability, and translates renamed parameters where needed.
+- **Reliable Authentication**: Maintains sessions and automatically re-authenticates after authorization failures.
+- **Resilient Networking**: Supports retries, timeouts, diagnostics, and optional IPv4 fallback for dual-stack hosts.
+- **Async and Cancellable**: Public network operations use `Task` and accept `CancellationToken`.
+- **NativeAOT Ready**: Uses source-generated JSON metadata and is validated by a NativeAOT smoke application.
+- **Modern .NET Support**: Targets .NET 8, .NET 9, and .NET 10.
+- **Efficient Uploads**: Streams torrent files instead of loading complete files into memory.
 
 ## 📦 Installation
 
-Install via NuGet Package Manager:
+Install the package from NuGet:
 
 ```bash
 dotnet add package Banned.Qbittorrent
@@ -28,108 +27,99 @@ dotnet add package Banned.Qbittorrent
 
 ## 🚀 Quick Start
 
-1. Initialize the Client
-   Use the static Create factory method to handle initial authentication and API version negotiation automatically.
+### 1. Initialize the Client
+
+`QBittorrentClient.Create` logs in and negotiates the Web API and qBittorrent application versions.
 
 ```csharp
 using Banned.Qbittorrent;
+
+using var client = await QBittorrentClient.Create(
+    "http://localhost:8080",
+    "admin",
+    "adminadmin");
+```
+
+Use `QBittorrentClientOptions` when custom networking behavior is required:
+
+```csharp
 using Banned.Qbittorrent.Models;
 using Banned.Qbittorrent.Models.Enums;
 
-// Automatically logs in and configures version compatibility
-var client = await QBittorrentClient.Create("http://localhost:8080", "admin", "adminadmin");
+var options = new QBittorrentClientOptions
+{
+    AddressFamilyPreference = AddressFamilyPreference.System,
+    EnableAutomaticIPv4Fallback = true,
+    ConnectTimeout = TimeSpan.FromSeconds(5),
+    DiagnosticSink = message => Console.Error.WriteLine(message)
+};
 
-// Or with custom configuration
-var client = await QBittorrentClient.Create(
-    url: "http://localhost:8080",
-    userName: "admin",
-    password: "adminadmin",
-    httpClient: customHttpClient,    // Custom HttpClient instance
-    maxRetries: 5,                   // Maximum number of retries
-    timeout: TimeSpan.FromSeconds(30), // Request timeout
-    enableDetailedLogging: true      // Include additional network failure diagnostics
-);
-
-// Configure dual-stack connection behavior
-var dualStackClient = await QBittorrentClient.Create(
+using var client = await QBittorrentClient.Create(
     "https://qbittorrent.example.com:8443",
     "admin",
     "adminadmin",
-    new QBittorrentClientOptions
-    {
-        AddressFamilyPreference = AddressFamilyPreference.System,
-        EnableAutomaticIPv4Fallback = true,
-        ConnectTimeout = TimeSpan.FromSeconds(5)
-    });
+    options);
 ```
 
-The internally created client first follows the system connection policy. If connection or TLS establishment fails and DNS is dual-stack, it upgrades once to an IPv4-first handler while preserving authentication cookies. `PreferIPv4` and `PreferIPv6` can be selected explicitly. A caller-provided `HttpClient` remains entirely caller-owned: the library does not change or dispose it, and proxy/address-family policy must be configured on that client by the caller.
+A caller-provided `HttpClient` remains caller-owned and is not modified or disposed by the library.
 
-For temporary troubleshooting, set `DiagnosticSink` when using the options overload. It is `null` by default and adds no logging dependency:
+### 2. Torrent Management
 
 ```csharp
-var diagnosticOptions = new QBittorrentClientOptions
+using Banned.Qbittorrent.Models.Requests;
+
+var torrents = await client.Torrent.GetTorrentInfos();
+
+await client.Torrent.AddTorrent(new AddTorrentRequest
 {
-    DiagnosticSink = message => Console.Error.WriteLine(message)
-};
-```
-
-2. Torrent Management
-
-```csharp
-// Get all torrents
-var torrents = await client.Torrent.GetInfos();
-
-// Add a new torrent via Magnet link
-await client.Torrent.Add(new AddTorrentsRequest {
-    Urls = new[] { "magnet:?xt=urn:btih:..." },
-    SavePath = "/downloads/movies"
+    Urls = ["magnet:?xt=urn:btih:..."],
+    SavePath = "/downloads/movies",
+    Tags = "movies"
 });
 
-// Manage specific torrents
-var hashes = new[] { "hash1", "hash2" };
-await client.Torrent.Pause(hashes);
-await client.Torrent.Resume(hashes);
+await client.Torrent.PauseTorrents(["hash1", "hash2"]);
+await client.Torrent.ResumeTorrents(["hash1", "hash2"]);
 ```
 
-3. Application Preferences
+### 3. Application Preferences
 
 ```csharp
-// Retrieve current settings
-var prefs = await client.Application.GetApplicationPreferences();
-
-// Modify and save
-prefs.AlternativeWebuiEnabled = true;
-await client.Application.SetApplicationPreferences(prefs);
+var preferences = await client.Application.GetApplicationPreferences();
+if (preferences is not null)
+{
+    preferences.AlternativeWebUiEnabled = true;
+    await client.Application.SetApplicationPreferences(preferences);
+}
 ```
 
 ## 🛠 Project Architecture
 
-| Service        | Description                                                   |
-| -------------- | ------------------------------------------------------------- |
-| Application    | App versions, Build info, Preferences, and Cookie management. |
-| Authentication | Login, Logout, and Session persistence.                       |
-| Torrent        | Management of torrents, categories, tags, and file priority.  |
-| Transfer       | Global speed limits, transfer statistics, and info.           |
-| Sync           | Main data synchronization and incremental status updates.     |
-| Rss            | Management of RSS feeds and automated download rules.         |
-| Search         | Search engine tasks and plugin management.                    |
-| Log            | System events and peer-to-peer connection logs.               |
+| Service | Responsibility |
+| --- | --- |
+| Application | Versions, build information, preferences, cookies, and server controls. |
+| Authentication | Login, logout, and session recovery. |
+| Torrent | Torrents, files, trackers, peers, categories, tags, limits, and queue controls. |
+| Transfer | Global transfer statistics, speed limits, and peer banning. |
+| Sync | Main-data and torrent-peer synchronization. |
+| RSS | Feeds, articles, and automatic download rules. |
+| Search | Search jobs, results, categories, and plugins. |
+| Log | Main and peer log access. |
+| TorrentCreator | Torrent creation tasks, status, output, and deletion. |
 
 ## 📜 Changelog
 
-[🧾 View CHANGELOG](https://github.com/banned2054/Banned.Qbittorrent/blob/main/Docs/CHANGELOG.md)
+[View CHANGELOG](https://github.com/banned2054/Banned.Qbittorrent/blob/main/Docs/CHANGELOG.md)
 
 ## ⚖️ License
 
 Copyright (c) 2026 banned.
 
-This project is licensed under the Apache License 2.0. See the [LICENSE](https://github.com/banned2054/Banned.Qbittorrent/blob/main/LICENSE) file for details. See [NOTICE](https://github.com/banned2054/Banned.Qbittorrent/blob/main/NOTICE) for upstream acknowledgements and third-party notices.
+Licensed under the [Apache License 2.0](./LICENSE). See [NOTICE](./NOTICE) for upstream acknowledgements and third-party notices.
 
 ## 🤝 Contributing
 
-Contributions are welcome! If you encounter a bug or have a feature request, please open an issue. Pull requests are highly appreciated.
+Issues and pull requests are welcome. Please include a focused description and tests for behavior changes where practical.
 
 ---
 
-Inspired by [qbittorrent-api](https://github.com/rmartin16/qbittorrent-api) and [official qBittorrent WebUI Wiki](<https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-5.0)>).
+Inspired by [qbittorrent-api](https://github.com/rmartin16/qbittorrent-api) and the [official qBittorrent WebUI API documentation](<https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-5.0)>).

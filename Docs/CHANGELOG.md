@@ -1,11 +1,12 @@
 # Changelog
 
-All notable changes to this project will be documented in this file.  
+All notable changes to this project will be documented in this file.
 
-This format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),  and this project adheres to [Semantic Versioning](https://semver.org/).
+This format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## 📘 Versions
 
+- [v1.6.0](#-release-v160--api-coverage--version-compatibility)
 - [v1.5.1](#-release-v151--xml-documentation-support)
 - [v1.5.0](#-release-v150--nativeaot--trimming-support)
 - [v1.4.0](#-release-v140--dual-stack-connection-recovery--diagnostics)
@@ -21,6 +22,39 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 - [v0.0.7](#-release-v007--qbittorrent-net-client-refinement)
 - [v0.0.6](#-release-v006--qbittorrent-net-client-enhancement)
 - [v0.0.5](#-release-v005--qbittorrent-net-client-update)
+
+## 🚀 Release v1.6.0 — API Coverage & Version Compatibility
+
+**Release Date:** 2026-08-08
+
+### ✨ Added
+
+* Added the official Torrent Creator API, including task creation, status, torrent-file retrieval, and deletion.
+* Added missing Application, Torrent, and Search operations, including build information, network interfaces, torrent export, web seeds, paths, tags, plugin listing, and search-result downloads.
+* Added the remaining Add Torrent options supported by current qBittorrent releases, including temporary download paths, stop conditions, queue placement, share-limit actions, TLS fields, and forced state.
+* Added `CancellationToken` support across public asynchronous network operations.
+
+### 🔧 Changed
+
+* Client initialization now retains both the Web API version and qBittorrent application version for compatibility decisions.
+* Endpoint availability checks now support both introduction and removal versions.
+* Add Torrent translates legacy directory-layout fields and sends compatible aliases while allowing older servers to ignore unknown optional fields.
+* CI now runs the unit test suite in addition to Release and NativeAOT validation.
+
+### 🐞 Fixed
+
+* Corrected response contracts for build information, directory listings, binary torrent downloads, and other previously mismatched endpoints.
+* Corrected torrent filter names introduced by Web API 2.11 and rename behavior across qBittorrent 4.3.2 and 4.3.3.
+* Added missing minimum-version checks for versioned endpoints before network requests are sent.
+
+### ⚠️ Compatibility
+
+* Adding optional `CancellationToken` parameters changes compiled method signatures. Source consumers normally only need to rebuild, but applications replacing the assembly without recompilation may encounter binary incompatibility.
+
+### 🧪 Tests
+
+* Expanded isolated coverage for authentication recovery, retries, cancellation, multipart uploads, JSON converters, API versions, service contracts, and Add Torrent compatibility.
+* The current suite contains 132 tests and does not require a live qBittorrent server.
 
 ## 🚀 Release v1.5.1 — XML Documentation Support
 

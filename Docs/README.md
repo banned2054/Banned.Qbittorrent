@@ -2,25 +2,24 @@
 
 [English](https://github.com/banned2054/Banned.Qbittorrent/blob/main/README.md) | 简体中文
 
-[![NuGet](https://img.shields.io/nuget/v/Banned.Qbittorrent.svg)](https://www.nuget.org/packages/Banned.Qbittorrent)[![Downloads](https://img.shields.io/nuget/dt/Banned.Qbittorrent.svg)](https://www.nuget.org/packages/Banned.Qbittorrent)[![License](https://img.shields.io/badge/license-Apache_2.0-green)](./LICENSE)
+[![NuGet](https://img.shields.io/nuget/v/Banned.Qbittorrent.svg)](https://www.nuget.org/packages/Banned.Qbittorrent) [![Downloads](https://img.shields.io/nuget/dt/Banned.Qbittorrent.svg)](https://www.nuget.org/packages/Banned.Qbittorrent) [![License](https://img.shields.io/badge/license-Apache_2.0-green)](../LICENSE)
 
-**Banned.Qbittorrent** 是一个高性能、强类型的 qBittorrent Web API .NET 客户端库。它采用现代异步设计，功能强大且稳健，实现了对 qBittorrent 功能集的完整覆盖。
+**Banned.Qbittorrent** 是一个强类型、异步的 qBittorrent Web API .NET 客户端，覆盖应用、种子、传输、同步、RSS、搜索、日志、认证和 Torrent Creator 等主要工作流，并处理不同 qBittorrent 版本间的重要 API 差异。
 
 ## ✨ 核心特性
 
-- **完整的 API 实现**: 全面覆盖种子管理（Torrent）、应用程序设置、RSS、搜索以及同步（Sync）模块。
-- **自动版本协商**: 自动检测 Web API 版本，并针对特定功能执行兼容性检查。
-- **智能身份验证**: 内置会话保持（Keep-alive）机制与自动重新登录逻辑。
-- **弹性网络处理**: 包含指数退避（Exponential Backoff）重试机制，从容应对瞬时网络抖动。
-- **异步优先**: 原生支持基于 `Task` 的异步模式及 `CancellationToken` 取消令牌。
-- **NativeAOT 支持**: 使用源生成 JSON 契约，并通过裁剪与 NativeAOT 分析验证。
-- **并行请求执行**: 并发执行多个请求以提高性能。
-- **增强的配置选项**: 灵活的选项用于自定义重试行为、超时和日志记录。
-- **内存优化**: 改进的文件上传机制，减少大种子文件的内存使用。
+- **广泛的 Web API 支持**：按服务模块访问 qBittorrent 的主要 Web API。
+- **版本兼容处理**：检测服务端版本、检查端点可用性，并转换有名称变化的参数。
+- **可靠的身份验证**：维护登录会话，并在认证失效后自动重新登录。
+- **弹性网络处理**：支持重试、超时、诊断，以及双栈主机的可选 IPv4 回退。
+- **异步与取消**：公开网络操作使用 `Task` 并接受 `CancellationToken`。
+- **NativeAOT 支持**：使用源生成 JSON 元数据，并通过 NativeAOT 冒烟项目验证。
+- **现代 .NET 支持**：面向 .NET 8、.NET 9 和 .NET 10。
+- **高效上传**：流式读取 Torrent 文件，避免一次性载入内存。
 
 ## 📦 安装
 
-通过 NuGet 包管理器安装：
+从 NuGet 安装：
 
 ```bash
 dotnet add package Banned.Qbittorrent
@@ -28,108 +27,99 @@ dotnet add package Banned.Qbittorrent
 
 ## 🚀 快速上手
 
-1. 初始化客户端
-   使用静态工厂方法 `Create` 自动处理初始身份验证和 API 版本协商。
+### 1. 初始化客户端
+
+`QBittorrentClient.Create` 会自动登录，并协商 Web API 与 qBittorrent 应用版本。
 
 ```csharp
 using Banned.Qbittorrent;
+
+using var client = await QBittorrentClient.Create(
+    "http://localhost:8080",
+    "admin",
+    "adminadmin");
+```
+
+需要自定义网络行为时可使用 `QBittorrentClientOptions`：
+
+```csharp
 using Banned.Qbittorrent.Models;
 using Banned.Qbittorrent.Models.Enums;
 
-// 自动登录并配置版本兼容性
-var client = await QBittorrentClient.Create("http://localhost:8080", "admin", "adminadmin");
+var options = new QBittorrentClientOptions
+{
+    AddressFamilyPreference = AddressFamilyPreference.System,
+    EnableAutomaticIPv4Fallback = true,
+    ConnectTimeout = TimeSpan.FromSeconds(5),
+    DiagnosticSink = message => Console.Error.WriteLine(message)
+};
 
-// 或使用自定义配置
-var client = await QBittorrentClient.Create(
-    url: "http://localhost:8080",
-    userName: "admin",
-    password: "adminadmin",
-    httpClient: customHttpClient,    // 自定义HttpClient实例
-    maxRetries: 5,                   // 最大重试次数
-    timeout: TimeSpan.FromSeconds(30), // 请求超时时间
-    enableDetailedLogging: true      // 在网络故障异常中包含额外诊断信息
-);
-
-// 配置双栈连接行为
-var dualStackClient = await QBittorrentClient.Create(
+using var client = await QBittorrentClient.Create(
     "https://qbittorrent.example.com:8443",
     "admin",
     "adminadmin",
-    new QBittorrentClientOptions
-    {
-        AddressFamilyPreference = AddressFamilyPreference.System,
-        EnableAutomaticIPv4Fallback = true,
-        ConnectTimeout = TimeSpan.FromSeconds(5)
-    });
+    options);
 ```
 
-内部创建的客户端会先遵循系统连接策略；当连接或 TLS 建立失败且 DNS 同时包含 IPv4/IPv6 时，只升级一次为 IPv4 优先 handler，并复用认证 Cookie。也可以显式选择 `PreferIPv4` 或 `PreferIPv6`。调用者传入的 `HttpClient` 完全由调用者管理：库不会修改或释放它，代理和地址族策略也应由调用者在该客户端上配置。
+调用者传入的 `HttpClient` 始终由调用者管理，本库不会修改或释放它。
 
-临时排障时，可通过 options 重载设置 `DiagnosticSink`。该属性默认为 `null`，不会引入日志依赖：
+### 2. 种子管理
 
 ```csharp
-var diagnosticOptions = new QBittorrentClientOptions
+using Banned.Qbittorrent.Models.Requests;
+
+var torrents = await client.Torrent.GetTorrentInfos();
+
+await client.Torrent.AddTorrent(new AddTorrentRequest
 {
-    DiagnosticSink = message => Console.Error.WriteLine(message)
-};
-```
-
-2. 种子管理
-
-```csharp
-// 获取所有种子信息
-var torrents = await client.Torrent.GetInfos();
-
-// 通过磁力链接添加新种子
-await client.Torrent.Add(new AddTorrentsRequest {
-    Urls = new[] { "magnet:?xt=urn:btih:..." },
-    SavePath = "/downloads/movies"
+    Urls = ["magnet:?xt=urn:btih:..."],
+    SavePath = "/downloads/movies",
+    Tags = "movies"
 });
 
-// 管理特定种子
-var hashes = new[] { "hash1", "hash2" };
-await client.Torrent.Pause(hashes);
-await client.Torrent.Resume(hashes);
+await client.Torrent.PauseTorrents(["hash1", "hash2"]);
+await client.Torrent.ResumeTorrents(["hash1", "hash2"]);
 ```
 
-3. 修改应用程序首选项
+### 3. 应用程序首选项
 
 ```csharp
-// 获取当前设置
-var prefs = await client.Application.GetApplicationPreferences();
-
-// 修改并保存
-prefs.AlternativeWebuiEnabled = true;
-await client.Application.SetApplicationPreferences(prefs);
+var preferences = await client.Application.GetApplicationPreferences();
+if (preferences is not null)
+{
+    preferences.AlternativeWebUiEnabled = true;
+    await client.Application.SetApplicationPreferences(preferences);
+}
 ```
 
 ## 🛠 项目架构
 
-| 服务模块       | 描述                                             |
-| -------------- | ------------------------------------------------ |
-| Application    | 包含应用版本、构建信息、偏好设置及 Cookie 管理。 |
-| Authentication | 负责登录、注销及会话持久化。                     |
-| Torrent        | 管理种子、分类、标签及文件优先级。               |
-| Transfer       | 管理全局限速、传输统计数据及状态信息。           |
-| Sync           | 核心数据同步及增量状态更新。                     |
-| Rss            | 管理 RSS 订阅源及自动下载规则。                  |
-| Search         | 管理搜索引擎任务及插件。                         |
-| Log            | 系统事件日志及 P2P 连接日志。                    |
+| 服务 | 职责 |
+| --- | --- |
+| Application | 版本、构建信息、偏好设置、Cookie 与服务器控制。 |
+| Authentication | 登录、注销与会话恢复。 |
+| Torrent | 种子、文件、Tracker、Peer、分类、标签、限速与队列控制。 |
+| Transfer | 全局传输统计、速度限制与 Peer 封禁。 |
+| Sync | 主数据与 Torrent Peer 增量同步。 |
+| RSS | 订阅源、文章与自动下载规则。 |
+| Search | 搜索任务、结果、分类与插件。 |
+| Log | 主日志与 Peer 日志。 |
+| TorrentCreator | Torrent 创建任务、状态、文件获取与删除。 |
 
 ## 📜 更新日志
 
-[🧾 查看 CHANGELOG](https://github.com/banned2054/Banned.Qbittorrent/blob/main/Docs/CHANGELOG.md)
+[查看 CHANGELOG](https://github.com/banned2054/Banned.Qbittorrent/blob/main/Docs/CHANGELOG.md)
 
 ## ⚖️ 开源协议
 
 Copyright (c) 2026 banned.
 
-本项目基于 Apache License 2.0 协议开源。详情请参阅 [LICENSE](https://github.com/banned2054/Banned.Qbittorrent/blob/main/LICENSE) 文件。上游致谢与第三方声明请参阅 [NOTICE](https://github.com/banned2054/Banned.Qbittorrent/blob/main/NOTICE)。
+本项目基于 [Apache License 2.0](../LICENSE) 开源。上游致谢与第三方声明参阅 [NOTICE](../NOTICE)。
 
 ## 🤝 参与贡献
 
-欢迎任何形式的贡献！如果您发现 Bug 或有新功能建议，请提交 Issue。我们也期待您的 Pull Request。
+欢迎提交 Issue 和 Pull Request。涉及行为变化时，请尽量附上聚焦的说明与测试。
 
 ---
 
-本项目灵感源自 [qbittorrent-api](https://github.com/rmartin16/qbittorrent-api) 和 [qBittorrent 官方 WebUI Wiki](<https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-5.0)>).
+本项目受 [qbittorrent-api](https://github.com/rmartin16/qbittorrent-api) 和 [qBittorrent 官方 WebUI API 文档](<https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-5.0)>) 启发。
