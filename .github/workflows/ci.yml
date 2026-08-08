@@ -22,6 +22,9 @@ jobs:
             - name: Build
               run: dotnet build Banned.Qbittorrent.sln --configuration Release
 
+            - name: Test
+              run: dotnet test Banned.Qbittorrent.sln --configuration Release --no-build
+
             - name: Publish NativeAOT smoke application
               run: dotnet publish Banned.Qbittorrent.AotSmoke/Banned.Qbittorrent.AotSmoke.csproj --configuration Release --runtime linux-x64 --output artifacts/aot
 
