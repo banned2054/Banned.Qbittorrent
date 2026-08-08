@@ -639,49 +639,85 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
     /// <param name="autoTmm">是否自动管理。<br/>Whether to use automatic torrent management.</param>
     /// <param name="sequentialDownload">是否顺序下载。<br/>Whether to download sequentially.</param>
     /// <param name="firstLastPiecePriority">是否优先下载首尾块。<br/>Whether to prioritize first and last pieces.</param>
+    /// <param name="cookie">获取远程 Torrent 文件时使用的 Cookie。<br/>Cookie used to retrieve a remote torrent file.</param>
+    /// <param name="contentLayout">Torrent 内容的目录布局。<br/>Directory layout for torrent content.</param>
+    /// <param name="downloadPath">Torrent 完成前使用的临时下载路径。<br/>Temporary download path used before completion.</param>
+    /// <param name="useDownloadPath">是否使用临时下载路径。<br/>Whether to use the temporary download path.</param>
+    /// <param name="stopCondition">自动停止 Torrent 的条件。<br/>Condition for automatically stopping the torrent.</param>
+    /// <param name="addToTopOfQueue">是否添加到队列顶部。<br/>Whether to add the torrent to the top of the queue.</param>
+    /// <param name="inactiveSeedingTimeLimit">非活动状态下的做种时间限制（分钟）。<br/>Inactive seeding time limit (minutes).</param>
+    /// <param name="shareLimitAction">达到分享限制后执行的操作。<br/>Action performed after the share limit is reached.</param>
+    /// <param name="sslCertificate">用于 SSL Torrent 的客户端证书。<br/>Client certificate for SSL torrents.</param>
+    /// <param name="sslPrivateKey">用于 SSL Torrent 的客户端私钥。<br/>Client private key for SSL torrents.</param>
+    /// <param name="sslDhParameters">用于 SSL Torrent 的 Diffie-Hellman 参数。<br/>Diffie-Hellman parameters for SSL torrents.</param>
+    /// <param name="forced">是否以强制状态添加 Torrent。<br/>Whether to add the torrent in the forced state.</param>
     /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
     /// <returns>
     /// 操作结果信息。<br/>
     /// Operation result message.
     /// </returns>
-    public async Task<string> AddTorrent(
-        List<string>?     filePaths              = null,
-        List<string>?     urls                   = null,
-        string?           savePath               = "/download",
-        string?           category               = null,
-        string?           tags                   = null,
-        bool?             skipChecking           = null,
-        bool?             stopped                = null,
-        bool?             paused                 = null,
-        bool?             rootFolder             = null,
-        string?           rename                 = null,
-        int?              uploadLimit            = null,
-        int?              downloadLimit          = null,
-        float?            ratioLimit             = null,
-        int?              seedingTimeLimit       = null,
-        bool?             autoTmm                = null,
-        bool?             sequentialDownload     = null,
-        bool?             firstLastPiecePriority = null,
-        CancellationToken cancellationToken      = default)
+    public async Task<string> AddTorrent(List<string>?                filePaths                = null,
+                                         List<string>?                urls                     = null,
+                                         string?                      savePath                 = "/download",
+                                         string?                      category                 = null,
+                                         string?                      tags                     = null,
+                                         bool?                        skipChecking             = null,
+                                         bool?                        stopped                  = null,
+                                         bool?                        paused                   = null,
+                                         bool?                        rootFolder               = null,
+                                         string?                      rename                   = null,
+                                         int?                         uploadLimit              = null,
+                                         int?                         downloadLimit            = null,
+                                         float?                       ratioLimit               = null,
+                                         int?                         seedingTimeLimit         = null,
+                                         bool?                        autoTmm                  = null,
+                                         bool?                        sequentialDownload       = null,
+                                         bool?                        firstLastPiecePriority   = null,
+                                         string?                      cookie                   = null,
+                                         EnumContentLayout?           contentLayout            = null,
+                                         string?                      downloadPath             = null,
+                                         bool?                        useDownloadPath          = null,
+                                         EnumTorrentAddStopCondition? stopCondition            = null,
+                                         bool?                        addToTopOfQueue          = null,
+                                         int?                         inactiveSeedingTimeLimit = null,
+                                         EnumTorrentShareLimitAction? shareLimitAction         = null,
+                                         string?                      sslCertificate           = null,
+                                         string?                      sslPrivateKey            = null,
+                                         string?                      sslDhParameters          = null,
+                                         bool?                        forced                   = null,
+                                         CancellationToken            cancellationToken        = default)
     {
         var request = new AddTorrentRequest
         {
             FilePaths                     = filePaths,
             Urls                          = urls,
             SavePath                      = savePath,
+            Cookie                        = cookie,
             Category                      = category,
             Tags                          = tags,
             SkipCheckingEnabled           = skipChecking,
             RootFolderEnabled             = rootFolder,
+            ContentLayout                 = contentLayout,
+            DownloadPath                  = downloadPath,
+            UseDownloadPathEnabled        = useDownloadPath,
+            StopCondition                 = stopCondition,
+            AddToTopOfQueueEnabled        = addToTopOfQueue,
             Rename                        = rename,
             UploadLimit                   = uploadLimit,
             DownloadLimit                 = downloadLimit,
             RatioLimit                    = ratioLimit,
             SeedingTimeLimit              = seedingTimeLimit,
+            InactiveSeedingTimeLimit      = inactiveSeedingTimeLimit,
+            ShareLimitAction              = shareLimitAction,
+            SslCertificate                = sslCertificate,
+            SslPrivateKey                 = sslPrivateKey,
+            SslDhParameters               = sslDhParameters,
+            StoppedEnabled                = stopped,
+            ForcedEnabled                 = forced,
             AutoTmmEnabled                = autoTmm,
             SequentialDownloadEnabled     = sequentialDownload,
             FirstLastPiecePriorityEnabled = firstLastPiecePriority,
-            PausedEnabled                 = stopped ?? paused
+            PausedEnabled                 = paused
         };
 
         return await AddTorrent(request, cancellationToken);

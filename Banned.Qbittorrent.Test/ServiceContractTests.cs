@@ -107,9 +107,8 @@ public class ServiceContractTests
     public async Task SearchOperations_UseDocumentedEndpointsAndParameters()
     {
         var responses = new Queue<string>(["{\"id\":42}", ""]);
-        var (netService, httpClient, handler) = CreateNetService(_ =>
-                                                                     StubHttpMessageHandler
-                                                                        .JsonResponse(responses.Dequeue()));
+        var (netService, httpClient, handler) =
+            CreateNetService(_ => StubHttpMessageHandler.JsonResponse(responses.Dequeue()));
         using (netService)
         using (httpClient)
         {
@@ -142,9 +141,8 @@ public class ServiceContractTests
             "[\"/downloads/a.torrent\"]",
             "[{\"name\":\"a.torrent\",\"size\":123}]"
         ]);
-        var (netService, httpClient, handler) = CreateNetService(_ =>
-                                                                     StubHttpMessageHandler
-                                                                        .JsonResponse(responses.Dequeue()));
+        var (netService, httpClient, handler) =
+            CreateNetService(_ => StubHttpMessageHandler.JsonResponse(responses.Dequeue()));
         using (netService)
         using (httpClient)
         {
@@ -237,7 +235,7 @@ public class ServiceContractTests
         using (httpClient)
         {
             ThrowsAsync<Banned.Qbittorrent.Exceptions.QbittorrentNotSupportedException>(async () =>
-                await new TorrentService(netService, new ApiVersion(2, 9, 1)).GetTorrentCount());
+                         await new TorrentService(netService, new ApiVersion(2, 9, 1)).GetTorrentCount());
             That(handler.Requests, Is.Empty);
         }
     }
@@ -249,9 +247,9 @@ public class ServiceContractTests
     [TestCase(2, 11, EnumTorrentFilter.StalledUploading, "stalled_uploading")]
     [TestCase(2, 11, EnumTorrentFilter.Error, "errored")]
     public async Task GetTorrentInfos_UsesVersionSpecificFilterName(int               major,
-                                                                   int               minor,
-                                                                   EnumTorrentFilter filter,
-                                                                   string            expected)
+                                                                    int               minor,
+                                                                    EnumTorrentFilter filter,
+                                                                    string            expected)
     {
         var apiVersion = new ApiVersion(major, minor);
         var (netService, httpClient, handler) =
@@ -300,8 +298,8 @@ public class ServiceContractTests
     [TestCase(EnumContentLayout.Original, "true")]
     [TestCase(EnumContentLayout.Subfolder, "true")]
     [TestCase(EnumContentLayout.NoSubfolder, "false")]
-    public async Task AddTorrent_ConvertsContentLayoutToRootFolderBeforeWebApi27(EnumContentLayout layout,
-                                                                                string            expected)
+    public async Task AddTorrent_ConvertsContentLayoutToRootFolderBeforeWebApi27(
+        EnumContentLayout layout, string expected)
     {
         var apiVersion = ApiVersion.V2_6_0;
         var (netService, httpClient, handler) =
@@ -324,15 +322,137 @@ public class ServiceContractTests
         }
     }
 
+    [Test]
+    public async Task AddTorrent_SerializesExtendedParametersOnLatestWebApi()
+    {
+        var (netService, httpClient, handler) =
+            CreateNetService(_ => StubHttpMessageHandler.JsonResponse("Ok."), ApiVersion.V2_15_1);
+        using (netService)
+        using (httpClient)
+        {
+            await new TorrentService(netService, ApiVersion.V2_15_1)
+               .AddTorrent(urls : ["magnet:?xt=urn:btih:abc"],
+                           tags : "linux,iso",
+                           stopped : true,
+                           ratioLimit : 1.25f,
+                           seedingTimeLimit : 120,
+                           cookie : "session=abc",
+                           contentLayout : EnumContentLayout.Subfolder,
+                           downloadPath : "/incomplete",
+                           useDownloadPath : false,
+                           stopCondition : EnumTorrentAddStopCondition.FilesChecked,
+                           addToTopOfQueue : true,
+                           inactiveSeedingTimeLimit : 30,
+                           shareLimitAction : EnumTorrentShareLimitAction.RemoveWithContent,
+                           sslCertificate : "certificate",
+                           sslPrivateKey : "private-key",
+                           sslDhParameters : "dh-parameters",
+                           forced : true);
+
+            var form = DecodeForm(handler.Requests.Single());
+            Multiple(() =>
+            {
+                That(form, Does.Contain("cookie=session=abc"));
+                That(form, Does.Contain("tags=linux,iso"));
+                That(form, Does.Contain("paused=true"));
+                That(form, Does.Contain("stopped=true"));
+                That(form, Does.Contain("contentLayout=Subfolder"));
+                That(form, Does.Contain("ratioLimit=1.25"));
+                That(form, Does.Contain("seedingTimeLimit=120"));
+                That(form, Does.Contain("downloadPath=/incomplete"));
+                That(form, Does.Contain("useDownloadPath=false"));
+                That(form, Does.Contain("stopCondition=FilesChecked"));
+                That(form, Does.Contain("addToTopOfQueue=true"));
+                That(form, Does.Contain("inactiveSeedingTimeLimit=30"));
+                That(form, Does.Contain("shareLimitAction=RemoveWithContent"));
+                That(form, Does.Contain("ssl_certificate=certificate"));
+                That(form, Does.Contain("ssl_private_key=private-key"));
+                That(form, Does.Contain("ssl_dh_params=dh-parameters"));
+                That(form, Does.Contain("forced=true"));
+            });
+        }
+    }
+
+    [TestCase(null, "true")]
+    [TestCase(false, "false")]
+    public async Task AddTorrent_DefaultsUseDownloadPathOnlyWhenNotExplicitlySet(bool? useDownloadPath,
+        string                                                                         expected)
+    {
+        var (netService, httpClient, handler) =
+            CreateNetService(_ => StubHttpMessageHandler.JsonResponse("Ok."), ApiVersion.V2_8_4);
+        using (netService)
+        using (httpClient)
+        {
+            await new TorrentService(netService, ApiVersion.V2_8_4).AddTorrent(new AddTorrentRequest
+            {
+                Urls                   = ["magnet:?xt=urn:btih:abc"],
+                DownloadPath           = "/incomplete",
+                UseDownloadPathEnabled = useDownloadPath
+            });
+
+            That(DecodeForm(handler.Requests.Single()), Does.Contain($"useDownloadPath={expected}"));
+        }
+    }
+
+    [Test]
+    public void AddTorrentRequest_ToDictionaryWithoutVersionSerializesExtendedParameters()
+    {
+        var parameters = new AddTorrentRequest
+        {
+            Tags          = "tag",
+            DownloadPath  = "/incomplete",
+            ForcedEnabled = true
+        }.ToDictionary();
+
+        Multiple(() =>
+        {
+            That(parameters["tags"], Is.EqualTo("tag"));
+            That(parameters["downloadPath"], Is.EqualTo("/incomplete"));
+            That(parameters["useDownloadPath"], Is.EqualTo("true"));
+            That(parameters["forced"], Is.EqualTo("true"));
+        });
+    }
+
+    [TestCase("tags")]
+    [TestCase("ratioLimit")]
+    [TestCase("seedingTimeLimit")]
+    [TestCase("downloadPath")]
+    [TestCase("useDownloadPath")]
+    [TestCase("stopCondition")]
+    [TestCase("addToTopOfQueue")]
+    [TestCase("inactiveSeedingTimeLimit")]
+    [TestCase("shareLimitAction")]
+    [TestCase("ssl_certificate")]
+    [TestCase("ssl_private_key")]
+    [TestCase("ssl_dh_params")]
+    [TestCase("forced")]
+    public async Task AddTorrent_SendsExtendedParametersToOlderWebApiVersions(string parameter)
+    {
+        var apiVersion = new ApiVersion(2, 0);
+        var request    = CreateAddTorrentRequestWithParameter(parameter);
+
+        var (netService, httpClient, handler) =
+            CreateNetService(_ => StubHttpMessageHandler.JsonResponse("Ok."), apiVersion);
+        using (netService)
+        using (httpClient)
+        {
+            await new TorrentService(netService, apiVersion).AddTorrent(request);
+
+            Multiple(() =>
+            {
+                That(handler.Requests, Has.Count.EqualTo(1));
+                That(DecodeForm(handler.Requests.Single()), Does.Contain($"{parameter}="));
+            });
+        }
+    }
+
     [TestCase("setShareLimits", 2, 0, 0)]
     [TestCase("editTracker", 2, 1, 1)]
     [TestCase("renameFile", 2, 3, 0)]
     [TestCase("renameFolder", 2, 6, 0)]
     [TestCase("banPeers", 2, 2, 0)]
-    public void VersionedOperations_RejectUnsupportedApiVersionBeforeSendingRequest(string operation,
-                                                                                    int    major,
-                                                                                    int    minor,
-                                                                                    int    patch)
+    public void VersionedOperations_RejectUnsupportedApiVersionBeforeSendingRequest(
+        string operation, int major, int minor, int patch)
     {
         var apiVersion = new ApiVersion(major, minor, patch);
         var (netService, httpClient, handler) =
@@ -366,10 +486,10 @@ public class ServiceContractTests
                                                                      {
                                                                          "/api/v2/torrentcreator/addTask" =>
                                                                              StubHttpMessageHandler.JsonResponse(
-                                                                              "{\"taskID\":\"task-1\",\"futureField\":\"preserved\"}"),
+                                                                                  "{\"taskID\":\"task-1\",\"futureField\":\"preserved\"}"),
                                                                          "/api/v2/torrentcreator/status" =>
                                                                              StubHttpMessageHandler.JsonResponse(
-                                                                              "[{\"taskID\":\"task-1\",\"status\":\"Finished\",\"progress\":1,\"futureField\":42}]"),
+                                                                                  "[{\"taskID\":\"task-1\",\"status\":\"Finished\",\"progress\":1,\"futureField\":42}]"),
                                                                          "/api/v2/torrentcreator/torrentFile" =>
                                                                              StubHttpMessageHandler
                                                                                 .BytesResponse(torrentBytes),
@@ -468,8 +588,7 @@ public class ServiceContractTests
     }
 
     private static (NetService NetService, HttpClient HttpClient, StubHttpMessageHandler Handler)
-        CreateNetService(string json)
-        => CreateNetService(_ => StubHttpMessageHandler.JsonResponse(json));
+        CreateNetService(string json) => CreateNetService(_ => StubHttpMessageHandler.JsonResponse(json));
 
     private static (NetService NetService, HttpClient HttpClient, StubHttpMessageHandler Handler)
         CreateNetService(Func<HttpRequestMessage, HttpResponseMessage> responseFactory, ApiVersion? apiVersion = null)
@@ -483,4 +602,56 @@ public class ServiceContractTests
 
     private static string DecodeForm(HttpRequestSnapshot request) =>
         Uri.UnescapeDataString(request.Body ?? string.Empty);
+
+    private static AddTorrentRequest CreateAddTorrentRequestWithParameter(string parameter)
+    {
+        var request = new AddTorrentRequest { Urls = ["magnet:?xt=urn:btih:abc"] };
+        switch (parameter)
+        {
+            case "tags" :
+                request.Tags = "tag";
+                break;
+            case "ratioLimit" :
+                request.RatioLimit = 1;
+                break;
+            case "seedingTimeLimit" :
+                request.SeedingTimeLimit = 1;
+                break;
+            case "downloadPath" :
+                request.DownloadPath           = "/incomplete";
+                request.UseDownloadPathEnabled = false;
+                break;
+            case "useDownloadPath" :
+                request.UseDownloadPathEnabled = true;
+                break;
+            case "stopCondition" :
+                request.StopCondition = EnumTorrentAddStopCondition.MetadataReceived;
+                break;
+            case "addToTopOfQueue" :
+                request.AddToTopOfQueueEnabled = true;
+                break;
+            case "inactiveSeedingTimeLimit" :
+                request.InactiveSeedingTimeLimit = 1;
+                break;
+            case "shareLimitAction" :
+                request.ShareLimitAction = EnumTorrentShareLimitAction.Stop;
+                break;
+            case "ssl_certificate" :
+                request.SslCertificate = "certificate";
+                break;
+            case "ssl_private_key" :
+                request.SslPrivateKey = "private-key";
+                break;
+            case "ssl_dh_params" :
+                request.SslDhParameters = "dh-parameters";
+                break;
+            case "forced" :
+                request.ForcedEnabled = true;
+                break;
+            default :
+                throw new ArgumentOutOfRangeException(nameof(parameter), parameter, null);
+        }
+
+        return request;
+    }
 }
