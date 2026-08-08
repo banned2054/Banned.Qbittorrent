@@ -15,7 +15,7 @@ internal sealed class StubHttpMessageHandler(Func<HttpRequestMessage, HttpRespon
             ? null
             : await request.Content.ReadAsStringAsync(cancellationToken);
 
-        Requests.Add(new HttpRequestSnapshot(request.Method, request.RequestUri!, body));
+        Requests.Add(new HttpRequestSnapshot(request.Method, request.RequestUri!, body, cancellationToken));
         return responseFactory(request);
     }
 
@@ -30,4 +30,8 @@ internal sealed class StubHttpMessageHandler(Func<HttpRequestMessage, HttpRespon
     };
 }
 
-internal sealed record HttpRequestSnapshot(HttpMethod Method, Uri Uri, string? Body);
+internal sealed record HttpRequestSnapshot(
+    HttpMethod        Method,
+    Uri               Uri,
+    string?           Body,
+    CancellationToken CancellationToken);

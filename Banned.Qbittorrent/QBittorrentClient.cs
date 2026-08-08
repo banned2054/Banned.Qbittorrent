@@ -66,20 +66,19 @@ public class QBittorrentClient : IDisposable
     private readonly NetService _network;
 
     /// <summary>
-    /// 私有构造函数，通过静态工厂方法 <see cref="Create(string, string, string, QBittorrentClientOptions)"/> 进行初始化。<br/>
-    /// Private constructor, initialized via the static factory method <see cref="Create(string, string, string, QBittorrentClientOptions)"/>.
+    /// 私有构造函数，通过静态工厂方法 <see cref="Create(string, string, string, QBittorrentClientOptions, CancellationToken)"/> 进行初始化。<br/>
+    /// Private constructor, initialized via the static factory method <see cref="Create(string, string, string, QBittorrentClientOptions, CancellationToken)"/>.
     /// </summary>
-    private QBittorrentClient(
-        ApplicationService    app,
-        AuthenticationService authentication,
-        LogService            log,
-        RssService            rss,
-        SearchService         search,
-        SyncService           sync,
-        TorrentService        torrent,
-        TorrentCreatorService torrentCreator,
-        TransferService       transfer,
-        NetService            net)
+    private QBittorrentClient(ApplicationService    app,
+                              AuthenticationService authentication,
+                              LogService            log,
+                              RssService            rss,
+                              SearchService         search,
+                              SyncService           sync,
+                              TorrentService        torrent,
+                              TorrentCreatorService torrentCreator,
+                              TransferService       transfer,
+                              NetService            net)
     {
         Application    = app;
         Authentication = authentication;
@@ -104,14 +103,16 @@ public class QBittorrentClient : IDisposable
     /// <param name="maxRetries">最大重试次数。 / Maximum number of retries.</param>
     /// <param name="timeout">请求超时时间，为 null 时默认 15 秒。 / Request timeout, default 15 seconds when null.</param>
     /// <param name="enableDetailedLogging">是否在网络故障异常中包含额外诊断信息。 / Whether network failure exceptions include additional diagnostics.</param>
+    /// <param name="cancellationToken">取消初始化、登录或版本协商的令牌。 / Token used to cancel initialization, login, or version negotiation.</param>
     /// <returns>已完成 API 版本协商的客户端实例。 / A client instance with API version negotiation completed.</returns>
     /// <remarks>
     /// 此方法会自动调用 <c>GetApiVersion</c> 并将其配置到网络服务中，以确保后续请求的版本兼容性。<br/>
     /// This method automatically calls <c>GetApiVersion</c> and configures it in the network service to ensure version compatibility for subsequent requests.
     /// </remarks>
-    public static async Task<QBittorrentClient> Create(string      url, string userName, string password,
+    public static async Task<QBittorrentClient> Create(string url, string userName, string password,
                                                        HttpClient? httpClient = null, int? maxRetries = null,
-                                                       TimeSpan?   timeout = null, bool? enableDetailedLogging = null)
+                                                       TimeSpan? timeout = null, bool? enableDetailedLogging = null,
+                                                       CancellationToken cancellationToken = default)
     {
         return await Create(
                             url,
@@ -124,7 +125,8 @@ public class QBittorrentClient : IDisposable
                                 Timeout               = timeout    ?? NetService.DefaultRequestTimeout,
                                 ConnectTimeout        = NetService.DefaultConnectTimeout,
                                 EnableDetailedLogging = enableDetailedLogging ?? false
-                            })
+                            },
+                            cancellationToken)
            .ConfigureAwait(false);
     }
 
@@ -136,19 +138,22 @@ public class QBittorrentClient : IDisposable
     /// <param name="userName">用户名。 / Username.</param>
     /// <param name="password">密码。 / Password.</param>
     /// <param name="options">网络与重试选项。 / Networking and retry options.</param>
+    /// <param name="cancellationToken">取消初始化、登录或版本协商的令牌。 / Token used to cancel initialization, login, or version negotiation.</param>
     /// <returns>已完成登录和 API 版本协商的客户端实例。 / An initialized client instance.</returns>
     public static async Task<QBittorrentClient> Create(string                   url, string userName, string password,
-                                                       QBittorrentClientOptions options)
+                                                       QBittorrentClientOptions options,
+                                                       CancellationToken        cancellationToken = default)
     {
         return await CreateCore(url, userName, password, options,
-                                static (baseUrl, clientOptions) => new NetService(baseUrl, clientOptions))
+                                static (baseUrl, clientOptions) => new NetService(baseUrl, clientOptions),
+                                cancellationToken)
            .ConfigureAwait(false);
     }
 
     internal static async Task<QBittorrentClient> CreateCore(string url, string userName, string password,
                                                              QBittorrentClientOptions options,
                                                              Func<string, QBittorrentClientOptions, NetService>
-                                                                 netServiceFactory)
+                                                                 netServiceFactory, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(url);
         ArgumentNullException.ThrowIfNull(userName);
@@ -162,8 +167,8 @@ public class QBittorrentClient : IDisposable
         var auth        = new AuthenticationService(net, userName, password);
         try
         {
-            await auth.Login().ConfigureAwait(false);
-            var apiVersion = await application.GetApiVersion().ConfigureAwait(false);
+            await auth.Login(cancellationToken).ConfigureAwait(false);
+            var apiVersion = await application.GetApiVersion(cancellationToken).ConfigureAwait(false);
             net.SetApiVersion(apiVersion);
             var log            = new LogService(net);
             var rss            = new RssService(net);

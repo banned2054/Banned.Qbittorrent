@@ -20,9 +20,10 @@ public class TransferService(NetService netService)
     /// 包含速度、数据量及连接状态的传输信息对象。<br/>
     /// A transfer info object containing speed, data usage, and connection status.
     /// </returns>
-    public async Task<TransferInfo> GetTransferInfo()
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
+    public async Task<TransferInfo> GetTransferInfo(CancellationToken cancellationToken = default)
     {
-        var response = await netService.Get($"{BaseUrl}/info");
+        var response = await netService.Get($"{BaseUrl}/info", ct : cancellationToken);
         return QBittorrentJsonSerializer.Deserialize<TransferInfo>(response) ?? new TransferInfo();
     }
 
@@ -34,9 +35,10 @@ public class TransferService(NetService netService)
     /// 启用返回 true，否则返回 false。<br/>
     /// Returns true if enabled, otherwise false.
     /// </returns>
-    public async Task<bool> GetIsAlternativeSpeedLimitsEnabled()
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
+    public async Task<bool> GetIsAlternativeSpeedLimitsEnabled(CancellationToken cancellationToken = default)
     {
-        var response = await netService.Get($"{BaseUrl}/speedLimitsMode");
+        var response = await netService.Get($"{BaseUrl}/speedLimitsMode", ct : cancellationToken);
         return response == "1";
     }
 
@@ -44,9 +46,10 @@ public class TransferService(NetService netService)
     /// 切换备用速度限制的状态。<br/>
     /// Toggle the state of alternative speed limits.
     /// </summary>
-    public async Task ToggleAlternativeSpeedLimits()
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
+    public async Task ToggleAlternativeSpeedLimits(CancellationToken cancellationToken = default)
     {
-        await netService.Post($"{BaseUrl}/toggleSpeedLimitsMode");
+        await netService.Post($"{BaseUrl}/toggleSpeedLimitsMode", ct : cancellationToken);
     }
 
     /// <summary>
@@ -57,9 +60,10 @@ public class TransferService(NetService netService)
     /// 下载限制（字节/秒）。<br/>
     /// Download limit (bytes/s).
     /// </returns>
-    public async Task<long> GetGlobalDownloadLimit()
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
+    public async Task<long> GetGlobalDownloadLimit(CancellationToken cancellationToken = default)
     {
-        var result = await netService.Get($"{BaseUrl}/downloadLimit");
+        var result = await netService.Get($"{BaseUrl}/downloadLimit", ct : cancellationToken);
         return long.Parse(result);
     }
 
@@ -68,13 +72,14 @@ public class TransferService(NetService netService)
     /// Set global download speed limit.
     /// </summary>
     /// <param name="limit">下载限制（字节/秒）。 / Download limit (bytes/s).</param>
-    public async Task SetGlobalDownloadLimit(long limit)
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
+    public async Task SetGlobalDownloadLimit(long limit, CancellationToken cancellationToken = default)
     {
         var parameters = new Dictionary<string, string>
         {
             { "limit", limit.ToString() }
         };
-        await netService.Post($"{BaseUrl}/setDownloadLimit", parameters);
+        await netService.Post($"{BaseUrl}/setDownloadLimit", parameters, ct : cancellationToken);
     }
 
     /// <summary>
@@ -85,9 +90,10 @@ public class TransferService(NetService netService)
     /// 上传限制（字节/秒）。<br/>
     /// Upload limit (bytes/s).
     /// </returns>
-    public async Task<long> GetGlobalUploadLimit()
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
+    public async Task<long> GetGlobalUploadLimit(CancellationToken cancellationToken = default)
     {
-        var result = await netService.Get($"{BaseUrl}/uploadLimit");
+        var result = await netService.Get($"{BaseUrl}/uploadLimit", ct : cancellationToken);
         return long.Parse(result);
     }
 
@@ -96,13 +102,14 @@ public class TransferService(NetService netService)
     /// Set global upload speed limit.
     /// </summary>
     /// <param name="limit">上传限制（字节/秒）。 / Upload limit (bytes/s).</param>
-    public async Task SetGlobalUploadLimit(long limit)
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
+    public async Task SetGlobalUploadLimit(long limit, CancellationToken cancellationToken = default)
     {
         var parameters = new Dictionary<string, string>
         {
             { "limit", limit.ToString() }
         };
-        await netService.Post($"{BaseUrl}/setUploadLimit", parameters);
+        await netService.Post($"{BaseUrl}/setUploadLimit", parameters, ct : cancellationToken);
     }
 
     /// <summary>
@@ -110,12 +117,13 @@ public class TransferService(NetService netService)
     /// Ban specified peers.
     /// </summary>
     /// <param name="peers">要封禁的 Peer 列表（格式通常为 IP:Port）。 / List of peers to ban (usually in IP:Port format).</param>
-    public async Task BanPeers(List<string> peers)
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
+    public async Task BanPeers(List<string> peers, CancellationToken cancellationToken = default)
     {
         var parameters = new Dictionary<string, string>
         {
             { "peers", StringUtils.Join('|', peers) }
         };
-        await netService.Post($"{BaseUrl}/banPeers", parameters);
+        await netService.Post($"{BaseUrl}/banPeers", parameters, ct : cancellationToken);
     }
 }

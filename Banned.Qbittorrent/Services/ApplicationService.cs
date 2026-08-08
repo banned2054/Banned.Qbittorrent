@@ -20,9 +20,10 @@ public class ApplicationService(NetService netService)
     /// Web API 版本信息。<br/>
     /// Web API version information.
     /// </returns>
-    public async Task<ApiVersion> GetApiVersion()
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
+    public async Task<ApiVersion> GetApiVersion(CancellationToken cancellationToken = default)
     {
-        var result = await netService.Get($"{BaseUrl}/webapiVersion", skipAuthCheck : true);
+        var result = await netService.Get($"{BaseUrl}/webapiVersion", skipAuthCheck : true, ct : cancellationToken);
         return ApiVersion.Parse(result);
     }
 
@@ -34,9 +35,10 @@ public class ApplicationService(NetService netService)
     /// qBittorrent 版本号。<br/>
     /// qBittorrent version string.
     /// </returns>
-    public async Task<string> GetVersion()
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
+    public async Task<string> GetVersion(CancellationToken cancellationToken = default)
     {
-        var result = await netService.Get($"{BaseUrl}/version");
+        var result = await netService.Get($"{BaseUrl}/version", ct : cancellationToken);
         return result;
     }
 
@@ -48,9 +50,10 @@ public class ApplicationService(NetService netService)
     /// 构建信息。<br/>
     /// Build information.
     /// </returns>
-    public async Task<BuildInfo?> GetBuildInfo()
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
+    public async Task<BuildInfo?> GetBuildInfo(CancellationToken cancellationToken = default)
     {
-        var response = await netService.Get($"{BaseUrl}/buildInfo", ApiVersion.V2_3_0);
+        var response = await netService.Get($"{BaseUrl}/buildInfo", ApiVersion.V2_3_0, ct : cancellationToken);
         return QBittorrentJsonSerializer.Deserialize<BuildInfo>(response);
     }
 
@@ -62,9 +65,10 @@ public class ApplicationService(NetService netService)
     /// qBittorrent 进程信息。<br/>
     /// qBittorrent process information.
     /// </returns>
-    public async Task<ProcessInfo?> GetProcessInfo()
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
+    public async Task<ProcessInfo?> GetProcessInfo(CancellationToken cancellationToken = default)
     {
-        var response = await netService.Get($"{BaseUrl}/processInfo", ApiVersion.V2_15_1);
+        var response = await netService.Get($"{BaseUrl}/processInfo", ApiVersion.V2_15_1, ct : cancellationToken);
         var result   = QBittorrentJsonSerializer.Deserialize<ProcessInfo>(response);
         return result;
     }
@@ -77,9 +81,10 @@ public class ApplicationService(NetService netService)
     /// 此操作会向 qBittorrent Web API 发送关闭请求，通常需要管理员权限。<br/>
     /// This operation sends a shutdown request to the qBittorrent Web API, which usually requires administrative privileges.
     /// </remarks>
-    public async Task ShutDown()
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
+    public async Task ShutDown(CancellationToken cancellationToken = default)
     {
-        await netService.Post($"{BaseUrl}/shutdown");
+        await netService.Post($"{BaseUrl}/shutdown", ct : cancellationToken);
     }
 
     /// <summary>
@@ -94,9 +99,10 @@ public class ApplicationService(NetService netService)
     /// 成功时返回 HTTP 200，并返回 JSON 对象，包含应用程序设置的键值对。<br/>
     /// On success, returns HTTP 200 with a JSON object containing key-value pairs of application settings.
     /// </remarks>
-    public async Task<ApplicationPreferences?> GetApplicationPreferences()
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
+    public async Task<ApplicationPreferences?> GetApplicationPreferences(CancellationToken cancellationToken = default)
     {
-        var response = await netService.Get($"{BaseUrl}/preferences");
+        var response = await netService.Get($"{BaseUrl}/preferences", ct : cancellationToken);
         var result   = QBittorrentJsonSerializer.Deserialize<ApplicationPreferences>(response);
         return result;
     }
@@ -113,7 +119,9 @@ public class ApplicationService(NetService netService)
     /// 请求会将参数序列化为 JSON，并作为 <c>json</c> 字段提交到 Web API。<br/>
     /// The request serializes the preferences into JSON and submits it to the Web API as the <c>json</c> field.
     /// </remarks>
-    public async Task SetApplicationPreferences(ApplicationPreferences applicationPreferences)
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
+    public async Task SetApplicationPreferences(ApplicationPreferences applicationPreferences,
+                                                CancellationToken      cancellationToken = default)
     {
         var request = QBittorrentJsonSerializer.SerializeIgnoringNulls(applicationPreferences);
         var parameters = new Dictionary<string, string>
@@ -121,7 +129,7 @@ public class ApplicationService(NetService netService)
             { "json", request }
         };
 
-        await netService.Post($"{BaseUrl}/setPreferences", parameters);
+        await netService.Post($"{BaseUrl}/setPreferences", parameters, ct : cancellationToken);
     }
 
     /// <summary>
@@ -132,9 +140,10 @@ public class ApplicationService(NetService netService)
     /// 默认保存路径字符串。<br/>
     /// The default save path string.
     /// </returns>
-    public async Task<string> GetDefaultSavePath()
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
+    public async Task<string> GetDefaultSavePath(CancellationToken cancellationToken = default)
     {
-        var result = await netService.Get($"{BaseUrl}/defaultSavePath");
+        var result = await netService.Get($"{BaseUrl}/defaultSavePath", ct : cancellationToken);
         return result;
     }
 
@@ -146,9 +155,10 @@ public class ApplicationService(NetService netService)
     /// Cookie 列表。<br/>
     /// A list of cookies.
     /// </returns>
-    public async Task<List<Cookie>> GetCookies()
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
+    public async Task<List<Cookie>> GetCookies(CancellationToken cancellationToken = default)
     {
-        var response = await netService.Get($"{BaseUrl}/cookies", ApiVersion.V2_11_3);
+        var response = await netService.Get($"{BaseUrl}/cookies", ApiVersion.V2_11_3, ct : cancellationToken);
         var result   = QBittorrentJsonSerializer.Deserialize<List<Cookie>>(response);
         return result ?? [];
     }
@@ -165,14 +175,15 @@ public class ApplicationService(NetService netService)
     /// 列表中的每个 Cookie 必须包含 name, domain, path 和 value 字段。<br/>
     /// Each cookie in the list must contain name, domain, path, and value fields.
     /// </remarks>
-    public async Task SetCookies(List<Cookie> cookies)
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
+    public async Task SetCookies(List<Cookie> cookies, CancellationToken cancellationToken = default)
     {
         var request = QBittorrentJsonSerializer.SerializeIgnoringNulls(cookies);
         var parameters = new Dictionary<string, string>
         {
             { "json", request }
         };
-        await netService.Post($"{BaseUrl}/setCookies", parameters, ApiVersion.V2_11_3);
+        await netService.Post($"{BaseUrl}/setCookies", parameters, ApiVersion.V2_11_3, ct : cancellationToken);
     }
 
     /// <summary>
@@ -180,9 +191,11 @@ public class ApplicationService(NetService netService)
     /// Gets the network interfaces on the qBittorrent host.
     /// </summary>
     /// <returns>网络接口列表。<br/>The network interface list.</returns>
-    public async Task<List<NetworkInterfaceInfo>> GetNetworkInterfaces()
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
+    public async Task<List<NetworkInterfaceInfo>> GetNetworkInterfaces(CancellationToken cancellationToken = default)
     {
-        var response = await netService.Get($"{BaseUrl}/networkInterfaceList", ApiVersion.V2_3_0);
+        var response =
+            await netService.Get($"{BaseUrl}/networkInterfaceList", ApiVersion.V2_3_0, ct : cancellationToken);
         return QBittorrentJsonSerializer.Deserialize<List<NetworkInterfaceInfo>>(response) ?? [];
     }
 
@@ -191,11 +204,14 @@ public class ApplicationService(NetService netService)
     /// Gets addresses for a network interface, or all addresses when the interface name is empty.
     /// </summary>
     /// <param name="interfaceName">网络接口名称。<br/>Network interface name.</param>
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
     /// <returns>网络地址列表。<br/>The network address list.</returns>
-    public async Task<List<string>> GetNetworkInterfaceAddresses(string interfaceName = "")
+    public async Task<List<string>> GetNetworkInterfaceAddresses(string            interfaceName     = "",
+                                                                 CancellationToken cancellationToken = default)
     {
         var parameters = new Dictionary<string, string> { { "iface", interfaceName } };
-        var response   = await netService.Post($"{BaseUrl}/networkInterfaceAddressList", parameters, ApiVersion.V2_3_0);
+        var response = await netService.Post($"{BaseUrl}/networkInterfaceAddressList", parameters, ApiVersion.V2_3_0,
+                                             ct : cancellationToken);
         return QBittorrentJsonSerializer.Deserialize<List<string>>(response) ?? [];
     }
 
@@ -203,16 +219,19 @@ public class ApplicationService(NetService netService)
     /// 使用当前应用程序设置发送测试邮件。<br/>
     /// Sends a test email using the current application settings.
     /// </summary>
-    public async Task SendTestEmail() =>
-        await netService.Post($"{BaseUrl}/sendTestEmail", targetVersion : ApiVersion.V2_10_4);
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
+    public async Task SendTestEmail(CancellationToken cancellationToken = default) =>
+        await netService.Post($"{BaseUrl}/sendTestEmail", targetVersion : ApiVersion.V2_10_4, ct : cancellationToken);
 
     /// <summary>
     /// 获取目录中的文件和子目录路径。<br/>
     /// Gets file and subdirectory paths in a directory.
     /// </summary>
     /// <param name="directoryPath">qBittorrent 主机上的目录路径。<br/>Directory path on the qBittorrent host.</param>
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
     /// <returns>目录内容路径列表。<br/>The directory content paths.</returns>
-    public async Task<List<string>> GetDirectoryContent(string directoryPath)
+    public async Task<List<string>> GetDirectoryContent(string            directoryPath,
+                                                        CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(directoryPath);
         var parameters = new Dictionary<string, string>
@@ -220,7 +239,8 @@ public class ApplicationService(NetService netService)
             { "dirPath", directoryPath },
             { "withMetadata", "false" }
         };
-        var response = await netService.Post($"{BaseUrl}/getDirectoryContent", parameters, ApiVersion.V2_11_0);
+        var response = await netService.Post($"{BaseUrl}/getDirectoryContent", parameters, ApiVersion.V2_11_0,
+                                             ct : cancellationToken);
         return QBittorrentJsonSerializer.Deserialize<List<string>>(response) ?? [];
     }
 
@@ -229,8 +249,10 @@ public class ApplicationService(NetService netService)
     /// Gets directory contents including metadata.
     /// </summary>
     /// <param name="directoryPath">qBittorrent 主机上的目录路径。<br/>Directory path on the qBittorrent host.</param>
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
     /// <returns>每个目录项的元数据。<br/>Metadata for each directory entry.</returns>
-    public async Task<List<Dictionary<string, JsonElement>>> GetDirectoryContentWithMetadata(string directoryPath)
+    public async Task<List<Dictionary<string, JsonElement>>> GetDirectoryContentWithMetadata(
+        string directoryPath, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(directoryPath);
         var parameters = new Dictionary<string, string>
@@ -238,7 +260,8 @@ public class ApplicationService(NetService netService)
             { "dirPath", directoryPath },
             { "withMetadata", "true" }
         };
-        var response = await netService.Post($"{BaseUrl}/getDirectoryContent", parameters, ApiVersion.V2_11_8);
+        var response = await netService.Post($"{BaseUrl}/getDirectoryContent", parameters, ApiVersion.V2_11_8,
+                                             ct : cancellationToken);
         return QBittorrentJsonSerializer.Deserialize<List<Dictionary<string, JsonElement>>>(response) ?? [];
     }
 }

@@ -19,18 +19,19 @@ public class SyncService(NetService netService)
     /// 响应 ID。如果是第一次请求，请设为 0。服务器将只返回自该 rid 以来发生变化的数据。<br/>
     /// Response ID. If this is the first request, set it to 0. The server will only return data changed since this rid.
     /// </param>
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
     /// <returns>
     /// 包含种子信息、传输状态、分类及标签的主数据更新对象。<br/>
     /// A main data update object containing torrents, transfer state, categories, and tags.
     /// </returns>
-    public async Task<MainData?> GetMainData(int rid = 0)
+    public async Task<MainData?> GetMainData(int rid = 0, CancellationToken cancellationToken = default)
     {
         var parameters = new Dictionary<string, string>
         {
             { "rid", rid.ToString() }
         };
 
-        var response = await netService.Post($"{BaseUrl}/maindata", parameters);
+        var response = await netService.Post($"{BaseUrl}/maindata", parameters, ct : cancellationToken);
         return QBittorrentJsonSerializer.Deserialize<MainData>(response);
     }
 
@@ -40,11 +41,13 @@ public class SyncService(NetService netService)
     /// </summary>
     /// <param name="rid">响应 ID。 / Response ID.</param>
     /// <param name="hash">种子的 Hash 值。 / Torrent hash.</param>
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
     /// <returns>
     /// Peer 增量更新数据对象。<br/>
     /// A peer incremental update data object.
     /// </returns>
-    public async Task<PeerData?> GetPeerData(int rid = 0, string hash = "")
+    public async Task<PeerData?> GetPeerData(int    rid  = 0,
+                                             string hash = "", CancellationToken cancellationToken = default)
     {
         var parameters = new Dictionary<string, string>
         {
@@ -52,7 +55,7 @@ public class SyncService(NetService netService)
             { "hash", hash }
         };
 
-        var response = await netService.Post($"{BaseUrl}/torrentPeers", parameters);
+        var response = await netService.Post($"{BaseUrl}/torrentPeers", parameters, ct : cancellationToken);
         return QBittorrentJsonSerializer.Deserialize<PeerData>(response);
     }
 }

@@ -22,8 +22,11 @@ public class SearchService(NetService netService)
     /// <param name="pattern">搜索关键词。Search pattern.</param>
     /// <param name="plugins">要使用的插件列表（"all" 表示所有插件）。List of plugins to use (or "all").</param>
     /// <param name="category">要搜索的类别（"all" 表示所有类别）。Category to search in (or "all").</param>
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
     /// <returns>包含搜索作业 ID 的对象。An object containing the search job ID.</returns>
-    public async Task<SearchJob?> StartSearch(string pattern, string[] plugins, string category = "all")
+    public async Task<SearchJob?> StartSearch(string   pattern,
+                                              string[] plugins,
+                                              string   category = "all", CancellationToken cancellationToken = default)
     {
         var parameters = new Dictionary<string, string>
         {
@@ -31,7 +34,8 @@ public class SearchService(NetService netService)
             { "plugins", StringUtils.Join('|', plugins) },
             { "category", category },
         };
-        var result = await netService.Post($"{BaseUrl}/start", parameters, ApiVersion.V2_1_1);
+        var result = await netService.Post($"{BaseUrl}/start", parameters, ApiVersion.V2_1_1,
+                                           ct : cancellationToken);
         return QBittorrentJsonSerializer.Deserialize<SearchJob>(result);
     }
 
@@ -40,13 +44,14 @@ public class SearchService(NetService netService)
     /// Stop the specific search job.
     /// </summary>
     /// <param name="id">搜索作业的 ID。Search job ID.</param>
-    public async Task StopSearch(int id)
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
+    public async Task StopSearch(int id, CancellationToken cancellationToken = default)
     {
         var parameters = new Dictionary<string, string>
         {
             { "id", id.ToString() }
         };
-        await netService.Post($"{BaseUrl}/stop", parameters, ApiVersion.V2_1_1);
+        await netService.Post($"{BaseUrl}/stop", parameters, ApiVersion.V2_1_1, ct : cancellationToken);
     }
 
     /// <summary>
@@ -54,21 +59,24 @@ public class SearchService(NetService netService)
     /// Stop the specific search job.
     /// </summary>
     /// <param name="job">搜索作业对象。Search job object.</param>
-    public async Task StopSearch(SearchJob job) => await StopSearch(job.Id);
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
+    public async Task StopSearch(SearchJob job, CancellationToken cancellationToken = default) =>
+        await StopSearch(job.Id, cancellationToken);
 
     /// <summary>
     /// 获取搜索作业的状态。<br/>
     /// Get the status of search jobs.
     /// </summary>
     /// <param name="id">可选的搜索作业 ID。如果不指定，则返回所有搜索作业的状态。<br/>Optional search job ID. If not specified, returns status of all jobs.</param>
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
     /// <returns>搜索状态列表。A list of search statuses.</returns>
-    public async Task<SearchStatus[]?> SearchStatus(int? id = null)
+    public async Task<SearchStatus[]?> SearchStatus(int? id = null, CancellationToken cancellationToken = default)
     {
         var url = $"{BaseUrl}/status";
 
         if (id.HasValue) url += $"?id={id.Value}";
 
-        var response = await netService.Get(url, ApiVersion.V2_1_1);
+        var response = await netService.Get(url, ApiVersion.V2_1_1, ct : cancellationToken);
         return QBittorrentJsonSerializer.Deserialize<SearchStatus[]>(response);
     }
 
@@ -79,8 +87,11 @@ public class SearchService(NetService netService)
     /// <param name="id">搜索作业 ID。Search job ID.</param>
     /// <param name="limit">返回结果的最大数量。Max number of results to return.</param>
     /// <param name="offset">结果偏移量。Result offset.</param>
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
     /// <returns>包含搜索结果及状态的对象。An object containing search results and status.</returns>
-    public async Task<SearchResult?> GetSearchResults(int id, int limit = 0, int offset = 0)
+    public async Task<SearchResult?> GetSearchResults(int id,
+                                                      int limit  = 0,
+                                                      int offset = 0, CancellationToken cancellationToken = default)
     {
         var parameters = new Dictionary<string, string>
         {
@@ -88,7 +99,8 @@ public class SearchService(NetService netService)
             { "limit", limit.ToString() },
             { "offset", offset.ToString() }
         };
-        var response = await netService.Post($"{BaseUrl}/results", parameters, ApiVersion.V2_1_1);
+        var response =
+            await netService.Post($"{BaseUrl}/results", parameters, ApiVersion.V2_1_1, ct : cancellationToken);
         return QBittorrentJsonSerializer.Deserialize<SearchResult>(response);
     }
 
@@ -97,13 +109,14 @@ public class SearchService(NetService netService)
     /// Delete search job.
     /// </summary>
     /// <param name="id">搜索作业 ID。Search job ID.</param>
-    public async Task DeleteSearchResults(int id)
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
+    public async Task DeleteSearchResults(int id, CancellationToken cancellationToken = default)
     {
         var parameters = new Dictionary<string, string>
         {
             { "id", id.ToString() }
         };
-        await netService.Post($"{BaseUrl}/delete", parameters, ApiVersion.V2_1_1);
+        await netService.Post($"{BaseUrl}/delete", parameters, ApiVersion.V2_1_1, ct : cancellationToken);
     }
 
     /// <summary>
@@ -111,21 +124,24 @@ public class SearchService(NetService netService)
     /// Delete search job.
     /// </summary>
     /// <param name="job">搜索作业对象。Search job object.</param>
-    public async Task DeleteSearchResults(SearchJob job) => await DeleteSearchResults(job.Id);
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
+    public async Task DeleteSearchResults(SearchJob job, CancellationToken cancellationToken = default) =>
+        await DeleteSearchResults(job.Id, cancellationToken);
 
     /// <summary>
     /// 获取搜索类别。此端点仅存在于 Web API 2.1.1 至 2.6.0 之前。<br/>
     /// Gets search categories. This endpoint is available from Web API 2.1.1 until, but excluding, 2.6.0.
     /// </summary>
     /// <param name="pluginName">可选的插件筛选器，支持 "all" 和 "enabled"。<br/>Optional plugin filter; "all" and "enabled" are supported.</param>
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
     /// <returns>搜索类别列表。A list of search categories.</returns>
-    public async Task<List<SearchCategory>> GetSearchCategories(string? pluginName = null)
+    public async Task<List<SearchCategory>> GetSearchCategories(string?           pluginName        = null,
+                                                                CancellationToken cancellationToken = default)
     {
-        Dictionary<string, string>? parameters = pluginName == null
-            ? null
-            : new Dictionary<string, string> { { "pluginName", pluginName } };
+        var parameters = pluginName == null ? null : new Dictionary<string, string> { { "pluginName", pluginName } };
 
-        var response = await netService.Post($"{BaseUrl}/categories", parameters, SearchCategoriesVersionRange);
+        var response = await netService.Post($"{BaseUrl}/categories", parameters, SearchCategoriesVersionRange,
+                                             ct : cancellationToken);
         return QBittorrentJsonSerializer.Deserialize<List<SearchCategory>>(response) ?? [];
     }
 
@@ -133,10 +149,11 @@ public class SearchService(NetService netService)
     /// 获取所有已安装的搜索插件。<br/>
     /// Get all installed search plugins.
     /// </summary>
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
     /// <returns>搜索插件列表。A list of search plugins.</returns>
-    public async Task<List<SearchPlugins>> GetSearchPlugins()
+    public async Task<List<SearchPlugins>> GetSearchPlugins(CancellationToken cancellationToken = default)
     {
-        var response = await netService.Get($"{BaseUrl}/plugins", ApiVersion.V2_1_1);
+        var response = await netService.Get($"{BaseUrl}/plugins", ApiVersion.V2_1_1, ct : cancellationToken);
         return QBittorrentJsonSerializer.Deserialize<List<SearchPlugins>>(response) ?? [];
     }
 
@@ -145,13 +162,14 @@ public class SearchService(NetService netService)
     /// Install search plugins.
     /// </summary>
     /// <param name="sources">插件源列表（可以是本地路径或 URL）。List of plugin sources (local paths or URLs).</param>
-    public async Task InstallSearchPlugin(string[] sources)
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
+    public async Task InstallSearchPlugin(string[] sources, CancellationToken cancellationToken = default)
     {
         var parameters = new Dictionary<string, string>
         {
             { "sources", StringUtils.Join('|', sources) }
         };
-        await netService.Post($"{BaseUrl}/installPlugin", parameters, ApiVersion.V2_1_1);
+        await netService.Post($"{BaseUrl}/installPlugin", parameters, ApiVersion.V2_1_1, ct : cancellationToken);
     }
 
     /// <summary>
@@ -159,20 +177,23 @@ public class SearchService(NetService netService)
     /// Install search plugin.
     /// </summary>
     /// <param name="source">插件源（可以是本地路径或 URL）。Plugin source (local path or URL).</param>
-    public async Task InstallSearchPlugin(string source) => await InstallSearchPlugin([source]);
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
+    public async Task InstallSearchPlugin(string source, CancellationToken cancellationToken = default) =>
+        await InstallSearchPlugin([source], cancellationToken);
 
     /// <summary>
     /// 卸载搜索插件。<br/>
     /// Uninstall search plugins.
     /// </summary>
     /// <param name="names">要卸载的插件名称列表。List of plugin names to uninstall.</param>
-    public async Task UninstallSearchPlugin(string[] names)
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
+    public async Task UninstallSearchPlugin(string[] names, CancellationToken cancellationToken = default)
     {
         var parameters = new Dictionary<string, string>
         {
             { "names", StringUtils.Join('|', names) }
         };
-        await netService.Post($"{BaseUrl}/uninstallPlugin", parameters, ApiVersion.V2_1_1);
+        await netService.Post($"{BaseUrl}/uninstallPlugin", parameters, ApiVersion.V2_1_1, ct : cancellationToken);
     }
 
     /// <summary>
@@ -180,7 +201,9 @@ public class SearchService(NetService netService)
     /// Uninstall search plugin.
     /// </summary>
     /// <param name="name">要卸载的插件名称。Plugin name to uninstall.</param>
-    public async Task UninstallSearchPlugin(string name) => await UninstallSearchPlugin([name]);
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
+    public async Task UninstallSearchPlugin(string name, CancellationToken cancellationToken = default) =>
+        await UninstallSearchPlugin([name], cancellationToken);
 
     /// <summary>
     /// 启用或禁用搜索插件。<br/>
@@ -188,22 +211,24 @@ public class SearchService(NetService netService)
     /// </summary>
     /// <param name="names">插件名称列表。List of plugin names.</param>
     /// <param name="enable">是否启用。Whether to enable.</param>
-    public async Task EnableSearchPlugin(string[] names, bool enable)
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
+    public async Task EnableSearchPlugin(string[] names, bool enable, CancellationToken cancellationToken = default)
     {
         var parameters = new Dictionary<string, string>
         {
             { "names", StringUtils.Join('|', names) },
             { "enable", enable.ToString().ToLower() }
         };
-        await netService.Post($"{BaseUrl}/enablePlugin", parameters, ApiVersion.V2_1_1);
+        await netService.Post($"{BaseUrl}/enablePlugin", parameters, ApiVersion.V2_1_1, ct : cancellationToken);
     }
 
     /// <summary>
     /// 更新搜索插件。<br/>
     /// Update search plugins.
     /// </summary>
-    public async Task UpdateSearchPlugins() =>
-        await netService.Post($"{BaseUrl}/updatePlugins", null, ApiVersion.V2_1_1);
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
+    public async Task UpdateSearchPlugins(CancellationToken cancellationToken = default) =>
+        await netService.Post($"{BaseUrl}/updatePlugins", null, ApiVersion.V2_1_1, ct : cancellationToken);
 
     /// <summary>
     /// 通过搜索插件下载种子文件或磁力链接。<br/>
@@ -211,7 +236,9 @@ public class SearchService(NetService netService)
     /// </summary>
     /// <param name="torrentUrl">种子文件 URL 或磁力链接。<br/>Torrent file URL or magnet link.</param>
     /// <param name="pluginName">搜索插件名称。<br/>Search plugin name.</param>
-    public async Task DownloadTorrent(string torrentUrl, string pluginName)
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
+    public async Task DownloadTorrent(string torrentUrl,
+                                      string pluginName, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(torrentUrl);
         ArgumentException.ThrowIfNullOrWhiteSpace(pluginName);
@@ -221,6 +248,6 @@ public class SearchService(NetService netService)
             { "torrentUrl", torrentUrl },
             { "pluginName", pluginName }
         };
-        await netService.Post($"{BaseUrl}/downloadTorrent", parameters, ApiVersion.V2_11_0);
+        await netService.Post($"{BaseUrl}/downloadTorrent", parameters, ApiVersion.V2_11_0, ct : cancellationToken);
     }
 }

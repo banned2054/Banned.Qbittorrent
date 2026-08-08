@@ -47,7 +47,9 @@ public class AuthenticationService : IDisposable
     /// 此方法会强制触发登录流程，无论当前是否已登录。<br/>
     /// This method forces the login process regardless of the current login status.
     /// </remarks>
-    public Task Login() => EnsureLoggedIn(force : true, ct : CancellationToken.None);
+    /// <param name="cancellationToken">取消登录请求的令牌。<br/>Token used to cancel the login request.</param>
+    public Task Login(CancellationToken cancellationToken = default) =>
+        EnsureLoggedIn(force : true, ct : cancellationToken);
 
     /// <summary>
     /// 登出 qBittorrent 客户端。<br/>
@@ -57,13 +59,14 @@ public class AuthenticationService : IDisposable
     /// 登出后，本地缓存的登录状态和过期时间将被重置。<br/>
     /// After logging out, the locally cached login status and expiration time will be reset.
     /// </remarks>
-    public async Task Logout()
+    /// <param name="cancellationToken">取消登出请求的令牌。<br/>Token used to cancel the logout request.</param>
+    public async Task Logout(CancellationToken cancellationToken = default)
     {
         if (!_isLoggedIn) return;
 
         try
         {
-            await _netService.Post("api/v2/auth/logout", skipAuthCheck : true);
+            await _netService.Post("api/v2/auth/logout", skipAuthCheck : true, ct : cancellationToken);
         }
         finally
         {

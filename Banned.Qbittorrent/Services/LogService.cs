@@ -20,6 +20,7 @@ public class LogService(NetService netService)
     /// <param name="warning">是否包含警告级别日志。 / Include warning messages.</param>
     /// <param name="critical">是否包含严重错误级别日志。 / Include critical messages.</param>
     /// <param name="lastId">返回 ID 大于此值的日志（用于增量获取）。 / Returns logs with ID greater than this value.</param>
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
     /// <returns>
     /// 日志列表。<br/>
     /// A list of log elements.
@@ -28,7 +29,7 @@ public class LogService(NetService netService)
                                                 bool info     = true,
                                                 bool warning  = true,
                                                 bool critical = true,
-                                                int  lastId   = -1)
+                                                int  lastId   = -1, CancellationToken cancellationToken = default)
     {
         var url = $"{BaseUrl}/main?"                           +
                   $"normal={normal.ToString().ToLower()}&"     +
@@ -37,7 +38,7 @@ public class LogService(NetService netService)
                   $"critical={critical.ToString().ToLower()}&" +
                   $"last_known_id={lastId}";
 
-        var response = await netService.Get(url);
+        var response = await netService.Get(url, ct : cancellationToken);
         return QBittorrentJsonSerializer.Deserialize<List<LogElement>>(response) ?? [];
     }
 
@@ -46,14 +47,15 @@ public class LogService(NetService netService)
     /// Get peer-related logs.
     /// </summary>
     /// <param name="lastId">返回 ID 大于此值的日志。 / Returns logs with ID greater than this value.</param>
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
     /// <returns>
     /// 用户日志列表。<br/>
     /// A list of user log elements.
     /// </returns>
-    public async Task<List<UserLogElement>> GetUserLogs(int lastId = -1)
+    public async Task<List<UserLogElement>> GetUserLogs(int lastId = -1, CancellationToken cancellationToken = default)
     {
         var url      = $"{BaseUrl}/peer?last_known_id={lastId}";
-        var response = await netService.Get(url);
+        var response = await netService.Get(url, ct : cancellationToken);
         return QBittorrentJsonSerializer.Deserialize<List<UserLogElement>>(response) ?? [];
     }
 
@@ -62,34 +64,43 @@ public class LogService(NetService netService)
     /// Get only normal logs.
     /// </summary>
     /// <param name="lastId">上一个已知日志的 ID。 / The last known log ID.</param>
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
     /// <returns>普通日志列表。 / A list of normal log elements.</returns>
-    public async Task<List<LogElement>> GetNormalLog(int lastId = -1) =>
-        await GetLogs(normal : true, info : false, warning : false, critical : false, lastId);
+    public async Task<List<LogElement>> GetNormalLog(int lastId = -1, CancellationToken cancellationToken = default) =>
+        await GetLogs(normal : true, info : false, warning : false, critical : false, lastId : lastId,
+                      cancellationToken : cancellationToken);
 
     /// <summary>
     /// 仅获取信息级别日志。<br/>
     /// Get only info logs.
     /// </summary>
     /// <param name="lastId">上一个已知日志的 ID。 / The last known log ID.</param>
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
     /// <returns>信息日志列表。 / A list of info log elements.</returns>
-    public async Task<List<LogElement>> GetInfoLog(int lastId = -1) =>
-        await GetLogs(normal : false, info : true, warning : false, critical : false, lastId);
+    public async Task<List<LogElement>> GetInfoLog(int lastId = -1, CancellationToken cancellationToken = default) =>
+        await GetLogs(normal : false, info : true, warning : false, critical : false, lastId : lastId,
+                      cancellationToken : cancellationToken);
 
     /// <summary>
     /// 仅获取警告级别日志。<br/>
     /// Get only warning logs.
     /// </summary>
     /// <param name="lastId">上一个已知日志的 ID。 / The last known log ID.</param>
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
     /// <returns>警告日志列表。 / A list of warning log elements.</returns>
-    public async Task<List<LogElement>> GetWarningLog(int lastId = -1) =>
-        await GetLogs(normal : false, info : false, warning : true, critical : false, lastId);
+    public async Task<List<LogElement>> GetWarningLog(int lastId = -1, CancellationToken cancellationToken = default) =>
+        await GetLogs(normal : false, info : false, warning : true, critical : false, lastId : lastId,
+                      cancellationToken : cancellationToken);
 
     /// <summary>
     /// 仅获取严重错误级别日志。<br/>
     /// Get only critical logs.
     /// </summary>
     /// <param name="lastId">上一个已知日志的 ID。 / The last known log ID.</param>
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
     /// <returns>严重错误日志列表。 / A list of critical log elements.</returns>
-    public async Task<List<LogElement>> GetCriticalLog(int lastId = -1) =>
-        await GetLogs(normal : false, info : false, warning : false, critical : true, lastId);
+    public async Task<List<LogElement>>
+        GetCriticalLog(int lastId = -1, CancellationToken cancellationToken = default) =>
+        await GetLogs(normal : false, info : false, warning : false, critical : true, lastId : lastId,
+                      cancellationToken : cancellationToken);
 }

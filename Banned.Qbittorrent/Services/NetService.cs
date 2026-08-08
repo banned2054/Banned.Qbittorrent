@@ -88,7 +88,7 @@ public class NetService : IDisposable
     /// <param name="httpClient">可选的 HttpClient 实例。 / Optional HttpClient instance.</param>
     /// <param name="timeout">可选的请求超时时间，为 null 时默认 15 秒。 / Optional request timeout, default 15 seconds when null.</param>
     public NetService(string baseUrl, HttpClient? httpClient = null, TimeSpan? timeout = null) : this(baseUrl,
-        new QBittorrentClientOptions { HttpClient = httpClient, Timeout = timeout ?? DefaultRequestTimeout })
+             new QBittorrentClientOptions { HttpClient = httpClient, Timeout = timeout ?? DefaultRequestTimeout })
     {
     }
 
@@ -126,12 +126,12 @@ public class NetService : IDisposable
             _cookieContainer = new CookieContainer();
             _ownsHttpClient  = true;
             _httpClientFactory = httpClientFactory ?? (preference => HttpClientUtils.CreateDefaultHttpClient(
-             _cookieContainer,
-             _configuredTimeout,
-             _connectTimeout,
-             preference,
-             _addressResolver,
-             _diagnosticSink == null ? null : EmitConnectionDiagnostic));
+                 _cookieContainer,
+                 _configuredTimeout,
+                 _connectTimeout,
+                 preference,
+                 _addressResolver,
+                 _diagnosticSink == null ? null : EmitConnectionDiagnostic));
             _client = CreateDefaultHttpClient(_addressFamilyPreference);
         }
     }
@@ -276,8 +276,8 @@ public class NetService : IDisposable
                                   ApiVersion?       targetVersion = null,
                                   string?           opName        = null,
                                   bool              skipAuthCheck = false,
-                                  CancellationToken ct            = default,
-                                  int?              maxRetries    = null)
+                                  int?              maxRetries    = null,
+                                  CancellationToken ct            = default)
     {
         EnsureApiVersionSupported(opName ?? subPath, new ApiVersionRange(targetVersion));
 
@@ -300,8 +300,12 @@ public class NetService : IDisposable
     /// <param name="ct">取消令牌。 / Cancellation token.</param>
     /// <param name="maxRetries">最大重试次数覆盖值。 / Maximum retry count override.</param>
     /// <returns>响应体字符串。 / Response body string.</returns>
-    public async Task<string> Get(string subPath,               ApiVersionRange   versionRange, string? opName = null,
-                                  bool   skipAuthCheck = false, CancellationToken ct = default, int? maxRetries = null)
+    public async Task<string> Get(string            subPath,
+                                  ApiVersionRange   versionRange,
+                                  string?           opName        = null,
+                                  bool              skipAuthCheck = false,
+                                  int?              maxRetries    = null,
+                                  CancellationToken ct            = default)
     {
         EnsureApiVersionSupported(opName ?? subPath, versionRange);
 
@@ -329,8 +333,8 @@ public class NetService : IDisposable
                                    ApiVersion?                 targetVersion = null,
                                    string?                     opName        = null,
                                    bool                        skipAuthCheck = false,
-                                   CancellationToken           ct            = default,
-                                   int?                        maxRetries    = null)
+                                   int?                        maxRetries    = null,
+                                   CancellationToken           ct            = default)
     {
         EnsureApiVersionSupported(opName ?? subPath, new ApiVersionRange(targetVersion));
 
@@ -367,8 +371,8 @@ public class NetService : IDisposable
                                    ApiVersionRange             versionRange,
                                    string?                     opName        = null,
                                    bool                        skipAuthCheck = false,
-                                   CancellationToken           ct            = default,
-                                   int?                        maxRetries    = null)
+                                   int?                        maxRetries    = null,
+                                   CancellationToken           ct            = default)
     {
         EnsureApiVersionSupported(opName ?? subPath, versionRange);
 
