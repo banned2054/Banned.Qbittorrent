@@ -366,3 +366,4 @@ AnotherQbittorrent.Test/test-config.json
 AnotherQbittorrent.Test/StaticConfig.cs
 publish.ps1
 Banned.Qbittorrent.Test/.env
+.dsh/
