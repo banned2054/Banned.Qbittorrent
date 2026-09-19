@@ -6,6 +6,7 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## 📘 Versions
 
+- [v1.7.0](#-release-v170--upstream-api-parity-and-qbittorrent-530-support)
 - [v1.6.0](#-release-v160--api-coverage--version-compatibility)
 - [v1.5.1](#-release-v151--xml-documentation-support)
 - [v1.5.0](#-release-v150--nativeaot--trimming-support)
@@ -22,6 +23,36 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 - [v0.0.7](#-release-v007--qbittorrent-net-client-refinement)
 - [v0.0.6](#-release-v006--qbittorrent-net-client-enhancement)
 - [v0.0.5](#-release-v005--qbittorrent-net-client-update)
+
+## 🚀 Release v1.7.0 — Upstream API Parity and qBittorrent 5.3.0 Support
+
+**Release Date:** 2026-09-18
+
+### ✨ Added
+
+* Added upstream API coverage for API-key rotation and deletion, client-data load/store, torrent SSL parameters, metadata fetch/parse/save, and piece availability.
+* Added `Transfer.GetSpeedLimits` and `Transfer.SetSpeedLimits`, which read and write all four global and alternative speed limits in one request (Web API v2.16.0).
+* Added `Transfer.PauseSession` and `Transfer.ResumeSession` for whole-session controls (Web API v2.16.2).
+* Added `Application.GetFreeSpaceAtPath`, `Rss.CloneAutoDownloadingRule`, and `Torrent.DownloadFile` for server-side free-space queries, RSS rule cloning, and completed-file path lookup (Web API v2.15.2–v2.16.0).
+* Added the `shareLimitsMode` option and `EnumTorrentShareLimitsMode`, plus the previously missing `shareLimitAction` parameter for share-limit operations (Web API v2.16.0 and v2.10.4 respectively).
+* Added the `ignoreDotfiles` option to torrent creation tasks (Web API v2.16.0).
+
+### 🔧 Changed
+
+* Add Torrent now supports qBittorrent 5.3.0's `seedMode` name while retaining `skip_checking` for older servers, and adds `filePriorities` and `downloader` support.
+* Torrent reannounce operations now accept optional tracker URLs, matching the upstream Python client behavior.
+* Newly added endpoint methods enforce their minimum Web API versions before sending requests.
+* The NativeAOT smoke application now negotiates Web API 2.16.2 and exercises the new transfer speed-limit model.
+
+### ⚠️ Compatibility
+
+* Newly added endpoint methods throw `QbittorrentNotSupportedException` before sending a request to an older server.
+* Add Torrent continues to send the legacy parameter names where needed and sends new optional parameters only when configured.
+* Adding optional parameters changes compiled method signatures for `Torrent.AddTorrent`, `Torrent.SetTorrentShareLimit`, `Torrent.SetTorrentsShareLimit`, and `Torrent.SetAllTorrentsShareLimit`. Existing source calls normally only need to be rebuilt, but applications replacing the assembly without recompilation must rebuild to avoid binary incompatibility.
+
+### 🧪 Tests
+
+* Added isolated contract and upstream-parity tests for the new endpoints, version boundaries, request methods, compatibility parameters, and serialization behavior.
 
 ## 🚀 Release v1.6.0 — API Coverage & Version Compatibility
 

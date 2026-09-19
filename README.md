@@ -40,28 +40,7 @@ using var client = await QBittorrentClient.Create(
     "adminadmin");
 ```
 
-Use `QBittorrentClientOptions` when custom networking behavior is required:
-
-```csharp
-using Banned.Qbittorrent.Models;
-using Banned.Qbittorrent.Models.Enums;
-
-var options = new QBittorrentClientOptions
-{
-    AddressFamilyPreference = AddressFamilyPreference.System,
-    EnableAutomaticIPv4Fallback = true,
-    ConnectTimeout = TimeSpan.FromSeconds(5),
-    DiagnosticSink = message => Console.Error.WriteLine(message)
-};
-
-using var client = await QBittorrentClient.Create(
-    "https://qbittorrent.example.com:8443",
-    "admin",
-    "adminadmin",
-    options);
-```
-
-A caller-provided `HttpClient` remains caller-owned and is not modified or disposed by the library.
+Use `QBittorrentClientOptions` for custom networking behavior. A caller-provided `HttpClient` remains caller-owned and is not modified or disposed by the library.
 
 ### 2. Torrent Management
 
@@ -92,14 +71,21 @@ if (preferences is not null)
 }
 ```
 
+## 🔄 Compatibility
+
+The client supports qBittorrent Web API versions through v2.16.2, including the qBittorrent 5.3.0 endpoints.
+Versioned operations check the server API version and throw `QbittorrentNotSupportedException` before sending
+requests to older servers. See the [CHANGELOG](https://github.com/banned2054/Banned.Qbittorrent/blob/main/Docs/CHANGELOG.md)
+for endpoint additions and compatibility changes.
+
 ## 🛠 Project Architecture
 
 | Service | Responsibility |
 | --- | --- |
-| Application | Versions, build information, preferences, cookies, and server controls. |
+| Application | Versions, build information, preferences, cookies, free space, and server controls. |
 | Authentication | Login, logout, and session recovery. |
-| Torrent | Torrents, files, trackers, peers, categories, tags, limits, and queue controls. |
-| Transfer | Global transfer statistics, speed limits, and peer banning. |
+| Torrent | Torrents, files, local file paths, trackers, peers, categories, tags, limits, and queue controls. |
+| Transfer | Global transfer statistics, session controls, speed limits, and peer banning. |
 | Sync | Main-data and torrent-peer synchronization. |
 | RSS | Feeds, articles, and automatic download rules. |
 | Search | Search jobs, results, categories, and plugins. |

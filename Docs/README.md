@@ -40,28 +40,7 @@ using var client = await QBittorrentClient.Create(
     "adminadmin");
 ```
 
-需要自定义网络行为时可使用 `QBittorrentClientOptions`：
-
-```csharp
-using Banned.Qbittorrent.Models;
-using Banned.Qbittorrent.Models.Enums;
-
-var options = new QBittorrentClientOptions
-{
-    AddressFamilyPreference = AddressFamilyPreference.System,
-    EnableAutomaticIPv4Fallback = true,
-    ConnectTimeout = TimeSpan.FromSeconds(5),
-    DiagnosticSink = message => Console.Error.WriteLine(message)
-};
-
-using var client = await QBittorrentClient.Create(
-    "https://qbittorrent.example.com:8443",
-    "admin",
-    "adminadmin",
-    options);
-```
-
-调用者传入的 `HttpClient` 始终由调用者管理，本库不会修改或释放它。
+需要自定义网络行为时可使用 `QBittorrentClientOptions`。调用者传入的 `HttpClient` 始终由调用者管理，本库不会修改或释放它。
 
 ### 2. 种子管理
 
@@ -92,14 +71,20 @@ if (preferences is not null)
 }
 ```
 
+## 🔄 兼容性
+
+本库支持最高至 Web API v2.16.2 的 qBittorrent 版本，包括 qBittorrent 5.3.0 新增端点。
+带版本要求的操作会先检查服务端 API 版本；在较旧服务器上会在发送请求前抛出
+`QbittorrentNotSupportedException`。端点新增和兼容性变化请参阅[更新日志](https://github.com/banned2054/Banned.Qbittorrent/blob/main/Docs/CHANGELOG.md)。
+
 ## 🛠 项目架构
 
 | 服务 | 职责 |
 | --- | --- |
-| Application | 版本、构建信息、偏好设置、Cookie 与服务器控制。 |
+| Application | 版本、构建信息、偏好设置、Cookie、剩余空间与服务器控制。 |
 | Authentication | 登录、注销与会话恢复。 |
-| Torrent | 种子、文件、Tracker、Peer、分类、标签、限速与队列控制。 |
-| Transfer | 全局传输统计、速度限制与 Peer 封禁。 |
+| Torrent | 种子、文件、本地文件路径、Tracker、Peer、分类、标签、限速与队列控制。 |
+| Transfer | 全局传输统计、会话控制、速度限制与 Peer 封禁。 |
 | Sync | 主数据与 Torrent Peer 增量同步。 |
 | RSS | 订阅源、文章与自动下载规则。 |
 | Search | 搜索任务、结果、分类与插件。 |

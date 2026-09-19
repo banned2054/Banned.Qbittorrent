@@ -3,7 +3,7 @@
 	<PropertyGroup>
 		<TargetFrameworks>net10.0;net9.0;net8.0</TargetFrameworks>
 		<PackageId>Banned.Qbittorrent</PackageId>
-		<Version>1.6.0</Version>
+		<Version>1.7.0</Version>
 		<IsAotCompatible>true</IsAotCompatible>
 		<RepositoryUrl>https://github.com/banned2054/Banned.Qbittorrent</RepositoryUrl>
 		<Authors>banned</Authors>
@@ -14,7 +14,14 @@
 		<Nullable>enable</Nullable>
 		<Description>A .NET client library for qBittorrent's Web API</Description>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
-		<PackageReleaseNotes>Version 1.6.0 expands Web API support and version compatibility.&#xA;&#xA;- Adds the official Torrent Creator API and missing Application, Torrent, and Search operations.&#xA;- Adds CancellationToken support across public asynchronous network operations.&#xA;- Improves endpoint, rename, torrent-filter, and Add Torrent compatibility across qBittorrent versions.&#xA;- Expands isolated contract, networking, serialization, and compatibility tests.</PackageReleaseNotes>
+		<PackageReleaseNotes>
+			Version 1.7.0 expands qBittorrent Web API coverage through v2.16.2 and adds qBittorrent 5.3.0 compatibility.
+
+			- Adds API-key management, client-data storage, torrent metadata, SSL, piece-availability, and tracker reannounce support.
+			- Adds combined speed limits, session pause/resume, free-space queries, RSS rule cloning, server-side file-path lookup, share-limits mode, and dotfile control.
+			- Adds compatibility for qBittorrent 5.3.0 parameter changes and expands upstream parity tests.
+			- Existing source calls generally remain compatible, but affected overloads with new optional parameters require recompilation of precompiled consumers.
+		</PackageReleaseNotes>
 		<PackageTags>qbittorrent;api;dotnet;httpclient</PackageTags>
 	</PropertyGroup>
 	<ItemGroup>
