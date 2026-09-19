@@ -27,6 +27,13 @@ public class CreateTorrentTaskRequest
     /// <summary>是否优化文件对齐。<br/>Whether to optimize file alignment.</summary>
     public bool? OptimizeAlignment { get; set; }
 
+    /// <summary>
+    /// 是否从种子中排除点文件；省略时 qBittorrent 默认排除。此参数由 Web API v2.16.0 引入。<br/>
+    /// Whether dotfiles are excluded from the torrent; qBittorrent excludes them by default when omitted.
+    /// This parameter was introduced with Web API v2.16.0.
+    /// </summary>
+    public bool? IgnoreDotfiles { get; set; }
+
     /// <summary>填充文件大小限制。<br/>Padding file size limit.</summary>
     public long? PaddedFileSizeLimit { get; set; }
 
@@ -58,15 +65,16 @@ public class CreateTorrentTaskRequest
                 EnumTorrentCreatorFormat.Hybrid => "hybrid",
                 _                               => throw new ArgumentOutOfRangeException(nameof(Format))
             };
-        if (StartSeeding.HasValue) parameters["startSeeding"] = ToBooleanString(StartSeeding.Value);
-        if (IsPrivate.HasValue) parameters["private"] = ToBooleanString(IsPrivate.Value);
+        if (StartSeeding.HasValue) parameters["startSeeding"]           = ToBooleanString(StartSeeding.Value);
+        if (IsPrivate.HasValue) parameters["private"]                   = ToBooleanString(IsPrivate.Value);
         if (OptimizeAlignment.HasValue) parameters["optimizeAlignment"] = ToBooleanString(OptimizeAlignment.Value);
+        if (IgnoreDotfiles.HasValue) parameters["ignoreDotfiles"]       = ToBooleanString(IgnoreDotfiles.Value);
         if (PaddedFileSizeLimit.HasValue)
             parameters["paddedFileSizeLimit"] = PaddedFileSizeLimit.Value.ToString(CultureInfo.InvariantCulture);
         if (PieceSize.HasValue) parameters["pieceSize"] = PieceSize.Value.ToString(CultureInfo.InvariantCulture);
-        if (Comment != null) parameters["comment"] = Comment;
-        if (Trackers != null) parameters["trackers"] = string.Join('|', Trackers);
-        if (UrlSeeds != null) parameters["urlSeeds"] = string.Join('|', UrlSeeds);
+        if (Comment  != null) parameters["comment"]     = Comment;
+        if (Trackers != null) parameters["trackers"]    = string.Join('|', Trackers);
+        if (UrlSeeds != null) parameters["urlSeeds"]    = string.Join('|', UrlSeeds);
 
         return parameters;
     }

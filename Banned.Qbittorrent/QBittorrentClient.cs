@@ -16,6 +16,12 @@ public class QBittorrentClient : IDisposable
     public ApplicationService Application { get; }
 
     /// <summary>
+    /// 获取 Web UI 客户端数据服务（加载和保存自定义客户端数据）。<br/>
+    /// Gets the Web UI client-data service for loading and storing custom client data.
+    /// </summary>
+    public ClientDataService ClientData { get; }
+
+    /// <summary>
     /// 获取身份验证服务（登录、登出、保活检查）。<br/>
     /// Gets the authentication service (login, logout, keep-alive checks).
     /// </summary>
@@ -76,6 +82,7 @@ public class QBittorrentClient : IDisposable
     /// Private constructor, initialized via the static factory method <see cref="Create(string, string, string, QBittorrentClientOptions, CancellationToken)"/>.
     /// </summary>
     private QBittorrentClient(ApplicationService    app,
+                              ClientDataService     clientData,
                               AuthenticationService authentication,
                               LogService            log,
                               RssService            rss,
@@ -87,17 +94,18 @@ public class QBittorrentClient : IDisposable
                               string                qbittorrentVersion,
                               NetService            net)
     {
-        Application    = app;
-        Authentication = authentication;
-        Log            = log;
-        Rss            = rss;
-        Search         = search;
-        Sync           = sync;
-        Torrent        = torrent;
-        TorrentCreator = torrentCreator;
-        Transfer       = transfer;
+        Application        = app;
+        ClientData         = clientData;
+        Authentication     = authentication;
+        Log                = log;
+        Rss                = rss;
+        Search             = search;
+        Sync               = sync;
+        Torrent            = torrent;
+        TorrentCreator     = torrentCreator;
+        Transfer           = transfer;
         QbittorrentVersion = qbittorrentVersion;
-        _network            = net;
+        _network           = net;
     }
 
     /// <summary>
@@ -172,14 +180,16 @@ public class QBittorrentClient : IDisposable
         var net = netServiceFactory(url, options);
 
         var application = new ApplicationService(net);
+        var clientData  = new ClientDataService(net);
         var auth        = new AuthenticationService(net, userName, password);
         try
         {
             await auth.Login(cancellationToken).ConfigureAwait(false);
             var apiVersion = await application.GetApiVersion(cancellationToken).ConfigureAwait(false);
             net.SetApiVersion(apiVersion);
-            var qbittorrentVersion = await application.GetVersion(cancellationToken).ConfigureAwait(false);
+            var qbittorrentVersion       = await application.GetVersion(cancellationToken).ConfigureAwait(false);
             var parsedApplicationVersion = ParseApplicationVersion(qbittorrentVersion);
+
             var log            = new LogService(net);
             var rss            = new RssService(net);
             var search         = new SearchService(net);
@@ -188,8 +198,8 @@ public class QBittorrentClient : IDisposable
             var torrentCreator = new TorrentCreatorService(net);
             var transfer       = new TransferService(net);
 
-            return new QBittorrentClient(application, auth, log, rss, search, sync, torrent, torrentCreator, transfer,
-                                         qbittorrentVersion, net);
+            return new QBittorrentClient(application, clientData, auth, log, rss, search, sync, torrent, torrentCreator,
+                                         transfer, qbittorrentVersion, net);
         }
         catch
         {
@@ -204,6 +214,7 @@ public class QBittorrentClient : IDisposable
         ArgumentException.ThrowIfNullOrWhiteSpace(value);
 
         var normalized = value.Trim();
+
         if (normalized[0] is 'v' or 'V') normalized = normalized[1..];
 
         var numericLength = normalized.TakeWhile(character => char.IsDigit(character) || character == '.').Count();

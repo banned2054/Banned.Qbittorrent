@@ -6,6 +6,7 @@ using Banned.Qbittorrent.Models.Torrent;
 using Banned.Qbittorrent.Serialization;
 using Banned.Qbittorrent.Utils;
 using System.Globalization;
+using System.Text.Json;
 
 namespace Banned.Qbittorrent.Services;
 
@@ -285,6 +286,61 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
     }
 
     /// <summary>
+    /// 获取种子内某个已完整下载文件在 qBittorrent 主机上的文件系统路径。<br/>
+    /// Gets the file system path of a fully downloaded file within a torrent.
+    /// </summary>
+    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
+    /// <param name="file">文件在种子内的索引，或该文件的路径。<br/>Index of the file within the torrent, or its path.</param>
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
+    /// <returns>
+    /// qBittorrent 主机上该文件的文件系统路径。<br/>
+    /// The file system path of the file on the qBittorrent host.
+    /// </returns>
+    /// <remarks>
+    /// 此方法随 qBittorrent v5.3.0 (Web API v2.16.0) 引入。<br/>
+    /// This method was introduced with qBittorrent v5.3.0 (Web API v2.16.0).
+    /// </remarks>
+    /// <exception cref="Exceptions.QbittorrentNotFoundException">种子不存在时抛出。 / Thrown when the torrent does not exist.</exception>
+    /// <exception cref="Exceptions.QbittorrentConflictException">
+    /// 种子元数据不可用、文件不存在或尚未完整下载时抛出。<br/>
+    /// Thrown when the torrent metadata is unavailable, the file does not exist, or it is not fully downloaded.
+    /// </exception>
+    public async Task<string> DownloadFile(string hash, int file, CancellationToken cancellationToken = default) =>
+        await DownloadFile(hash, file.ToString(CultureInfo.InvariantCulture), cancellationToken);
+
+    /// <summary>
+    /// 获取种子内某个已完整下载文件在 qBittorrent 主机上的文件系统路径。<br/>
+    /// Gets the file system path of a fully downloaded file within a torrent.
+    /// </summary>
+    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
+    /// <param name="file">文件在种子内的路径。<br/>Path of the file within the torrent.</param>
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
+    /// <returns>
+    /// qBittorrent 主机上该文件的文件系统路径。<br/>
+    /// The file system path of the file on the qBittorrent host.
+    /// </returns>
+    /// <remarks>
+    /// 此方法随 qBittorrent v5.3.0 (Web API v2.16.0) 引入。<br/>
+    /// This method was introduced with qBittorrent v5.3.0 (Web API v2.16.0).
+    /// </remarks>
+    /// <exception cref="Exceptions.QbittorrentNotFoundException">种子不存在时抛出。 / Thrown when the torrent does not exist.</exception>
+    /// <exception cref="Exceptions.QbittorrentConflictException">
+    /// 种子元数据不可用、文件不存在或尚未完整下载时抛出。<br/>
+    /// Thrown when the torrent metadata is unavailable, the file does not exist, or it is not fully downloaded.
+    /// </exception>
+    public async Task<string> DownloadFile(string hash, string file, CancellationToken cancellationToken = default)
+    {
+        hash = StringUtils.NormalizeHash(hash);
+        ArgumentException.ThrowIfNullOrWhiteSpace(file);
+        var parameters = new Dictionary<string, string>
+        {
+            { "hash", hash },
+            { "file", file }
+        };
+        return await netService.Post($"{BaseUrl}/downloadFile", parameters, ApiVersion.V2_16_0, ct : cancellationToken);
+    }
+
+    /// <summary>
     /// 获取指定种子的每个分片状态。<br/>
     /// Get the state of each piece in the specified torrent.
     /// </summary>
@@ -313,6 +369,118 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
         GetTorrentPiecesHashes(string hash, CancellationToken cancellationToken = default) =>
         QBittorrentJsonSerializer.Deserialize<List<string>>(await Put("pieceHashes", hash,
                                                                       cancellationToken : cancellationToken));
+
+    /// <summary>
+    /// 获取指定种子的分片可用性。<br/>
+    /// Gets piece availability for the specified torrent.
+    /// </summary>
+    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
+    /// <returns>每个分片可用的来源数量。<br/>The number of sources available for each piece.</returns>
+    /// <remarks>此方法随 Web API v2.15.1 引入，并使用 POST。<br/>
+    /// Introduced with Web API v2.15.1 and uses POST.</remarks>
+    public async Task<List<int>?> GetTorrentPieceAvailability(
+        string hash, CancellationToken cancellationToken = default) =>
+        QBittorrentJsonSerializer.Deserialize<List<int>>(await Put("pieceAvailability", hash, ApiVersion.V2_15_1,
+                                                                   cancellationToken));
+
+    /// <summary>
+    /// 获取指定种子的 SSL 参数。<br/>
+    /// Gets SSL parameters for the specified torrent.
+    /// </summary>
+    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
+    /// <returns>种子的 SSL 参数；服务器未返回有效数据时为 <see langword="null"/>。<br/>
+    /// The torrent SSL parameters, or <see langword="null"/> when the server returns no valid data.</returns>
+    /// <remarks>此方法随 Web API v2.10.3 引入，并使用 POST。<br/>
+    /// Introduced with Web API v2.10.3 and uses POST.</remarks>
+    public async Task<TorrentSslParameters?> GetTorrentSslParameters(
+        string hash, CancellationToken cancellationToken = default) =>
+        QBittorrentJsonSerializer.Deserialize<TorrentSslParameters>(await Put("SSLParameters", hash, ApiVersion.V2_10_3,
+                                                                              cancellationToken));
+
+    /// <summary>
+    /// 设置指定种子的 SSL 参数。<br/>
+    /// Sets SSL parameters for the specified torrent.
+    /// </summary>
+    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
+    /// <param name="certificate">客户端证书。<br/>Client certificate.</param>
+    /// <param name="privateKey">客户端私钥。<br/>Client private key.</param>
+    /// <param name="dhParameters">Diffie-Hellman 参数。<br/>Diffie-Hellman parameters.</param>
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
+    /// <remarks>此方法随 Web API v2.10.3 引入。<br/>Introduced with Web API v2.10.3.</remarks>
+    public async Task SetTorrentSslParameters(string hash,
+                                              string certificate,
+                                              string privateKey,
+                                              string dhParameters, CancellationToken cancellationToken = default)
+    {
+        var parameters = new Dictionary<string, string>
+        {
+            ["hash"]            = StringUtils.NormalizeHash(hash),
+            ["ssl_certificate"] = certificate,
+            ["ssl_private_key"] = privateKey,
+            ["ssl_dh_params"]   = dhParameters
+        };
+        await netService.Post($"{BaseUrl}/setSSLParameters", parameters, ApiVersion.V2_10_3, ct : cancellationToken);
+    }
+
+    /// <summary>
+    /// 从磁力链接或种子来源获取元数据。<br/>
+    /// Fetches torrent metadata from a magnet link or torrent source.
+    /// </summary>
+    /// <param name="source">元数据来源。<br/>Metadata source.</param>
+    /// <param name="downloader">可选的元数据下载器。<br/>Optional metadata downloader.</param>
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
+    /// <returns>服务器返回的元数据对象。<br/>Metadata returned by the server.</returns>
+    /// <remarks>此方法随 Web API v2.11.9 引入。<br/>Introduced with Web API v2.11.9.</remarks>
+    public async Task<Dictionary<string, JsonElement>> FetchTorrentMetadata(
+        string source, string? downloader = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(source);
+        var parameters = new Dictionary<string, string> { ["source"] = source };
+
+        if (downloader is not null) parameters["downloader"] = downloader;
+
+        var response = await netService.Post($"{BaseUrl}/fetchMetadata", parameters, ApiVersion.V2_11_9,
+                                             ct : cancellationToken);
+        return QBittorrentJsonSerializer.Deserialize<Dictionary<string, JsonElement>>(response) ?? [];
+    }
+
+    /// <summary>
+    /// 解析上传的种子元数据。<br/>
+    /// Parses uploaded torrent metadata.
+    /// </summary>
+    /// <param name="filePaths">要解析的种子文件路径。<br/>Torrent file paths to parse.</param>
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
+    /// <returns>解析出的元数据列表。<br/>Parsed metadata entries.</returns>
+    /// <remarks>此方法随 Web API v2.11.9 引入。<br/>Introduced with Web API v2.11.9.</remarks>
+    public async Task<List<Dictionary<string, JsonElement>>> ParseTorrentMetadata(
+        List<string> filePaths, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(filePaths);
+        if (filePaths.Count == 0)
+            throw new ArgumentException("At least one torrent file is required.", nameof(filePaths));
+
+        netService.EnsureApiVersionSupported($"{BaseUrl}/parseMetadata", new ApiVersionRange(ApiVersion.V2_11_9));
+        var response = await netService.PostWithFiles($"{BaseUrl}/parseMetadata", null, filePaths, cancellationToken);
+        return QBittorrentJsonSerializer.Deserialize<List<Dictionary<string, JsonElement>>>(response) ?? [];
+    }
+
+    /// <summary>
+    /// 保存 Torrent 元数据为 .torrent 文件。<br/>
+    /// Saves torrent metadata as a .torrent file.
+    /// </summary>
+    /// <param name="source">元数据来源。<br/>Metadata source.</param>
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
+    /// <returns>.torrent 文件内容。<br/>The .torrent file content.</returns>
+    /// <remarks>此方法随 Web API v2.11.9 引入。<br/>Introduced with Web API v2.11.9.</remarks>
+    public async Task<byte[]> SaveTorrentMetadata(string source, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(source);
+        var parameters = new Dictionary<string, string> { ["source"] = source };
+        return await netService.PostBytes($"{BaseUrl}/saveMetadata", parameters, ApiVersion.V2_11_9,
+                                          ct : cancellationToken);
+    }
 
     /// <summary>
     /// 导出指定种子的 .torrent 文件。<br/>
@@ -421,7 +589,28 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
     /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
     /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
     public async Task ReannounceTorrent(string hash, CancellationToken cancellationToken = default) =>
-        await PutHashes("reannounce", hash, ApiVersion.V2_0_2, cancellationToken);
+        await ReannounceTorrent(hash, null, cancellationToken);
+
+    /// <summary>
+    /// 重新向指定 Tracker 汇报种子，并可指定要汇报的 URL。<br/>
+    /// Reannounces a torrent and optionally supplies tracker URLs.
+    /// </summary>
+    /// <param name="hash">种子哈希值。<br/>Torrent hash value.</param>
+    /// <param name="urls">可选的 Tracker URL 列表。<br/>Optional tracker URL list.</param>
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
+    /// <remarks><c>urls</c> 参数随 Web API v2.11.10 引入。<br/>
+    /// The <c>urls</c> parameter was introduced with Web API v2.11.10.</remarks>
+    public async Task ReannounceTorrent(string            hash,
+                                        List<string>?     urls,
+                                        CancellationToken cancellationToken = default)
+    {
+        hash = StringUtils.NormalizeHash(hash);
+        var parameters = new Dictionary<string, string> { ["hashes"] = hash };
+
+        if (urls is not null) parameters["urls"] = StringUtils.Join('|', urls);
+        await netService.Post($"{BaseUrl}/reannounce", parameters, ApiVersion.V2_0_2,
+                              ct : cancellationToken);
+    }
 
     /// <summary>
     /// 重新向 Tracker 汇报多个种子。<br/>
@@ -430,7 +619,19 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
     /// <param name="hashes">种子哈希值列表。<br/>List of torrent hash values.</param>
     /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
     public async Task ReannounceTorrents(List<string> hashes, CancellationToken cancellationToken = default) =>
-        await ReannounceTorrent(StringUtils.Join('|', hashes), cancellationToken);
+        await ReannounceTorrent(StringUtils.Join('|', hashes), null, cancellationToken);
+
+    /// <summary>
+    /// 重新向多个指定 Tracker 汇报种子，并可指定要汇报的 URL。<br/>
+    /// Reannounces multiple torrents and optionally supplies tracker URLs.
+    /// </summary>
+    /// <param name="hashes">种子哈希值列表。<br/>List of torrent hash values.</param>
+    /// <param name="urls">可选的 Tracker URL 列表。<br/>Optional tracker URL list.</param>
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
+    public async Task ReannounceTorrents(List<string>      hashes,
+                                         List<string>?     urls,
+                                         CancellationToken cancellationToken = default) =>
+        await ReannounceTorrent(StringUtils.Join('|', hashes), urls, cancellationToken);
 
     /// <summary>
     /// 编辑指定种子的 Tracker。<br/>
@@ -647,6 +848,7 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
     /// <param name="addToTopOfQueue">是否添加到队列顶部。<br/>Whether to add the torrent to the top of the queue.</param>
     /// <param name="inactiveSeedingTimeLimit">非活动状态下的做种时间限制（分钟）。<br/>Inactive seeding time limit (minutes).</param>
     /// <param name="shareLimitAction">达到分享限制后执行的操作。<br/>Action performed after the share limit is reached.</param>
+    /// <param name="shareLimitsMode">分享限制的组合判定模式，由 Web API v2.16.0 引入。<br/>Share limits mode introduced with Web API v2.16.0.</param>
     /// <param name="sslCertificate">用于 SSL Torrent 的客户端证书。<br/>Client certificate for SSL torrents.</param>
     /// <param name="sslPrivateKey">用于 SSL Torrent 的客户端私钥。<br/>Client private key for SSL torrents.</param>
     /// <param name="sslDhParameters">用于 SSL Torrent 的 Diffie-Hellman 参数。<br/>Diffie-Hellman parameters for SSL torrents.</param>
@@ -681,6 +883,7 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
                                          bool?                        addToTopOfQueue          = null,
                                          int?                         inactiveSeedingTimeLimit = null,
                                          EnumTorrentShareLimitAction? shareLimitAction         = null,
+                                         EnumTorrentShareLimitsMode?  shareLimitsMode          = null,
                                          string?                      sslCertificate           = null,
                                          string?                      sslPrivateKey            = null,
                                          string?                      sslDhParameters          = null,
@@ -709,6 +912,7 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
             SeedingTimeLimit              = seedingTimeLimit,
             InactiveSeedingTimeLimit      = inactiveSeedingTimeLimit,
             ShareLimitAction              = shareLimitAction,
+            ShareLimitsMode               = shareLimitsMode,
             SslCertificate                = sslCertificate,
             SslPrivateKey                 = sslPrivateKey,
             SslDhParameters               = sslDhParameters,
@@ -973,16 +1177,30 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
     /// 最大非活动做种时间（分钟）（-2 表示使用全局值，-1 表示无限制）。<br/>
     /// Maximum inactive seeding time in minutes (-2 uses global value, -1 means no limit).
     /// </param>
+    /// <param name="shareLimitAction">
+    /// 达到分享限制后执行的操作。<br/>
+    /// Action performed once the share limit is reached.
+    /// </param>
+    /// <param name="shareLimitsMode">
+    /// 分享限制的组合判定模式，由 Web API v2.16.0 引入。<br/>
+    /// Share limits mode introduced with Web API v2.16.0.
+    /// </param>
     /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
-    public async Task SetTorrentShareLimit(string            hash,
-                                           float?            ratioLimit               = null,
-                                           int?              seedingTimeLimit         = null,
-                                           int?              inactiveSeedingTimeLimit = null,
-                                           CancellationToken cancellationToken        = default)
+    public async Task SetTorrentShareLimit(string                       hash,
+                                           float?                       ratioLimit               = null,
+                                           int?                         seedingTimeLimit         = null,
+                                           int?                         inactiveSeedingTimeLimit = null,
+                                           EnumTorrentShareLimitAction? shareLimitAction         = null,
+                                           EnumTorrentShareLimitsMode?  shareLimitsMode          = null,
+                                           CancellationToken            cancellationToken        = default)
     {
-        if (ratioLimit is null && seedingTimeLimit is null && inactiveSeedingTimeLimit is null)
+        if (ratioLimit is null               &&
+            seedingTimeLimit is null         &&
+            inactiveSeedingTimeLimit is null &&
+            shareLimitAction is null         &&
+            shareLimitsMode is null)
             throw new
-                ArgumentException("At least one of ratioLimit, seedingTimeLimit, or inactiveSeedingTimeLimit must be provided.");
+                ArgumentException("At least one of ratioLimit, seedingTimeLimit, inactiveSeedingTimeLimit, shareLimitAction, or shareLimitsMode must be provided.");
 
         hash = StringUtils.NormalizeHash(hash);
         var parameters = new Dictionary<string, string>
@@ -997,6 +1215,12 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
 
         if (inactiveSeedingTimeLimit is not null)
             parameters["inactiveSeedingTimeLimit"] = inactiveSeedingTimeLimit.Value.ToString();
+
+        if (shareLimitAction is not null)
+            parameters["shareLimitAction"] = shareLimitAction.Value.ToString();
+
+        if (shareLimitsMode is not null)
+            parameters["shareLimitsMode"] = shareLimitsMode.Value.ShareLimitsMode2String();
 
         await netService.Post($"{BaseUrl}/setShareLimits", parameters, ApiVersion.V2_0_1, ct : cancellationToken);
     }
@@ -1021,14 +1245,24 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
     /// 最大非活动做种时间（分钟）（-2 表示使用全局值，-1 表示无限制）。<br/>
     /// Maximum inactive seeding time in minutes (-2 uses global value, -1 means no limit).
     /// </param>
+    /// <param name="shareLimitAction">
+    /// 达到分享限制后执行的操作。<br/>
+    /// Action performed once the share limit is reached.
+    /// </param>
+    /// <param name="shareLimitsMode">
+    /// 分享限制的组合判定模式，由 Web API v2.16.0 引入。<br/>
+    /// Share limits mode introduced with Web API v2.16.0.
+    /// </param>
     /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
-    public async Task SetTorrentsShareLimit(List<string>      hashes,
-                                            float?            ratioLimit               = null,
-                                            int?              seedingTimeLimit         = null,
-                                            int?              inactiveSeedingTimeLimit = null,
-                                            CancellationToken cancellationToken        = default) =>
+    public async Task SetTorrentsShareLimit(List<string>                 hashes,
+                                            float?                       ratioLimit               = null,
+                                            int?                         seedingTimeLimit         = null,
+                                            int?                         inactiveSeedingTimeLimit = null,
+                                            EnumTorrentShareLimitAction? shareLimitAction         = null,
+                                            EnumTorrentShareLimitsMode?  shareLimitsMode          = null,
+                                            CancellationToken            cancellationToken        = default) =>
         await SetTorrentShareLimit(string.Join('|', hashes), ratioLimit, seedingTimeLimit, inactiveSeedingTimeLimit,
-                                   cancellationToken);
+                                   shareLimitAction, shareLimitsMode, cancellationToken);
 
     /// <summary>
     /// 设置所有种子的分享限制。<br/>
@@ -1046,13 +1280,23 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
     /// 最大非活动做种时间（分钟）（-2 表示使用全局值，-1 表示无限制）。<br/>
     /// Maximum inactive seeding time in minutes (-2 uses global value, -1 means no limit).
     /// </param>
+    /// <param name="shareLimitAction">
+    /// 达到分享限制后执行的操作。<br/>
+    /// Action performed once the share limit is reached.
+    /// </param>
+    /// <param name="shareLimitsMode">
+    /// 分享限制的组合判定模式，由 Web API v2.16.0 引入。<br/>
+    /// Share limits mode introduced with Web API v2.16.0.
+    /// </param>
     /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
-    public async Task SetAllTorrentsShareLimit(float?            ratioLimit               = null,
-                                               int?              seedingTimeLimit         = null,
-                                               int?              inactiveSeedingTimeLimit = null,
-                                               CancellationToken cancellationToken        = default) =>
+    public async Task SetAllTorrentsShareLimit(float?                       ratioLimit               = null,
+                                               int?                         seedingTimeLimit         = null,
+                                               int?                         inactiveSeedingTimeLimit = null,
+                                               EnumTorrentShareLimitAction? shareLimitAction         = null,
+                                               EnumTorrentShareLimitsMode?  shareLimitsMode          = null,
+                                               CancellationToken            cancellationToken        = default) =>
         await SetTorrentShareLimit("all", ratioLimit, seedingTimeLimit, inactiveSeedingTimeLimit,
-                                   cancellationToken);
+                                   shareLimitAction, shareLimitsMode, cancellationToken);
 
     /// <summary>
     /// 获取指定种子的上传限速。<br/>

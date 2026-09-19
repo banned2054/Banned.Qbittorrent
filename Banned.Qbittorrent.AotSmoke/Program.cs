@@ -19,13 +19,18 @@ var searchStatuses = await client.Search.SearchStatus();
 var mainData       = await client.Sync.GetMainData();
 var creatorTasks   = await client.TorrentCreator.GetStatuses();
 _ = await client.Transfer.GetTransferInfo();
+var speedLimits = await client.Transfer.GetSpeedLimits();
 
-if (torrents.Count         != 0 ||
-    logs.Count             != 0 ||
-    rules?.Count           != 0 ||
-    searchStatuses?.Length != 0 ||
-    creatorTasks.Count     != 0 ||
-    mainData               == null)
+if (torrents.Count                       != 0    ||
+    logs.Count                           != 0    ||
+    rules?.Count                         != 0    ||
+    searchStatuses?.Length               != 0    ||
+    creatorTasks.Count                   != 0    ||
+    speedLimits.UploadLimit              != 2048 ||
+    speedLimits.DownloadLimit            != 1024 ||
+    speedLimits.AlternativeUploadLimit   != 256  ||
+    speedLimits.AlternativeDownloadLimit != 512  ||
+    mainData                             == null)
     throw new InvalidOperationException("A source-generated JSON contract failed the NativeAOT smoke test.");
 
 Console.WriteLine("NativeAOT smoke test passed.");
@@ -33,14 +38,13 @@ Console.WriteLine("NativeAOT smoke test passed.");
 file sealed class StubQbittorrentHandler : HttpMessageHandler
 {
     protected override Task<HttpResponseMessage> SendAsync(
-        HttpRequestMessage request,
-        CancellationToken  cancellationToken)
+        HttpRequestMessage request, CancellationToken cancellationToken)
     {
         var responseBody = request.RequestUri?.AbsolutePath switch
         {
             "/api/v2/auth/login"            => "Ok.",
-            "/api/v2/app/webapiVersion"     => "2.15.1",
-            "/api/v2/app/version"           => "5.1.2",
+            "/api/v2/app/webapiVersion"     => "2.16.2",
+            "/api/v2/app/version"           => "5.3.0",
             "/api/v2/app/preferences"       => "{\"locale\":\"en\"}",
             "/api/v2/torrents/info"         => "[]",
             "/api/v2/log/main"              => "[]",
@@ -49,7 +53,9 @@ file sealed class StubQbittorrentHandler : HttpMessageHandler
             "/api/v2/torrentcreator/status" => "[]",
             "/api/v2/sync/maindata"         => "{}",
             "/api/v2/transfer/info"         => "{}",
-            _                               => string.Empty
+            "/api/v2/transfer/getSpeedLimits" =>
+                "{\"up_limit\":2048,\"dl_limit\":1024,\"alt_up_limit\":256,\"alt_dl_limit\":512}",
+            _ => string.Empty
         };
 
         var response = new HttpResponseMessage(HttpStatusCode.OK)

@@ -60,6 +60,9 @@ public readonly struct ApiVersion(int major, int minor = 0, int patch = 0)
     /// <summary>qBittorrent Web API 2.9.3。<br/>qBittorrent Web API version 2.9.3.</summary>
     public static readonly ApiVersion V2_9_3 = new(2, 9, 3);
 
+    /// <summary>qBittorrent Web API 2.10.3。<br/>qBittorrent Web API version 2.10.3.</summary>
+    public static readonly ApiVersion V2_10_3 = new(2, 10, 3);
+
     /// <summary>qBittorrent Web API 2.10.4。<br/>qBittorrent Web API version 2.10.4.</summary>
     public static readonly ApiVersion V2_10_4 = new(2, 10, 4);
 
@@ -78,11 +81,35 @@ public readonly struct ApiVersion(int major, int minor = 0, int patch = 0)
     /// <summary>qBittorrent Web API 2.11.8。<br/>qBittorrent Web API version 2.11.8.</summary>
     public static readonly ApiVersion V2_11_8 = new(2, 11, 8);
 
+    /// <summary>qBittorrent Web API 2.11.9。<br/>qBittorrent Web API version 2.11.9.</summary>
+    public static readonly ApiVersion V2_11_9 = new(2, 11, 9);
+
     /// <summary>qBittorrent Web API 2.12.1。<br/>qBittorrent Web API version 2.12.1.</summary>
     public static readonly ApiVersion V2_12_1 = new(2, 12, 1);
 
+    /// <summary>qBittorrent Web API 2.13.1。<br/>qBittorrent Web API version 2.13.1.</summary>
+    public static readonly ApiVersion V2_13_1 = new(2, 13, 1);
+
+    /// <summary>qBittorrent Web API 2.14.0。<br/>qBittorrent Web API version 2.14.0.</summary>
+    public static readonly ApiVersion V2_14_0 = new(2, 14);
+
+    /// <summary>qBittorrent Web API 2.14.1。<br/>qBittorrent Web API version 2.14.1.</summary>
+    public static readonly ApiVersion V2_14_1 = new(2, 14, 1);
+
     /// <summary>qBittorrent Web API 2.15.1。<br/>qBittorrent Web API version 2.15.1.</summary>
     public static readonly ApiVersion V2_15_1 = new(2, 15, 1);
+
+    /// <summary>qBittorrent Web API 2.15.2。<br/>qBittorrent Web API version 2.15.2.</summary>
+    public static readonly ApiVersion V2_15_2 = new(2, 15, 2);
+
+    /// <summary>qBittorrent Web API 2.15.4。<br/>qBittorrent Web API version 2.15.4.</summary>
+    public static readonly ApiVersion V2_15_4 = new(2, 15, 4);
+
+    /// <summary>qBittorrent Web API 2.16.0。<br/>qBittorrent Web API version 2.16.0.</summary>
+    public static readonly ApiVersion V2_16_0 = new(2, 16);
+
+    /// <summary>qBittorrent Web API 2.16.2。<br/>qBittorrent Web API version 2.16.2.</summary>
+    public static readonly ApiVersion V2_16_2 = new(2, 16, 2);
 
     #endregion
 

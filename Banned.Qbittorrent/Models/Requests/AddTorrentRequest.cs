@@ -54,6 +54,25 @@ public class AddTorrentRequest
     public bool? SkipCheckingEnabled { get; set; }
 
     /// <summary>
+    /// 添加 Torrent 时各文件的优先级，按文件索引排列。<br/>
+    /// File priorities ordered by file index when adding a torrent.
+    /// </summary>
+    /// <remarks>
+    /// qBittorrent expects comma-separated numeric values such as 0,1,7.
+    /// qBittorrent 要求以逗号分隔的数字，例如 0,1,7。
+    /// This parameter was introduced with Web API v2.11.9.
+    /// 此参数由 Web API v2.11.9 引入。
+    /// </remarks>
+    public List<int>? FilePriorities { get; set; }
+
+    /// <summary>
+    /// 添加 Torrent 时使用的下载器。<br/>
+    /// Downloader to use when adding a torrent.
+    /// </summary>
+    /// <remarks>此参数由 Web API v2.13.1 引入。<br/>Introduced with Web API v2.13.1.</remarks>
+    public string? Downloader { get; set; }
+
+    /// <summary>
     /// 是否启用“添加后暂停”。<br/>
     /// Whether to enable "pause after adding".
     /// </summary>
@@ -145,6 +164,12 @@ public class AddTorrentRequest
     public EnumTorrentShareLimitAction? ShareLimitAction { get; set; }
 
     /// <summary>
+    /// 分享限制的组合判定模式。此参数由 Web API v2.16.0 引入。<br/>
+    /// Mode used once a share limit is reached. This parameter was introduced with Web API v2.16.0.
+    /// </summary>
+    public EnumTorrentShareLimitsMode? ShareLimitsMode { get; set; }
+
+    /// <summary>
     /// 用于 SSL Torrent 的客户端证书（PEM 格式）。<br/>
     /// Client certificate for SSL torrents (PEM format).
     /// </summary>
@@ -211,12 +236,23 @@ public class AddTorrentRequest
             parameters["urls"] = string.Join("\n", Urls);
         }
 
-        if (!string.IsNullOrEmpty(SavePath)) parameters["savepath"]   = SavePath;
-        if (Cookie is not null) parameters["cookie"]                  = Cookie;
-        if (!string.IsNullOrEmpty(Category)) parameters["category"]   = Category;
-        if (!string.IsNullOrEmpty(Tags)) parameters["tags"] = Tags;
-        if (SkipCheckingEnabled.HasValue) parameters["skip_checking"] = SkipCheckingEnabled.Value.ToString().ToLower();
-        var stoppedEnabled = StoppedEnabled ?? PausedEnabled;
+        if (!string.IsNullOrEmpty(SavePath)) parameters["savepath"] = SavePath;
+        if (Cookie is not null) parameters["cookie"]                = Cookie;
+        if (!string.IsNullOrEmpty(Category)) parameters["category"] = Category;
+        if (!string.IsNullOrEmpty(Tags)) parameters["tags"]         = Tags;
+        if (SkipCheckingEnabled.HasValue)
+        {
+            var skipChecking = SkipCheckingEnabled.Value.ToString().ToLowerInvariant();
+            // qBittorrent 5.3/Web API 2.16 uses seedMode, while Python clients
+            // keep sending skip_checking as well for compatibility with older servers.
+            parameters["skip_checking"] = skipChecking;
+            parameters["seedMode"]      = skipChecking;
+        }
+
+        if (FilePriorities is { Count: > 0 })
+            parameters["filePriorities"] = string.Join(',', FilePriorities);
+        if (Downloader is not null) parameters["downloader"] = Downloader;
+        var stoppedEnabled                                   = StoppedEnabled ?? PausedEnabled;
         if (stoppedEnabled.HasValue)
         {
             parameters["paused"]  = stoppedEnabled.Value.ToString().ToLower();
@@ -241,9 +277,10 @@ public class AddTorrentRequest
             if (rootFolderEnabled.HasValue)
                 parameters["root_folder"] = rootFolderEnabled.Value.ToString().ToLower();
         }
+
         if (!string.IsNullOrEmpty(Rename)) parameters["rename"] = Rename;
-        if (UploadLimit.HasValue) parameters["upLimit"] = UploadLimit.Value.ToString();
-        if (DownloadLimit.HasValue) parameters["dlLimit"] = DownloadLimit.Value.ToString();
+        if (UploadLimit.HasValue) parameters["upLimit"]         = UploadLimit.Value.ToString();
+        if (DownloadLimit.HasValue) parameters["dlLimit"]       = DownloadLimit.Value.ToString();
         if (RatioLimit.HasValue)
             parameters["ratioLimit"] = RatioLimit.Value.ToString(CultureInfo.InvariantCulture);
         if (SeedingTimeLimit.HasValue)
@@ -259,9 +296,10 @@ public class AddTorrentRequest
             parameters["inactiveSeedingTimeLimit"] =
                 InactiveSeedingTimeLimit.Value.ToString(CultureInfo.InvariantCulture);
         if (ShareLimitAction.HasValue) parameters["shareLimitAction"] = ShareLimitAction.Value.ToString();
+        if (ShareLimitsMode.HasValue) parameters["shareLimitsMode"]   = ShareLimitsMode.Value.ShareLimitsMode2String();
         if (SslCertificate is not null) parameters["ssl_certificate"] = SslCertificate;
-        if (SslPrivateKey is not null) parameters["ssl_private_key"] = SslPrivateKey;
-        if (SslDhParameters is not null) parameters["ssl_dh_params"] = SslDhParameters;
+        if (SslPrivateKey is not null) parameters["ssl_private_key"]  = SslPrivateKey;
+        if (SslDhParameters is not null) parameters["ssl_dh_params"]  = SslDhParameters;
         if (ForcedEnabled.HasValue)
             parameters["forced"] = ForcedEnabled.Value.ToString().ToLowerInvariant();
         if (AutoTmmEnabled.HasValue) parameters["autoTMM"] = AutoTmmEnabled.Value.ToString().ToLower();

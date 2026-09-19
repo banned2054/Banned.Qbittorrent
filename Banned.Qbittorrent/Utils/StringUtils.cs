@@ -204,6 +204,34 @@ public static class StringUtils
     }
 
     /// <summary>
+    /// 将分享限制模式字符串转换为枚举。<br/>
+    /// Converts a share limits mode string to an enum.
+    /// </summary>
+    public static EnumTorrentShareLimitsMode String2ShareLimitsMode(string? value)
+    {
+        return value?.ToLowerInvariant() switch
+        {
+            "matchany" => EnumTorrentShareLimitsMode.MatchAny,
+            "matchall" => EnumTorrentShareLimitsMode.MatchAll,
+            _          => EnumTorrentShareLimitsMode.Default
+        };
+    }
+
+    /// <summary>
+    /// 将分享限制模式枚举转换为 API 识别的字符串。<br/>
+    /// Converts a share limits mode enum to an API-recognized string.
+    /// </summary>
+    public static string ShareLimitsMode2String(this EnumTorrentShareLimitsMode value)
+    {
+        return value switch
+        {
+            EnumTorrentShareLimitsMode.MatchAny => "MatchAny",
+            EnumTorrentShareLimitsMode.MatchAll => "MatchAll",
+            _                                   => "Default"
+        };
+    }
+
+    /// <summary>
     /// 将搜索状态字符串转换为枚举。<br/>
     /// Converts a search status string to an enum.
     /// </summary>

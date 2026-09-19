@@ -224,6 +224,28 @@ public class RssService(NetService netService)
     }
 
     /// <summary>
+    /// 复制自动下载规则到新规则。<br/>
+    /// Copy an auto-downloading rule to a new rule.
+    /// </summary>
+    /// <param name="ruleName">要复制的规则名称。Name of the rule to copy.</param>
+    /// <param name="newName">新规则的名称。Name for the new rule.</param>
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
+    /// <remarks>
+    /// 此方法随 qBittorrent v5.3.0 (Web API v2.15.4) 引入。<br/>
+    /// This method was introduced with qBittorrent v5.3.0 (Web API v2.15.4).
+    /// </remarks>
+    public async Task CloneAutoDownloadingRule(string ruleName,
+                                               string newName, CancellationToken cancellationToken = default)
+    {
+        var parameters = new Dictionary<string, string>
+        {
+            { "sourceName", ruleName },
+            { "cloneName", newName }
+        };
+        await netService.Post($"{BaseUrl}/cloneRule", parameters, ApiVersion.V2_15_4, ct : cancellationToken);
+    }
+
+    /// <summary>
     /// 移除自动下载规则。<br/>
     /// Remove auto-downloading rule.
     /// </summary>

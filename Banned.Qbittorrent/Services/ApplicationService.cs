@@ -120,8 +120,8 @@ public class ApplicationService(NetService netService)
     /// The request serializes the preferences into JSON and submits it to the Web API as the <c>json</c> field.
     /// </remarks>
     /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
-    public async Task SetApplicationPreferences(ApplicationPreferences applicationPreferences,
-                                                CancellationToken      cancellationToken = default)
+    public async Task SetApplicationPreferences(
+        ApplicationPreferences applicationPreferences, CancellationToken cancellationToken = default)
     {
         var request = QBittorrentJsonSerializer.SerializeIgnoringNulls(applicationPreferences);
         var parameters = new Dictionary<string, string>
@@ -206,8 +206,8 @@ public class ApplicationService(NetService netService)
     /// <param name="interfaceName">网络接口名称。<br/>Network interface name.</param>
     /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
     /// <returns>网络地址列表。<br/>The network address list.</returns>
-    public async Task<List<string>> GetNetworkInterfaceAddresses(string            interfaceName     = "",
-                                                                 CancellationToken cancellationToken = default)
+    public async Task<List<string>> GetNetworkInterfaceAddresses(
+        string interfaceName = "", CancellationToken cancellationToken = default)
     {
         var parameters = new Dictionary<string, string> { { "iface", interfaceName } };
         var response = await netService.Post($"{BaseUrl}/networkInterfaceAddressList", parameters, ApiVersion.V2_3_0,
@@ -224,14 +224,65 @@ public class ApplicationService(NetService netService)
         await netService.Post($"{BaseUrl}/sendTestEmail", targetVersion : ApiVersion.V2_10_4, ct : cancellationToken);
 
     /// <summary>
+    /// 获取指定路径所在的 qBittorrent 主机磁盘剩余空间。<br/>
+    /// Gets the free space on the qBittorrent host disk that contains the specified path.
+    /// </summary>
+    /// <param name="path">
+    /// qBittorrent 主机上的路径。<br/>
+    /// Path on the qBittorrent host.
+    /// </param>
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
+    /// <returns>
+    /// 剩余空间（字节）；无法确定时 qBittorrent 返回 -1。<br/>
+    /// The free space in bytes; qBittorrent returns -1 when it cannot be determined.
+    /// </returns>
+    /// <remarks>
+    /// 此方法随 Web API v2.15.2 引入。路径不存在时 qBittorrent 会退回到最近的存在祖先目录。<br/>
+    /// This method was introduced with Web API v2.15.2. When the path does not exist, qBittorrent falls
+    /// back to the nearest existing ancestor directory.
+    /// </remarks>
+    public async Task<long> GetFreeSpaceAtPath(string path, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        var parameters = new Dictionary<string, string> { { "path", path } };
+        var response = await netService.Post($"{BaseUrl}/getFreeSpaceAtPath", parameters, ApiVersion.V2_15_2,
+                                             ct : cancellationToken);
+        return long.TryParse(response, out var freeSpace) ? freeSpace : -1;
+    }
+
+    /// <summary>
+    /// 轮换 Web API 密钥。<br/>
+    /// Rotates the Web API key.
+    /// </summary>
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
+    /// <returns>新生成的 API 密钥；服务器未返回密钥时为 <see langword="null"/>。<br/>
+    /// The newly generated API key, or <see langword="null"/> when the server did not return one.</returns>
+    /// <remarks>此方法随 Web API v2.14.0 引入。<br/>Introduced with Web API v2.14.0.</remarks>
+    public async Task<string?> RotateApiKey(CancellationToken cancellationToken = default)
+    {
+        var response = await netService.Post($"{BaseUrl}/rotateAPIKey", targetVersion : ApiVersion.V2_14_0,
+                                             ct : cancellationToken);
+        return QBittorrentJsonSerializer.Deserialize<Dictionary<string, string>>(response)?.GetValueOrDefault("apiKey");
+    }
+
+    /// <summary>
+    /// 删除当前 Web API 密钥。<br/>
+    /// Deletes the current Web API key.
+    /// </summary>
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
+    /// <remarks>此方法随 Web API v2.14.1 引入。<br/>Introduced with Web API v2.14.1.</remarks>
+    public async Task DeleteApiKey(CancellationToken cancellationToken = default) =>
+        await netService.Post($"{BaseUrl}/deleteAPIKey", targetVersion : ApiVersion.V2_14_1, ct : cancellationToken);
+
+    /// <summary>
     /// 获取目录中的文件和子目录路径。<br/>
     /// Gets file and subdirectory paths in a directory.
     /// </summary>
     /// <param name="directoryPath">qBittorrent 主机上的目录路径。<br/>Directory path on the qBittorrent host.</param>
     /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
     /// <returns>目录内容路径列表。<br/>The directory content paths.</returns>
-    public async Task<List<string>> GetDirectoryContent(string            directoryPath,
-                                                        CancellationToken cancellationToken = default)
+    public async Task<List<string>> GetDirectoryContent(
+        string directoryPath, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(directoryPath);
         var parameters = new Dictionary<string, string>
