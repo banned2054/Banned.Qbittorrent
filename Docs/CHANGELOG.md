@@ -6,6 +6,7 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## 📘 Versions
 
+- [v1.8.0](#-release-v180--web-api-updates-and-backward-compatibility)
 - [v1.7.0](#-release-v170--upstream-api-parity-and-qbittorrent-530-support)
 - [v1.6.0](#-release-v160--api-coverage--version-compatibility)
 - [v1.5.1](#-release-v151--xml-documentation-support)
@@ -23,6 +24,39 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 - [v0.0.7](#-release-v007--qbittorrent-net-client-refinement)
 - [v0.0.6](#-release-v006--qbittorrent-net-client-enhancement)
 - [v0.0.5](#-release-v005--qbittorrent-net-client-update)
+
+## 🚀 Release v1.8.0 — Web API Updates and Backward Compatibility
+
+**Release Date:** 2026-11-10
+
+### ✨ Added
+
+* Added `Torrent.CancelTorrentMetadata` for `torrents/cancelFetchMetadata`, which cancels a metadata fetch started by `FetchTorrentMetadata` and discards cached metadata (Web API v2.17.0). Empty sources are rejected locally, `404` maps to `QbittorrentNotFoundException`, and the version check runs before any request is sent.
+* Added the `error` response field for `torrents/info` and `sync/maindata` payloads (`TorrentInfo.Error`), exposing the same error text shown in the GUI (Web API v2.17.0).
+* Added the `engineName` and `engineFullName` response fields to `ResultEntity` for `search/results`. `engineFullName` requires Web API v2.17.0; missing fields on older servers remain `null`.
+* Added the `confirm_remove_all_tags` and `confirm_remove_tracker_from_all_torrents` preference fields for reading via `app/preferences` and writing via `app/setPreferences` (Web API v2.16.2).
+* Added share limit options — `ratioLimit`, `seedingTimeLimit`, `inactiveSeedingTimeLimit`, `shareLimitAction`, and `shareLimitsMode` — to `Torrent.CreateCategory` and `Torrent.EditCategory` (Web API v2.16.2). Ratio and time limits accept `-2` to inherit the global limit and `-1` for unlimited seeding.
+* Added `EnumTorrentShareLimitAction.Default` to restore the inherited share limit action, preserving the numeric values of existing enum members.
+
+### 🔧 Changed
+
+* `Torrent.EditCategory` allows omitting `savePath` on Web API v2.16.2 or later. An explicit empty path is still sent to clear the category's save path, including on older servers; only `null` means omission.
+
+### 🐞 Fixed
+
+* Fixed `Search.GetSearchResults` failing to deserialize the server's string-valued `status` (`Running` / `Stopped`). The existing `SearchResult.Status` public type is preserved, and object-valued and `null` statuses remain supported.
+
+### ⚠️ Compatibility
+
+* The original five-parameter `Torrent.CreateCategory` and `Torrent.EditCategory` signatures remain available for existing compiled consumers and positional cancellation-token calls. New category options require Web API v2.16.2; calls without them retain the legacy request behavior.
+* Category share limit options and omission of `EditCategory.savePath` are rejected before sending a request on servers below Web API v2.16.2. `CancelTorrentMetadata` requires Web API v2.17.0.
+* New response and preference properties are nullable, allowing responses from older servers and partial `sync/maindata` updates to omit them.
+
+### 🧪 Tests
+
+* The suite now contains 190 passing tests, including legacy category request checks for Web API v2.1.1, v2.8.3, and v2.16.1, plus version boundaries, special limit values, explicit empty paths, original method signatures, and search, preference, and sync response contracts.
+* Builds pass for .NET 8, 9, and 10 with warnings treated as errors. The NativeAOT smoke application covers string-valued search status and the new response fields; native compilation and execution pass. These checks use simulated responses and do not require a live qBittorrent server.
+
 
 ## 🚀 Release v1.7.0 — Upstream API Parity and qBittorrent 5.3.0 Support
 
