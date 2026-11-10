@@ -16,5 +16,8 @@ public enum EnumTorrentShareLimitAction
     RemoveWithContent,
 
     /// <summary>启用超级做种。 / Enable super seeding.</summary>
-    EnableSuperSeeding
+    EnableSuperSeeding,
+
+    /// <summary>恢复默认分享限制动作。 / Use the default share limit action.</summary>
+    Default = -1
 }

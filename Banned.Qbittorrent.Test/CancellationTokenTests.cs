@@ -24,7 +24,7 @@ public class CancellationTokenTests
     ];
 
     [Test]
-    public void PublicAsyncNetworkMethods_EndWithOptionalCancellationToken()
+    public void PublicAsyncNetworkMethods_PreserveCancellationTokenConventions()
     {
         var offenders = PublicNetworkTypes
                        .SelectMany(type => type.GetMethods(BindingFlags.Public |
@@ -35,6 +35,15 @@ public class CancellationTokenTests
                        .Where(method =>
                        {
                            var parameters = method.GetParameters();
+                           // Category overloads retain the original token position for caller compatibility.
+                           if (method.DeclaringType == typeof(TorrentService) &&
+                               method.Name is nameof(TorrentService.CreateCategory) or
+                                              nameof(TorrentService.EditCategory))
+                               return parameters.Length is not (5 or 10) ||
+                                      parameters[4].ParameterType != typeof(CancellationToken) ||
+                                      (parameters.Length == 10 &&
+                                       parameters.Skip(4).Any(parameter => !parameter.IsOptional));
+
                            return parameters.Length == 0 ||
                                   parameters[^1].ParameterType != typeof(CancellationToken) ||
                                   !parameters[^1].IsOptional;
@@ -44,7 +53,7 @@ public class CancellationTokenTests
                        .ToArray();
 
         That(offenders, Is.Empty,
-             "Every public async network method must end with an optional CancellationToken parameter.");
+             "Network methods must end with an optional cancellation token, except category overloads that retain the original fifth position.");
     }
 
     [Test]

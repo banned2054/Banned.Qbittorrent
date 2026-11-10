@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Banned.Qbittorrent.Serialization;
 
 namespace Banned.Qbittorrent.Models.Search;
 
@@ -20,6 +21,7 @@ public class SearchResult
     /// The status of the current search job.
     /// </summary>
     [JsonPropertyName("status")]
+    [JsonConverter(typeof(SearchResultStatusConverter))]
     public SearchStatus? Status { get; set; }
 
     /// <summary>

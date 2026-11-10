@@ -414,6 +414,17 @@ public sealed class ApplicationPreferences
     [JsonPropertyName("bypass_local_auth")]
     public bool? BypassLocalAuth { get; set; }
 
+    /// <summary>删除全部标签时是否需要确认。<br/>Whether confirmation is required when removing all tags.</summary>
+    /// <remarks>此字段随 Web API v2.16.2 引入。<br/>Introduced with Web API v2.16.2.</remarks>
+    [JsonPropertyName("confirm_remove_all_tags")]
+    public bool? ConfirmRemoveAllTags { get; set; }
+
+    /// <summary>从所有种子删除 Tracker 时是否需要确认。<br/>
+    /// Whether confirmation is required when removing a tracker from all torrents.</summary>
+    /// <remarks>此字段随 Web API v2.16.2 引入。<br/>Introduced with Web API v2.16.2.</remarks>
+    [JsonPropertyName("confirm_remove_tracker_from_all_torrents")]
+    public bool? ConfirmRemoveTrackerFromAllTorrents { get; set; }
+
     /// <summary>是否允许白名单子网绕过 Web UI 身份验证。<br/>Whether whitelisted subnets may bypass Web UI authentication.</summary>
     [JsonPropertyName("bypass_auth_subnet_whitelist_enabled")]
     public bool? BypassAuthSubnetWhitelistEnabled { get; set; }

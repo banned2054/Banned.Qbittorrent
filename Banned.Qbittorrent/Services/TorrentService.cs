@@ -447,6 +447,35 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
     }
 
     /// <summary>
+    /// 取消由 fetchMetadata 发起的元数据查询。<br/>
+    /// Cancels a metadata fetch initiated by fetchMetadata.
+    /// </summary>
+    /// <param name="source">与 fetchMetadata 相同的元数据来源（磁力链接 / Info Hash / URL）。<br/>
+    /// Metadata source, using the same format as fetchMetadata (magnet link / info hash / URL).</param>
+    /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
+    /// <remarks>
+    /// 此方法随 Web API v2.17.0 引入。取消成功时同时丢弃已缓存的元数据。<br/>
+    /// Introduced with Web API v2.17.0. On success, any cached metadata for the source is also discarded.
+    /// </remarks>
+    /// <exception cref="ArgumentException">当 <c>source</c> 为空时在本地抛出。/ Thrown locally when <c>source</c> is empty.</exception>
+    /// <exception cref="QbittorrentNotFoundException">当不存在对应的元数据查询时抛出。/ Thrown when no matching metadata fetch exists.</exception>
+    public async Task CancelTorrentMetadata(string source, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(source);
+        var parameters = new Dictionary<string, string> { ["source"] = source };
+
+        try
+        {
+            await netService.Post($"{BaseUrl}/cancelFetchMetadata", parameters, ApiVersion.V2_17_0,
+                                  ct : cancellationToken);
+        }
+        catch (QbittorrentNotFoundException)
+        {
+            throw new QbittorrentNotFoundException("No matching fetchMetadata task for the given source.");
+        }
+    }
+
+    /// <summary>
     /// 解析上传的种子元数据。<br/>
     /// Parses uploaded torrent metadata.
     /// </summary>
@@ -1536,28 +1565,48 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
                                                                       targetVersion : ApiVersion.V2_1_1,
                                                                       ct : cancellationToken));
 
+    /// <summary>Creates a category using the original five-parameter API signature.</summary>
+    /// <param name="name">分类名称。The category name.</param>
+    /// <param name="savePath">分类保存路径。The category save path.</param>
+    /// <param name="downloadPath">可选下载路径。Optional download path.</param>
+    /// <param name="downloadPathEnable">是否启用下载路径。Whether the download path is enabled.</param>
+    /// <param name="cancellationToken">取消请求的令牌。Cancellation token.</param>
+    public Task CreateCategory(string name,
+                               string savePath,
+                               string? downloadPath,
+                               bool? downloadPathEnable,
+                               CancellationToken cancellationToken) =>
+        CreateCategory(name, savePath, downloadPath, downloadPathEnable, cancellationToken,
+                       ratioLimit : null, seedingTimeLimit : null, inactiveSeedingTimeLimit : null,
+                       shareLimitAction : null, shareLimitsMode : null);
+
     /// <summary>
     /// 创建一个分类。<br/>
-    /// Create a category.
+    /// Create a category with optional share limit settings.
     /// </summary>
     /// <param name="name">要创建的分类名称。<br/>The name of the category to create.</param>
     /// <param name="savePath">分类保存路径。<br/>The save path of the category.</param>
     /// <param name="downloadPath">可选的下载路径。<br/>Optional download path.</param>
     /// <param name="downloadPathEnable">是否启用下载路径。<br/>Whether to enable the download path.</param>
     /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
-    /// <exception cref="QbittorrentBadRequestException">
-    /// 当分类名称为空时抛出。<br/>
-    /// Thrown when the category name is empty.
-    /// </exception>
-    /// <exception cref="QbittorrentConflictException">
-    /// 当分类名称无效或已存在时抛出。<br/>
-    /// Thrown when the category name is invalid or already exists.
-    /// </exception>
-    public async Task CreateCategory(string            name,
-                                     string            savePath,
-                                     string?           downloadPath       = null,
-                                     bool?             downloadPathEnable = null,
-                                     CancellationToken cancellationToken  = default)
+    /// <param name="ratioLimit">分类的最大分享率。<br/>Maximum share ratio of the category.</param>
+    /// <param name="seedingTimeLimit">分类的最大做种时间（分钟）。<br/>Maximum seeding time of the category, in minutes.</param>
+    /// <param name="inactiveSeedingTimeLimit">分类的最大非活动做种时间（分钟）。<br/>Maximum inactive seeding time of the category, in minutes.</param>
+    /// <param name="shareLimitAction">分类达到分享限制后执行的操作。<br/>Action performed once the category's share limit is reached.</param>
+    /// <param name="shareLimitsMode">分类分享限制的组合判定模式。<br/>Share limits combination mode of the category.</param>
+    /// <exception cref="QbittorrentBadRequestException">分类名称为空时抛出。Thrown when the category name is empty.</exception>
+    /// <exception cref="QbittorrentConflictException">分类名称无效或已存在时抛出。Thrown when the category name is invalid or already exists.</exception>
+    /// <remarks>分享限制选项随 Web API v2.16.2 引入。Share limit options were introduced with Web API v2.16.2.</remarks>
+    public async Task CreateCategory(string name,
+                                     string savePath,
+                                     string? downloadPath = null,
+                                     bool? downloadPathEnable = null,
+                                     CancellationToken cancellationToken = default,
+                                     float? ratioLimit = null,
+                                     int? seedingTimeLimit = null,
+                                     int? inactiveSeedingTimeLimit = null,
+                                     EnumTorrentShareLimitAction? shareLimitAction = null,
+                                     EnumTorrentShareLimitsMode? shareLimitsMode = null)
     {
         var parameters = new Dictionary<string, string>
         {
@@ -1570,6 +1619,15 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
 
         if (downloadPathEnable != null)
             parameters["downloadPathEnabled"] = downloadPathEnable.Value ? "True" : "False";
+
+        if (HasAnyCategoryShareLimit(ratioLimit, seedingTimeLimit, inactiveSeedingTimeLimit,
+                                     shareLimitAction, shareLimitsMode))
+        {
+            netService.EnsureApiVersionSupported($"{BaseUrl}/createCategory",
+                                                 new ApiVersionRange(ApiVersion.V2_16_2));
+            AddCategoryShareLimitParameters(parameters, ratioLimit, seedingTimeLimit, inactiveSeedingTimeLimit,
+                                            shareLimitAction, shareLimitsMode);
+        }
 
         try
         {
@@ -1586,34 +1644,72 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
     }
 
 
+    /// <summary>Edits a category using the original five-parameter API signature.</summary>
+    /// <param name="name">分类名称。The category name.</param>
+    /// <param name="savePath">分类保存路径。The category save path.</param>
+    /// <param name="downloadPath">可选下载路径。Optional download path.</param>
+    /// <param name="downloadPathEnable">是否启用下载路径。Whether the download path is enabled.</param>
+    /// <param name="cancellationToken">取消请求的令牌。Cancellation token.</param>
+    public Task EditCategory(string name,
+                             string savePath,
+                             string? downloadPath,
+                             bool? downloadPathEnable,
+                             CancellationToken cancellationToken) =>
+        EditCategory(name, savePath, downloadPath, downloadPathEnable, cancellationToken,
+                     ratioLimit : null, seedingTimeLimit : null, inactiveSeedingTimeLimit : null,
+                     shareLimitAction : null, shareLimitsMode : null);
+
     /// <summary>
     /// 编辑一个分类。<br/>
-    /// Edit a category.
+    /// Edit a category with optional share limit settings.
     /// </summary>
     /// <param name="name">要编辑的分类名称。<br/>The name of the category to edit.</param>
-    /// <param name="savePath">分类保存路径。<br/>The save path of the category.</param>
+    /// <param name="savePath">分类保存路径；Web API v2.16.2 起可省略。<br/>Save path; optional since Web API v2.16.2.</param>
     /// <param name="downloadPath">可选的下载路径。<br/>Optional download path.</param>
     /// <param name="downloadPathEnable">是否启用下载路径。<br/>Whether to enable the download path.</param>
     /// <param name="cancellationToken">取消请求的令牌。<br/>Token used to cancel the request.</param>
-    /// <exception cref="QbittorrentBadRequestException">
-    /// 当分类名称为空时抛出。<br/>
-    /// Thrown when the category name is empty.
-    /// </exception>
-    /// <exception cref="QbittorrentConflictException">
-    /// 当分类编辑失败时抛出。<br/>
-    /// Thrown when the category editing operation fails.
-    /// </exception>
-    public async Task EditCategory(string            name,
-                                   string            savePath,
-                                   string?           downloadPath       = null,
-                                   bool?             downloadPathEnable = null,
-                                   CancellationToken cancellationToken  = default)
+    /// <param name="ratioLimit">分类的最大分享率。<br/>Maximum share ratio of the category.</param>
+    /// <param name="seedingTimeLimit">分类的最大做种时间（分钟）。<br/>Maximum seeding time of the category, in minutes.</param>
+    /// <param name="inactiveSeedingTimeLimit">分类的最大非活动做种时间（分钟）。<br/>Maximum inactive seeding time of the category, in minutes.</param>
+    /// <param name="shareLimitAction">分类达到分享限制后执行的操作。<br/>Action performed once the category's share limit is reached.</param>
+    /// <param name="shareLimitsMode">分类分享限制的组合判定模式。<br/>Share limits combination mode of the category.</param>
+    /// <exception cref="QbittorrentBadRequestException">分类名称或参数非法时抛出。Thrown when the category name or parameters are invalid.</exception>
+    /// <exception cref="QbittorrentConflictException">分类编辑失败时抛出。Thrown when category editing fails.</exception>
+    /// <remarks>
+    /// 省略 <c>savePath</c> 和分享限制参数要求 Web API v2.16.2；显式空字符串仍作为路径提交。<br/>
+    /// Omitting <c>savePath</c> and using share limit options require Web API v2.16.2; an explicit empty string is sent.
+    /// </remarks>
+    public async Task EditCategory(string name,
+                                   string? savePath = null,
+                                   string? downloadPath = null,
+                                   bool? downloadPathEnable = null,
+                                   CancellationToken cancellationToken = default,
+                                   float? ratioLimit = null,
+                                   int? seedingTimeLimit = null,
+                                   int? inactiveSeedingTimeLimit = null,
+                                   EnumTorrentShareLimitAction? shareLimitAction = null,
+                                   EnumTorrentShareLimitsMode? shareLimitsMode = null)
     {
+        if (HasAnyCategoryShareLimit(ratioLimit, seedingTimeLimit, inactiveSeedingTimeLimit,
+                                     shareLimitAction, shareLimitsMode))
+        {
+            netService.EnsureApiVersionSupported($"{BaseUrl}/editCategory (share limit options)",
+                                                 new ApiVersionRange(ApiVersion.V2_16_2));
+        }
+
+        if (savePath is null)
+        {
+            netService.EnsureApiVersionSupported($"{BaseUrl}/editCategory (optional savePath)",
+                                                 new ApiVersionRange(ApiVersion.V2_16_2));
+        }
+
         var parameters = new Dictionary<string, string>
         {
             { "category", name },
-            { "savePath", savePath },
         };
+
+        if (savePath is not null)
+            parameters["savePath"] = savePath;
 
         if (!string.IsNullOrWhiteSpace(downloadPath))
             parameters["downloadPath"] = downloadPath;
@@ -1621,18 +1717,63 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
         if (downloadPathEnable != null)
             parameters["downloadPathEnabled"] = downloadPathEnable.Value ? "True" : "False";
 
+        AddCategoryShareLimitParameters(parameters, ratioLimit, seedingTimeLimit, inactiveSeedingTimeLimit,
+                                        shareLimitAction, shareLimitsMode);
+
         try
         {
             await netService.Post($"{BaseUrl}/editCategory", parameters, ApiVersion.V2_1_0, ct : cancellationToken);
         }
         catch (QbittorrentBadRequestException)
         {
-            throw new QbittorrentBadRequestException("Category name is empty");
+            throw new QbittorrentBadRequestException("Category name is empty or one of the parameters is invalid");
         }
         catch (QbittorrentConflictException)
         {
             throw new QbittorrentConflictException("Category editing failed");
         }
+    }
+
+    private static bool HasAnyCategoryShareLimit(float?               ratioLimit,
+                                                 int?                 seedingTimeLimit,
+                                                 int?                 inactiveSeedingTimeLimit,
+                                                 EnumTorrentShareLimitAction? shareLimitAction,
+                                                 EnumTorrentShareLimitsMode?  shareLimitsMode) =>
+        ratioLimit is not null               ||
+        seedingTimeLimit is not null         ||
+        inactiveSeedingTimeLimit is not null ||
+        shareLimitAction is not null         ||
+        shareLimitsMode is not null;
+
+    private static void AddCategoryShareLimitParameters(Dictionary<string, string> parameters,
+                                                        float?               ratioLimit,
+                                                        int?                 seedingTimeLimit,
+                                                        int?                 inactiveSeedingTimeLimit,
+                                                        EnumTorrentShareLimitAction? shareLimitAction,
+                                                        EnumTorrentShareLimitsMode?  shareLimitsMode)
+    {
+        if (seedingTimeLimit is < -2)
+            throw new ArgumentException("seedingTimeLimit must be -2, -1, or greater than or equal to 0.",
+                                        nameof(seedingTimeLimit));
+
+        if (inactiveSeedingTimeLimit is < -2)
+            throw new ArgumentException("inactiveSeedingTimeLimit must be -2, -1, or greater than or equal to 0.",
+                                        nameof(inactiveSeedingTimeLimit));
+
+        if (ratioLimit is not null)
+            parameters["ratioLimit"] = ratioLimit.Value.ToString(CultureInfo.InvariantCulture);
+
+        if (seedingTimeLimit is not null)
+            parameters["seedingTimeLimit"] = seedingTimeLimit.Value.ToString();
+
+        if (inactiveSeedingTimeLimit is not null)
+            parameters["inactiveSeedingTimeLimit"] = inactiveSeedingTimeLimit.Value.ToString();
+
+        if (shareLimitAction is not null)
+            parameters["shareLimitAction"] = shareLimitAction.Value.ToString();
+
+        if (shareLimitsMode is not null)
+            parameters["shareLimitsMode"] = shareLimitsMode.Value.ShareLimitsMode2String();
     }
 
 

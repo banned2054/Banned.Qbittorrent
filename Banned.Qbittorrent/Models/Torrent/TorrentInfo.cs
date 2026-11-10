@@ -97,6 +97,14 @@ public class TorrentInfo
     public long? DownloadedSession { get; set; }
 
     /// <summary>
+    /// 种子出错原因文本（与 GUI 显示一致），无错时为空串。<br/>
+    /// Error text of the torrent, matching what the GUI shows; empty when there is no error.
+    /// </summary>
+    /// <remarks>此字段随 Web API v2.17.0 引入。<br/>Introduced with Web API v2.17.0.</remarks>
+    [JsonPropertyName("error")]
+    public string? Error { get; set; }
+
+    /// <summary>
     /// 预计剩余时间。<br/>
     /// Estimated Time of Arrival.
     /// </summary>

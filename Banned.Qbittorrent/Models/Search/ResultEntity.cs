@@ -56,4 +56,20 @@ public class ResultEntity
     /// </summary>
     [JsonPropertyName("siteUrl")]
     public string? SiteUrl { get; set; }
+
+    /// <summary>
+    /// 搜索引擎的短名称。<br/>
+    /// Short name of the search engine.
+    /// </summary>
+    [JsonPropertyName("engineName")]
+    public string? EngineName { get; set; }
+
+    /// <summary>
+    /// 搜索引擎的完整正式名称。<br/>
+    /// Full official name of the search engine.
+    /// </summary>
+    /// <remarks>此字段随 Web API v2.17.0 引入，<see cref="EngineName"/> 仍然保留。<br/>
+    /// Introduced with Web API v2.17.0; <see cref="EngineName"/> is kept unchanged.</remarks>
+    [JsonPropertyName("engineFullName")]
+    public string? EngineFullName { get; set; }
 }
