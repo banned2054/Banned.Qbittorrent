@@ -17,10 +17,13 @@
 		<PackageReleaseNotes>
 			Version 1.8.0 adds Web API v2.16.2 category options and v2.17.0 features while preserving compatibility with older servers.
 
+			- Adds an explicit .NET 11 target alongside .NET 8, 9, and 10.
 			- Adds metadata-fetch cancellation, torrent error details, and full search engine names (Web API v2.17.0).
 			- Adds category share limits, optional category save-path updates, and tag/tracker removal confirmation preferences (Web API v2.16.2).
 			- Fixes search result status deserialization without changing the existing public status type.
 			- Preserves original five-parameter category method signatures, positional cancellation tokens, and legacy request behavior.
+			- Streams torrent-list and sync JSON responses while preserving legacy response and encoding handling.
+			- Validates .NET 8, 9, 10, and 11 with the shared contract suite and NativeAOT smoke application.
 			- Expands old-server contract coverage and validates NativeAOT serialization with simulated responses.
 		</PackageReleaseNotes>
 		<PackageTags>qbittorrent;api;dotnet;httpclient</PackageTags>

@@ -17,7 +17,11 @@ jobs:
             - name: Set up .NET
               uses: actions/setup-dotnet@v6
               with:
-                  dotnet-version: "11.0.x"
+                  dotnet-version: |
+                      8.0.x
+                      9.0.x
+                      10.0.x
+                      11.0.x
 
             - name: Build
               run: dotnet build Banned.Qbittorrent.sln --configuration Release
@@ -26,7 +30,13 @@ jobs:
               run: dotnet test Banned.Qbittorrent.sln --configuration Release --no-build
 
             - name: Publish NativeAOT smoke application
-              run: dotnet publish Banned.Qbittorrent.AotSmoke/Banned.Qbittorrent.AotSmoke.csproj --configuration Release --runtime linux-x64 --output artifacts/aot
+              run: |
+                  for framework in net8.0 net9.0 net10.0 net11.0; do
+                      dotnet publish Banned.Qbittorrent.AotSmoke/Banned.Qbittorrent.AotSmoke.csproj --configuration Release --framework "$framework" --runtime linux-x64 --output "artifacts/aot/$framework"
+                  done
 
             - name: Run NativeAOT smoke application
-              run: ./artifacts/aot/Banned.Qbittorrent.AotSmoke
+              run: |
+                  for framework in net8.0 net9.0 net10.0 net11.0; do
+                      "./artifacts/aot/$framework/Banned.Qbittorrent.AotSmoke"
+                  done

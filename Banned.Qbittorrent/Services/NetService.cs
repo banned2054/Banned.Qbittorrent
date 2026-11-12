@@ -2,87 +2,66 @@ using Banned.Qbittorrent.Exceptions;
 using Banned.Qbittorrent.Models;
 using Banned.Qbittorrent.Models.Application;
 using Banned.Qbittorrent.Models.Enums;
+using Banned.Qbittorrent.Serialization;
 using Banned.Qbittorrent.Utils;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Text;
 using static Banned.Qbittorrent.Utils.NetUtils;
 
 namespace Banned.Qbittorrent.Services;
 
 /// <summary>
-/// 提供底层的 HTTP 网络请求服务，包含自动重试、身份验证检查和版本控制。<br/>
-/// Provides underlying HTTP networking services, including automatic retries, authentication checks, and version control.
+///     提供底层的 HTTP 网络请求服务，包含自动重试、身份验证检查和版本控制。<br />
+///     Provides underlying HTTP networking services, including automatic retries, authentication checks, and version
+///     control.
 /// </summary>
 public class NetService : IDisposable
 {
     private static long _requestSequence;
 
-    private readonly Func<AddressFamilyPreference, HttpClient>?         _httpClientFactory;
-    private readonly Func<string, CancellationToken, Task<IPAddress[]>> _addressResolver;
-
-    private readonly Action<string>?  _diagnosticSink;
-    private readonly List<HttpClient> _retiredClients = [];
-    private readonly CookieContainer? _cookieContainer;
-
-    private readonly Uri      _baseUrl;
-    private readonly TimeSpan _configuredTimeout;
-    private readonly TimeSpan _connectTimeout;
-    private readonly object   _clientRefreshLock = new();
-    private readonly bool     _ownsHttpClient;
-    private readonly bool     _enableAutomaticIPv4Fallback;
-
-    private AddressFamilyPreference _addressFamilyPreference;
-
-    private int  _clientGeneration;
-    private bool _automaticFallbackAttempted;
-    private bool _disposed;
-
-    private HttpClient _client;
-    private ApiVersion _apiVersion;
-
     /// <summary>
-    /// 获取或设置用于确保用户已登录的处理程序。<br/>
-    /// Gets or sets the handler used to ensure the user is logged in.
-    /// </summary>
-    public Func<Task>? EnsureLoggedInHandler { get; set; }
-
-    /// <summary>
-    /// 获取或设置用于确保用户已登录的处理程序，可指定是否强制重新登录。<br/>
-    /// Gets or sets the handler used to ensure the user is logged in, with optional forced re-login.
-    /// </summary>
-    public Func<bool, CancellationToken, Task>? EnsureLoggedInAsyncHandler { get; set; }
-
-    /// <summary>
-    /// 获取或设置最大重试次数。<br/>
-    /// Gets or sets the maximum number of attempts. The legacy property name is retained for compatibility.
-    /// </summary>
-    public int MaxRetries { get; set; } = 3;
-
-    /// <summary>
-    /// 获取默认请求超时时间。<br/>
-    /// Gets the default request timeout.
+    ///     获取默认请求超时时间。<br />
+    ///     Gets the default request timeout.
     /// </summary>
     public static readonly TimeSpan DefaultRequestTimeout = TimeSpan.FromSeconds(15);
 
     /// <summary>
-    /// 获取默认 TCP 连接建立超时时间。<br/>
-    /// Gets the default TCP connection establishment timeout.
+    ///     获取默认 TCP 连接建立超时时间。<br />
+    ///     Gets the default TCP connection establishment timeout.
     /// </summary>
     public static readonly TimeSpan DefaultConnectTimeout = TimeSpan.FromSeconds(5);
 
-    /// <summary>
-    /// 获取或设置是否在网络故障异常中包含额外诊断信息。<br/>
-    /// Gets or sets whether network failure exceptions include additional diagnostics.
-    /// </summary>
-    public bool EnableDetailedLogging { get; set; }
+    private readonly Func<string, CancellationToken, Task<IPAddress[]>> _addressResolver;
 
-    private bool DetailedDiagnosticsEnabled => EnableDetailedLogging || _diagnosticSink != null;
+    private readonly Uri              _baseUrl;
+    private readonly object           _clientRefreshLock = new();
+    private readonly TimeSpan         _configuredTimeout;
+    private readonly TimeSpan         _connectTimeout;
+    private readonly CookieContainer? _cookieContainer;
+
+    private readonly Action<string>? _diagnosticSink;
+    private readonly bool            _enableAutomaticIPv4Fallback;
+
+    private readonly Func<AddressFamilyPreference, HttpClient>? _httpClientFactory;
+
+    private readonly bool             _ownsHttpClient;
+    private readonly List<HttpClient> _retiredClients = [];
+
+    private AddressFamilyPreference _addressFamilyPreference;
+    private ApiVersion              _apiVersion;
+    private bool                    _automaticFallbackAttempted;
+
+    private HttpClient _client;
+
+    private int  _clientGeneration;
+    private bool _disposed;
 
     /// <summary>
-    /// 初始化 <see cref="NetService"/> 类的新实例。<br/>
-    /// Initializes a new instance of the <see cref="NetService"/> class.
+    ///     初始化 <see cref="NetService" /> 类的新实例。<br />
+    ///     Initializes a new instance of the <see cref="NetService" /> class.
     /// </summary>
     /// <param name="baseUrl">qBittorrent Web UI 的基础地址。 / The base URL of qBittorrent Web UI.</param>
     /// <param name="httpClient">可选的 HttpClient 实例。 / Optional HttpClient instance.</param>
@@ -96,14 +75,13 @@ public class NetService : IDisposable
     {
     }
 
-    internal NetService(string                                              baseUrl,
-                        QBittorrentClientOptions                            options,
+    internal NetService(string                                              baseUrl, QBittorrentClientOptions options,
                         Func<string, CancellationToken, Task<IPAddress[]>>? addressResolver,
                         Func<AddressFamilyPreference, HttpClient>?          httpClientFactory)
     {
         ArgumentNullException.ThrowIfNull(baseUrl);
         ArgumentNullException.ThrowIfNull(options);
-        NetUtils.ValidateOptions(options);
+        ValidateOptions(options);
 
         _baseUrl                     = new Uri(baseUrl.TrimEnd('/') + "/");
         _configuredTimeout           = options.Timeout;
@@ -133,6 +111,59 @@ public class NetService : IDisposable
                  _diagnosticSink == null ? null : EmitConnectionDiagnostic));
             _client = CreateDefaultHttpClient(_addressFamilyPreference);
         }
+    }
+
+    /// <summary>
+    ///     获取或设置用于确保用户已登录的处理程序。<br />
+    ///     Gets or sets the handler used to ensure the user is logged in.
+    /// </summary>
+    public Func<Task>? EnsureLoggedInHandler { get; set; }
+
+    /// <summary>
+    ///     获取或设置用于确保用户已登录的处理程序，可指定是否强制重新登录。<br />
+    ///     Gets or sets the handler used to ensure the user is logged in, with optional forced re-login.
+    /// </summary>
+    public Func<bool, CancellationToken, Task>? EnsureLoggedInAsyncHandler { get; set; }
+
+    /// <summary>
+    ///     获取或设置最大重试次数。<br />
+    ///     Gets or sets the maximum number of attempts. The legacy property name is retained for compatibility.
+    /// </summary>
+    public int MaxRetries { get; set; } = 3;
+
+    /// <summary>
+    ///     获取或设置是否在网络故障异常中包含额外诊断信息。<br />
+    ///     Gets or sets whether network failure exceptions include additional diagnostics.
+    /// </summary>
+    public bool EnableDetailedLogging { get; set; }
+
+    private bool DetailedDiagnosticsEnabled => EnableDetailedLogging || _diagnosticSink != null;
+
+    /// <summary>
+    ///     释放 <see cref="NetService" /> 使用的资源。<br />
+    ///     Releases the resources used by the <see cref="NetService" />.
+    /// </summary>
+    public void Dispose()
+    {
+        lock (_clientRefreshLock)
+        {
+            if (_disposed) return;
+            _disposed = true;
+
+            if (!_ownsHttpClient)
+            {
+                GC.SuppressFinalize(this);
+                return;
+            }
+
+            _client.Dispose();
+            foreach (var client in _retiredClients)
+                client.Dispose();
+
+            _retiredClients.Clear();
+        }
+
+        GC.SuppressFinalize(this);
     }
 
     private HttpClient CreateDefaultHttpClient(AddressFamilyPreference preference) => _httpClientFactory!(preference);
@@ -189,25 +220,20 @@ public class NetService : IDisposable
         }
 
         if (upgraded)
-        {
             AppendDiagnostic(diagnostics, requestId,
                              $"automatic IPv4 fallback activated oldPolicy={AddressFamilyPreference.System} " +
                              $"newPolicy={AddressFamilyPreference.PreferIPv4} generation={_clientGeneration} " +
                              $"oldHttpClientId={previous!.GetHashCode()} newHttpClientId={replacement!.GetHashCode()} " +
                              $"trigger={DescribeException(exception)}");
-        }
         else
-        {
             AppendDiagnostic(diagnostics, requestId,
                              $"automatic IPv4 fallback already activated by another request; generation={_clientGeneration}");
-        }
 
         return true;
     }
 
-    private async Task<IPAddress[]> ResolveAddressesForFallback(StringBuilder     diagnostics,
-                                                                long              requestId,
-                                                                CancellationToken cancellationToken)
+    private async Task<IPAddress[]> ResolveAddressesForFallback(
+        StringBuilder diagnostics, long requestId, CancellationToken cancellationToken)
     {
         if (Uri.CheckHostName(_baseUrl.Host) != UriHostNameType.Dns)
             return [];
@@ -218,10 +244,8 @@ public class NetService : IDisposable
             timeoutCts.CancelAfter(TimeSpan.FromSeconds(3));
             var addresses = await _addressResolver(_baseUrl.DnsSafeHost, timeoutCts.Token).ConfigureAwait(false);
             if (DetailedDiagnosticsEnabled)
-            {
                 AppendDiagnostic(diagnostics, requestId,
                                  $"fallback DNS candidates=[{string.Join(", ", addresses.Select(address => $"{address.AddressFamily}:{address}"))}]");
-            }
 
             return addresses;
         }
@@ -239,11 +263,14 @@ public class NetService : IDisposable
     }
 
     /// <summary>
-    /// 设置当前客户端使用的 Web API 版本。<br/>
-    /// Sets the Web API version used by the current client.
+    ///     设置当前客户端使用的 Web API 版本。<br />
+    ///     Sets the Web API version used by the current client.
     /// </summary>
     /// <param name="apiVersion">API 版本信息。 / API version information.</param>
-    public void SetApiVersion(ApiVersion apiVersion) => _apiVersion = apiVersion;
+    public void SetApiVersion(ApiVersion apiVersion)
+    {
+        _apiVersion = apiVersion;
+    }
 
     internal void EnsureApiVersionSupported(string endpoint, ApiVersionRange versionRange)
     {
@@ -257,8 +284,8 @@ public class NetService : IDisposable
     private Uri CombineUrl(string subPath) => new(_baseUrl, subPath.TrimStart('/'));
 
     /// <summary>
-    /// 发起异步 GET 请求。<br/>
-    /// Performs an asynchronous GET request.
+    ///     发起异步 GET 请求。<br />
+    ///     Performs an asynchronous GET request.
     /// </summary>
     /// <param name="subPath">请求的子路径。 / The sub-path of the request.</param>
     /// <param name="targetVersion">该接口要求的最低 API 版本。 / The minimum API version required by this endpoint.</param>
@@ -267,7 +294,10 @@ public class NetService : IDisposable
     /// <param name="ct">取消令牌。 / Cancellation token.</param>
     /// <param name="maxRetries">覆盖此请求的最大重试次数。 / Maximum retry count override for this request.</param>
     /// <returns>响应体字符串。 / The response body string.</returns>
-    /// <exception cref="QbittorrentNotSupportedException">当前 API 版本低于目标版本时抛出。 / Thrown when the current API version is lower than the target version.</exception>
+    /// <exception cref="QbittorrentNotSupportedException">
+    ///     当前 API 版本低于目标版本时抛出。 / Thrown when the current API version is lower
+    ///     than the target version.
+    /// </exception>
     public async Task<string> Get(string            subPath,
                                   ApiVersion?       targetVersion = null,
                                   string?           opName        = null,
@@ -278,16 +308,16 @@ public class NetService : IDisposable
         EnsureApiVersionSupported(opName ?? subPath, new ApiVersionRange(targetVersion));
 
         if (!skipAuthCheck && !IsAuthenticationEndpoint(subPath))
-            await EnsureLoggedIn(force : false, ct).ConfigureAwait(false);
+            await EnsureLoggedIn(false, ct).ConfigureAwait(false);
 
         return await ExecuteWithRetry(() => new HttpRequestMessage(HttpMethod.Get, CombineUrl(subPath)), maxRetries, ct,
-                                      skipAuthRetry : IsAuthenticationEndpoint(subPath))
+                                      IsAuthenticationEndpoint(subPath))
            .ConfigureAwait(false);
     }
 
     /// <summary>
-    /// 发起具有完整版本区间约束的异步 GET 请求。<br/>
-    /// Performs an asynchronous GET request constrained by a complete API version range.
+    ///     发起具有完整版本区间约束的异步 GET 请求。<br />
+    ///     Performs an asynchronous GET request constrained by a complete API version range.
     /// </summary>
     /// <param name="subPath">请求的子路径。 / The sub-path of the request.</param>
     /// <param name="versionRange">端点有效版本区间。 / Endpoint availability range.</param>
@@ -306,15 +336,15 @@ public class NetService : IDisposable
         EnsureApiVersionSupported(opName ?? subPath, versionRange);
 
         if (!skipAuthCheck && !IsAuthenticationEndpoint(subPath))
-            await EnsureLoggedIn(force : false, ct).ConfigureAwait(false);
+            await EnsureLoggedIn(false, ct).ConfigureAwait(false);
 
         return await ExecuteWithRetry(() => new HttpRequestMessage(HttpMethod.Get, CombineUrl(subPath)), maxRetries, ct,
-                                      skipAuthRetry : IsAuthenticationEndpoint(subPath)).ConfigureAwait(false);
+                                      IsAuthenticationEndpoint(subPath)).ConfigureAwait(false);
     }
 
     /// <summary>
-    /// 发起异步 POST 请求。<br/>
-    /// Performs an asynchronous POST request.
+    ///     发起异步 POST 请求。<br />
+    ///     Performs an asynchronous POST request.
     /// </summary>
     /// <param name="subPath">请求的子路径。 / The sub-path of the request.</param>
     /// <param name="parameters">表单参数。 / Form parameters.</param>
@@ -335,24 +365,21 @@ public class NetService : IDisposable
         EnsureApiVersionSupported(opName ?? subPath, new ApiVersionRange(targetVersion));
 
         if (!skipAuthCheck && !IsAuthenticationEndpoint(subPath))
-            await EnsureLoggedIn(force : false, ct).ConfigureAwait(false);
+            await EnsureLoggedIn(false, ct).ConfigureAwait(false);
 
         return await ExecuteWithRetry(() =>
         {
             var request = new HttpRequestMessage(HttpMethod.Post, CombineUrl(subPath));
 
-            if (parameters != null)
-            {
-                request.Content = new FormUrlEncodedContent(parameters);
-            }
+            if (parameters != null) request.Content = new FormUrlEncodedContent(parameters);
 
             return request;
-        }, maxRetries, ct, skipAuthRetry : IsAuthenticationEndpoint(subPath)).ConfigureAwait(false);
+        }, maxRetries, ct, IsAuthenticationEndpoint(subPath)).ConfigureAwait(false);
     }
 
     /// <summary>
-    /// 发起具有完整版本区间约束的异步 POST 请求。<br/>
-    /// Performs an asynchronous POST request constrained by a complete API version range.
+    ///     发起具有完整版本区间约束的异步 POST 请求。<br />
+    ///     Performs an asynchronous POST request constrained by a complete API version range.
     /// </summary>
     /// <param name="subPath">请求的子路径。 / The sub-path of the request.</param>
     /// <param name="parameters">表单参数。 / Form parameters.</param>
@@ -373,19 +400,43 @@ public class NetService : IDisposable
         EnsureApiVersionSupported(opName ?? subPath, versionRange);
 
         if (!skipAuthCheck && !IsAuthenticationEndpoint(subPath))
-            await EnsureLoggedIn(force : false, ct).ConfigureAwait(false);
+            await EnsureLoggedIn(false, ct).ConfigureAwait(false);
 
         return await ExecuteWithRetry(() =>
         {
             var request                             = new HttpRequestMessage(HttpMethod.Post, CombineUrl(subPath));
             if (parameters != null) request.Content = new FormUrlEncodedContent(parameters);
             return request;
-        }, maxRetries, ct, skipAuthRetry : IsAuthenticationEndpoint(subPath)).ConfigureAwait(false);
+        }, maxRetries, ct, IsAuthenticationEndpoint(subPath)).ConfigureAwait(false);
+    }
+
+    internal async Task<T?> PostJson<T>(
+        string subPath, Dictionary<string, string>? parameters, CancellationToken ct = default)
+    {
+        // Detailed diagnostics retain the original decoded body length and preview.
+        if (DetailedDiagnosticsEnabled)
+            return QBittorrentJsonSerializer.Deserialize<T>(await Post(subPath, parameters, ct : ct)
+                                                               .ConfigureAwait(false));
+
+        EnsureApiVersionSupported(subPath, new ApiVersionRange(null));
+
+        if (!IsAuthenticationEndpoint(subPath))
+            await EnsureLoggedIn(false, ct).ConfigureAwait(false);
+
+        return await ExecuteWithRetry(() =>
+                                      {
+                                          var request = new HttpRequestMessage(HttpMethod.Post, CombineUrl(subPath));
+                                          if (parameters != null)
+                                              request.Content = new FormUrlEncodedContent(parameters);
+                                          return Task.FromResult(request);
+                                      },
+                                      QBittorrentJsonSerializer.DeserializeAsync<T>, ct : ct,
+                                      skipAuthRetry : IsAuthenticationEndpoint(subPath)).ConfigureAwait(false);
     }
 
     /// <summary>
-    /// 发起异步 POST 请求并以字节数组读取响应。<br/>
-    /// Performs an asynchronous POST request and reads the response as a byte array.
+    ///     发起异步 POST 请求并以字节数组读取响应。<br />
+    ///     Performs an asynchronous POST request and reads the response as a byte array.
     /// </summary>
     /// <param name="subPath">请求的子路径。 / The sub-path of the request.</param>
     /// <param name="parameters">表单参数。 / Form parameters.</param>
@@ -402,7 +453,7 @@ public class NetService : IDisposable
         EnsureApiVersionSupported(opName ?? subPath, new ApiVersionRange(targetVersion));
 
         if (!IsAuthenticationEndpoint(subPath))
-            await EnsureLoggedIn(force : false, ct).ConfigureAwait(false);
+            await EnsureLoggedIn(false, ct).ConfigureAwait(false);
 
         return await ExecuteWithRetry(() =>
                                       {
@@ -418,8 +469,8 @@ public class NetService : IDisposable
     }
 
     /// <summary>
-    /// 发起具有完整版本区间约束的异步 POST 请求并读取字节响应。<br/>
-    /// Performs an asynchronous POST request constrained by a complete API version range and reads bytes.
+    ///     发起具有完整版本区间约束的异步 POST 请求并读取字节响应。<br />
+    ///     Performs an asynchronous POST request constrained by a complete API version range and reads bytes.
     /// </summary>
     /// <param name="subPath">请求的子路径。 / The sub-path of the request.</param>
     /// <param name="parameters">表单参数。 / Form parameters.</param>
@@ -436,7 +487,7 @@ public class NetService : IDisposable
         EnsureApiVersionSupported(opName ?? subPath, versionRange);
 
         if (!IsAuthenticationEndpoint(subPath))
-            await EnsureLoggedIn(force : false, ct).ConfigureAwait(false);
+            await EnsureLoggedIn(false, ct).ConfigureAwait(false);
 
         return await ExecuteWithRetry(() =>
                                       {
@@ -452,8 +503,8 @@ public class NetService : IDisposable
     }
 
     /// <summary>
-    /// 发起带文件的异步 POST 请求（多部分表单）。<br/>
-    /// Performs an asynchronous POST request with files (multipart/form-data).
+    ///     发起带文件的异步 POST 请求（多部分表单）。<br />
+    ///     Performs an asynchronous POST request with files (multipart/form-data).
     /// </summary>
     /// <param name="subPath">请求的子路径。 / The sub-path of the request.</param>
     /// <param name="parameters">额外的表单字段。 / Additional form fields.</param>
@@ -461,12 +512,10 @@ public class NetService : IDisposable
     /// <param name="ct">取消令牌。 / Cancellation token.</param>
     /// <returns>响应体字符串。 / The response body string.</returns>
     /// <exception cref="QbittorrentFileNotFoundException">当指定的文件不存在时抛出。 / Thrown when a specified file does not exist.</exception>
-    public async Task<string> PostWithFiles(string                      subPath,
-                                            Dictionary<string, string>? parameters,
-                                            List<string>                filePaths,
-                                            CancellationToken           ct = default)
+    public async Task<string> PostWithFiles(
+        string subPath, Dictionary<string, string>? parameters, List<string> filePaths, CancellationToken ct = default)
     {
-        await EnsureLoggedIn(force : false, ct).ConfigureAwait(false);
+        await EnsureLoggedIn(false, ct).ConfigureAwait(false);
 
         return await ExecuteWithRetry(() =>
         {
@@ -507,8 +556,8 @@ public class NetService : IDisposable
     }
 
     /// <summary>
-    /// 并行执行多个请求。<br/>
-    /// Executes multiple requests in parallel.
+    ///     并行执行多个请求。<br />
+    ///     Executes multiple requests in parallel.
     /// </summary>
     /// <param name="requests">请求信息列表。 / List of request information.</param>
     /// <param name="ct">取消令牌。 / Cancellation token.</param>
@@ -519,10 +568,7 @@ public class NetService : IDisposable
     {
         var tasks = requests.Select(async request =>
         {
-            if (request.method == HttpMethod.Get)
-            {
-                return await Get(request.subPath, skipAuthCheck : false, ct : ct);
-            }
+            if (request.method == HttpMethod.Get) return await Get(request.subPath, skipAuthCheck : false, ct : ct);
 
             return await Post(request.subPath, request.parameters, skipAuthCheck : false, ct : ct);
         }).ToList();
@@ -532,8 +578,8 @@ public class NetService : IDisposable
     }
 
     /// <summary>
-    /// 执行请求并包含指数退避重试机制。<br/>
-    /// Executes the request with an exponential backoff retry mechanism.
+    ///     执行请求并包含指数退避重试机制。<br />
+    ///     Executes the request with an exponential backoff retry mechanism.
     /// </summary>
     /// <param name="requestFactory">用于创建请求消息的工厂方法。 / Factory method to create the request message.</param>
     /// <param name="ct">取消令牌。 / Cancellation token.</param>
@@ -595,8 +641,8 @@ public class NetService : IDisposable
                          $"addressFamilyPreference={_addressFamilyPreference} generation={_clientGeneration} " +
                          $"skipAuthRetry={skipAuthRetry} ctCanBeCanceled={ct.CanBeCanceled} " +
                          $"baseUrl={RedactUri(_baseUrl)} endpoint={DescribeEndpoint(_baseUrl)} machine={Environment.MachineName} " +
-                         $"framework={System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription} " +
-                         $"os={System.Runtime.InteropServices.RuntimeInformation.OSDescription} " +
+                         $"framework={RuntimeInformation.FrameworkDescription} " +
+                         $"os={RuntimeInformation.OSDescription} " +
                          $"processId={Environment.ProcessId} threadId={Environment.CurrentManagedThreadId}");
 
         if (DetailedDiagnosticsEnabled) await AppendDnsDiagnostic(diagnostics, requestId, ct).ConfigureAwait(false);
@@ -651,7 +697,7 @@ public class NetService : IDisposable
                                      $"attempt {attempt}/{actualMaxRetries}: authentication failure " +
                                      $"{response.StatusCode}; forcing login and retrying same attempt");
 
-                    await EnsureLoggedIn(force : true, ct).ConfigureAwait(false);
+                    await EnsureLoggedIn(true, ct).ConfigureAwait(false);
                     attempt--;
                     continue;
                 }
@@ -710,9 +756,7 @@ public class NetService : IDisposable
 
                 if (!fallbackActivated && !IsSafeToReplayAfterConnectionFailure(lastRequestMethod, skipAuthRetry))
                 {
-                    AppendDiagnostic(
-                                     diagnostics,
-                                     requestId,
+                    AppendDiagnostic(diagnostics, requestId,
                                      $"attempt {attempt}/{actualMaxRetries}: retry suppressed because {lastRequestMethod} may have side effects");
                     break;
                 }
@@ -750,13 +794,8 @@ public class NetService : IDisposable
         ct.ThrowIfCancellationRequested();
 
         if (EnsureLoggedInAsyncHandler != null)
-        {
             await EnsureLoggedInAsyncHandler.Invoke(force, ct).ConfigureAwait(false);
-        }
-        else if (EnsureLoggedInHandler != null)
-        {
-            await EnsureLoggedInHandler.Invoke().ConfigureAwait(false);
-        }
+        else if (EnsureLoggedInHandler != null) await EnsureLoggedInHandler.Invoke().ConfigureAwait(false);
     }
 
     private void AppendDiagnostic(StringBuilder diagnostics, long requestId, string message)
@@ -766,8 +805,10 @@ public class NetService : IDisposable
         EmitDiagnostic(line);
     }
 
-    private void EmitConnectionDiagnostic(string message) =>
+    private void EmitConnectionDiagnostic(string message)
+    {
         EmitDiagnostic($"[{DateTimeOffset.Now:O}] [QBT-NET] {message}");
+    }
 
     private void EmitDiagnostic(string message)
     {
@@ -785,8 +826,7 @@ public class NetService : IDisposable
     {
         if (Uri.CheckHostName(_baseUrl.Host) != UriHostNameType.Dns)
         {
-            AppendDiagnostic(
-                             diagnostics, requestId,
+            AppendDiagnostic(diagnostics, requestId,
                              $"DNS skipped because endpoint host is {_baseUrl.HostNameType}; address={_baseUrl.Host}");
             return;
         }
@@ -802,8 +842,7 @@ public class NetService : IDisposable
                 ? "<none>"
                 : string.Join(", ", addresses.Select(address => $"{address.AddressFamily}:{address}"));
 
-            AppendDiagnostic(
-                             diagnostics, requestId,
+            AppendDiagnostic(diagnostics, requestId,
                              $"DNS resolved after {stopwatch.Elapsed}; hostLength={_baseUrl.DnsSafeHost.Length} " +
                              $"addresses=[{resolvedAddresses}]");
         }
@@ -818,32 +857,5 @@ public class NetService : IDisposable
                              $"DNS diagnostic failed after {stopwatch.Elapsed}; exception={DescribeException(ex)}; " +
                              "request will continue normally");
         }
-    }
-
-    /// <summary>
-    /// 释放 <see cref="NetService"/> 使用的资源。<br/>
-    /// Releases the resources used by the <see cref="NetService"/>.
-    /// </summary>
-    public void Dispose()
-    {
-        lock (_clientRefreshLock)
-        {
-            if (_disposed) return;
-            _disposed = true;
-
-            if (!_ownsHttpClient)
-            {
-                GC.SuppressFinalize(this);
-                return;
-            }
-
-            _client.Dispose();
-            foreach (var client in _retiredClients)
-                client.Dispose();
-
-            _retiredClients.Clear();
-        }
-
-        GC.SuppressFinalize(this);
     }
 }

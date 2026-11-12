@@ -27,36 +27,39 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## 🚀 Release v1.8.0 — Web API Updates and Backward Compatibility
 
-**Release Date:** 2026-11-10
+**Release Date:** 2026-11-12
 
 ### ✨ Added
 
-* Added `Torrent.CancelTorrentMetadata` for `torrents/cancelFetchMetadata`, which cancels a metadata fetch started by `FetchTorrentMetadata` and discards cached metadata (Web API v2.17.0). Empty sources are rejected locally, `404` maps to `QbittorrentNotFoundException`, and the version check runs before any request is sent.
-* Added the `error` response field for `torrents/info` and `sync/maindata` payloads (`TorrentInfo.Error`), exposing the same error text shown in the GUI (Web API v2.17.0).
-* Added the `engineName` and `engineFullName` response fields to `ResultEntity` for `search/results`. `engineFullName` requires Web API v2.17.0; missing fields on older servers remain `null`.
-* Added the `confirm_remove_all_tags` and `confirm_remove_tracker_from_all_torrents` preference fields for reading via `app/preferences` and writing via `app/setPreferences` (Web API v2.16.2).
-* Added share limit options — `ratioLimit`, `seedingTimeLimit`, `inactiveSeedingTimeLimit`, `shareLimitAction`, and `shareLimitsMode` — to `Torrent.CreateCategory` and `Torrent.EditCategory` (Web API v2.16.2). Ratio and time limits accept `-2` to inherit the global limit and `-1` for unlimited seeding.
-* Added `EnumTorrentShareLimitAction.Default` to restore the inherited share limit action, preserving the numeric values of existing enum members.
+- Added an explicit .NET 11 target alongside .NET 8, 9, and 10.
+- Added `Torrent.CancelTorrentMetadata` for `torrents/cancelFetchMetadata`, which cancels a metadata fetch started by `FetchTorrentMetadata` and discards cached metadata (Web API v2.17.0). Empty sources are rejected locally, `404` maps to `QbittorrentNotFoundException`, and the version check runs before any request is sent.
+- Added the `error` response field for `torrents/info` and `sync/maindata` payloads (`TorrentInfo.Error`), exposing the same error text shown in the GUI (Web API v2.17.0).
+- Added the `engineName` and `engineFullName` response fields to `ResultEntity` for `search/results`. `engineFullName` requires Web API v2.17.0; missing fields on older servers remain `null`.
+- Added the `confirm_remove_all_tags` and `confirm_remove_tracker_from_all_torrents` preference fields for reading via `app/preferences` and writing via `app/setPreferences` (Web API v2.16.2).
+- Added share limit options — `ratioLimit`, `seedingTimeLimit`, `inactiveSeedingTimeLimit`, `shareLimitAction`, and `shareLimitsMode` — to `Torrent.CreateCategory` and `Torrent.EditCategory` (Web API v2.16.2). Ratio and time limits accept `-2` to inherit the global limit and `-1` for unlimited seeding.
+- Added `EnumTorrentShareLimitAction.Default` to restore the inherited share limit action, preserving the numeric values of existing enum members.
 
 ### 🔧 Changed
 
-* `Torrent.EditCategory` allows omitting `savePath` on Web API v2.16.2 or later. An explicit empty path is still sent to clear the category's save path, including on older servers; only `null` means omission.
+- Both `Torrent.GetTorrentInfos` overloads, `Sync.GetMainData`, and `Sync.GetPeerData` now deserialize UTF-8 JSON from response streams using source-generated metadata, avoiding the intermediate full-response string and reducing temporary allocations.
+- Local allocation measurements with an in-memory HTTP response containing 10,000 torrents (920,001 bytes) showed approximately 28% lower per-request allocations on .NET 8 and 22% on .NET 11.
+- `Torrent.EditCategory` allows omitting `savePath` on Web API v2.16.2 or later. An explicit empty path is still sent to clear the category's save path, including on older servers; only `null` means omission.
 
 ### 🐞 Fixed
 
-* Fixed `Search.GetSearchResults` failing to deserialize the server's string-valued `status` (`Running` / `Stopped`). The existing `SearchResult.Status` public type is preserved, and object-valued and `null` statuses remain supported.
+- Fixed `Search.GetSearchResults` failing to deserialize the server's string-valued `status` (`Running` / `Stopped`). The existing `SearchResult.Status` public type is preserved, and object-valued and `null` statuses remain supported.
 
 ### ⚠️ Compatibility
 
-* The original five-parameter `Torrent.CreateCategory` and `Torrent.EditCategory` signatures remain available for existing compiled consumers and positional cancellation-token calls. New category options require Web API v2.16.2; calls without them retain the legacy request behavior.
-* Category share limit options and omission of `EditCategory.savePath` are rejected before sending a request on servers below Web API v2.16.2. `CancelTorrentMetadata` requires Web API v2.17.0.
-* New response and preference properties are nullable, allowing responses from older servers and partial `sync/maindata` updates to omit them.
+- The original five-parameter `Torrent.CreateCategory` and `Torrent.EditCategory` signatures remain available for existing compiled consumers and positional cancellation-token calls. New category options require Web API v2.16.2; calls without them retain the legacy request behavior.
+- Category share limit options and omission of `EditCategory.savePath` are rejected before sending a request on servers below Web API v2.16.2. `CancelTorrentMetadata` requires Web API v2.17.0.
+- New response and preference properties are nullable, allowing responses from older servers and partial `sync/maindata` updates to omit them.
+- Streaming JSON retains existing public signatures, request forms, cancellation, HTTP exception mapping, authentication recovery, and retry policies. Legacy state aliases, missing and unknown fields, JSON `null`, charset/BOM decoding, and invalid UTF-8 replacement behavior remain supported. Non-UTF-8 responses and detailed diagnostics retain buffered decoding so existing encoding handling and response previews are preserved. No preview features are enabled.
 
 ### 🧪 Tests
 
-* The suite now contains 190 passing tests, including legacy category request checks for Web API v2.1.1, v2.8.3, and v2.16.1, plus version boundaries, special limit values, explicit empty paths, original method signatures, and search, preference, and sync response contracts.
-* Builds pass for .NET 8, 9, and 10 with warnings treated as errors. The NativeAOT smoke application covers string-valued search status and the new response fields; native compilation and execution pass. These checks use simulated responses and do not require a live qBittorrent server.
-
+- Added 35 streaming JSON regression cases, bringing the suite to 225 tests, all passing on each of .NET 8, 9, 10, and 11 (900 test executions). Coverage includes legacy category requests, API version boundaries, original method signatures, response contracts, chunked JSON streams, Unicode, encoding fallbacks, cancellation, response disposal, and retry behavior. Streaming checks use content that rejects full-body buffering to verify the response is actually consumed as a stream.
+- Release builds pass with warnings treated as errors. NativeAOT compilation and execution pass for all four targets on Windows x64, covering source-generated JSON for torrent lists, sync responses, string-valued search status, and the new response fields. CI is configured to run the four-target tests and NativeAOT smoke checks on Linux x64. These checks use simulated responses and do not require a live qBittorrent server.
 
 ## 🚀 Release v1.7.0 — Upstream API Parity and qBittorrent 5.3.0 Support
 
@@ -64,29 +67,29 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### ✨ Added
 
-* Added upstream API coverage for API-key rotation and deletion, client-data load/store, torrent SSL parameters, metadata fetch/parse/save, and piece availability.
-* Added `Transfer.GetSpeedLimits` and `Transfer.SetSpeedLimits`, which read and write all four global and alternative speed limits in one request (Web API v2.16.0).
-* Added `Transfer.PauseSession` and `Transfer.ResumeSession` for whole-session controls (Web API v2.16.2).
-* Added `Application.GetFreeSpaceAtPath`, `Rss.CloneAutoDownloadingRule`, and `Torrent.DownloadFile` for server-side free-space queries, RSS rule cloning, and completed-file path lookup (Web API v2.15.2–v2.16.0).
-* Added the `shareLimitsMode` option and `EnumTorrentShareLimitsMode`, plus the previously missing `shareLimitAction` parameter for share-limit operations (Web API v2.16.0 and v2.10.4 respectively).
-* Added the `ignoreDotfiles` option to torrent creation tasks (Web API v2.16.0).
+- Added upstream API coverage for API-key rotation and deletion, client-data load/store, torrent SSL parameters, metadata fetch/parse/save, and piece availability.
+- Added `Transfer.GetSpeedLimits` and `Transfer.SetSpeedLimits`, which read and write all four global and alternative speed limits in one request (Web API v2.16.0).
+- Added `Transfer.PauseSession` and `Transfer.ResumeSession` for whole-session controls (Web API v2.16.2).
+- Added `Application.GetFreeSpaceAtPath`, `Rss.CloneAutoDownloadingRule`, and `Torrent.DownloadFile` for server-side free-space queries, RSS rule cloning, and completed-file path lookup (Web API v2.15.2–v2.16.0).
+- Added the `shareLimitsMode` option and `EnumTorrentShareLimitsMode`, plus the previously missing `shareLimitAction` parameter for share-limit operations (Web API v2.16.0 and v2.10.4 respectively).
+- Added the `ignoreDotfiles` option to torrent creation tasks (Web API v2.16.0).
 
 ### 🔧 Changed
 
-* Add Torrent now supports qBittorrent 5.3.0's `seedMode` name while retaining `skip_checking` for older servers, and adds `filePriorities` and `downloader` support.
-* Torrent reannounce operations now accept optional tracker URLs, matching the upstream Python client behavior.
-* Newly added endpoint methods enforce their minimum Web API versions before sending requests.
-* The NativeAOT smoke application now negotiates Web API 2.16.2 and exercises the new transfer speed-limit model.
+- Add Torrent now supports qBittorrent 5.3.0's `seedMode` name while retaining `skip_checking` for older servers, and adds `filePriorities` and `downloader` support.
+- Torrent reannounce operations now accept optional tracker URLs, matching the upstream Python client behavior.
+- Newly added endpoint methods enforce their minimum Web API versions before sending requests.
+- The NativeAOT smoke application now negotiates Web API 2.16.2 and exercises the new transfer speed-limit model.
 
 ### ⚠️ Compatibility
 
-* Newly added endpoint methods throw `QbittorrentNotSupportedException` before sending a request to an older server.
-* Add Torrent continues to send the legacy parameter names where needed and sends new optional parameters only when configured.
-* Adding optional parameters changes compiled method signatures for `Torrent.AddTorrent`, `Torrent.SetTorrentShareLimit`, `Torrent.SetTorrentsShareLimit`, and `Torrent.SetAllTorrentsShareLimit`. Existing source calls normally only need to be rebuilt, but applications replacing the assembly without recompilation must rebuild to avoid binary incompatibility.
+- Newly added endpoint methods throw `QbittorrentNotSupportedException` before sending a request to an older server.
+- Add Torrent continues to send the legacy parameter names where needed and sends new optional parameters only when configured.
+- Adding optional parameters changes compiled method signatures for `Torrent.AddTorrent`, `Torrent.SetTorrentShareLimit`, `Torrent.SetTorrentsShareLimit`, and `Torrent.SetAllTorrentsShareLimit`. Existing source calls normally only need to be rebuilt, but applications replacing the assembly without recompilation must rebuild to avoid binary incompatibility.
 
 ### 🧪 Tests
 
-* Added isolated contract and upstream-parity tests for the new endpoints, version boundaries, request methods, compatibility parameters, and serialization behavior.
+- Added isolated contract and upstream-parity tests for the new endpoints, version boundaries, request methods, compatibility parameters, and serialization behavior.
 
 ## 🚀 Release v1.6.0 — API Coverage & Version Compatibility
 
@@ -94,32 +97,32 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### ✨ Added
 
-* Added the official Torrent Creator API, including task creation, status, torrent-file retrieval, and deletion.
-* Added missing Application, Torrent, and Search operations, including build information, network interfaces, torrent export, web seeds, paths, tags, plugin listing, and search-result downloads.
-* Added the remaining Add Torrent options supported by current qBittorrent releases, including temporary download paths, stop conditions, queue placement, share-limit actions, TLS fields, and forced state.
-* Added `CancellationToken` support across public asynchronous network operations.
+- Added the official Torrent Creator API, including task creation, status, torrent-file retrieval, and deletion.
+- Added missing Application, Torrent, and Search operations, including build information, network interfaces, torrent export, web seeds, paths, tags, plugin listing, and search-result downloads.
+- Added the remaining Add Torrent options supported by current qBittorrent releases, including temporary download paths, stop conditions, queue placement, share-limit actions, TLS fields, and forced state.
+- Added `CancellationToken` support across public asynchronous network operations.
 
 ### 🔧 Changed
 
-* Client initialization now retains both the Web API version and qBittorrent application version for compatibility decisions.
-* Endpoint availability checks now support both introduction and removal versions.
-* Add Torrent translates legacy directory-layout fields and sends compatible aliases while allowing older servers to ignore unknown optional fields.
-* CI now runs the unit test suite in addition to Release and NativeAOT validation.
+- Client initialization now retains both the Web API version and qBittorrent application version for compatibility decisions.
+- Endpoint availability checks now support both introduction and removal versions.
+- Add Torrent translates legacy directory-layout fields and sends compatible aliases while allowing older servers to ignore unknown optional fields.
+- CI now runs the unit test suite in addition to Release and NativeAOT validation.
 
 ### 🐞 Fixed
 
-* Corrected response contracts for build information, directory listings, binary torrent downloads, and other previously mismatched endpoints.
-* Corrected torrent filter names introduced by Web API 2.11 and rename behavior across qBittorrent 4.3.2 and 4.3.3.
-* Added missing minimum-version checks for versioned endpoints before network requests are sent.
+- Corrected response contracts for build information, directory listings, binary torrent downloads, and other previously mismatched endpoints.
+- Corrected torrent filter names introduced by Web API 2.11 and rename behavior across qBittorrent 4.3.2 and 4.3.3.
+- Added missing minimum-version checks for versioned endpoints before network requests are sent.
 
 ### ⚠️ Compatibility
 
-* Adding optional `CancellationToken` parameters changes compiled method signatures. Source consumers normally only need to rebuild, but applications replacing the assembly without recompilation may encounter binary incompatibility.
+- Adding optional `CancellationToken` parameters changes compiled method signatures. Source consumers normally only need to rebuild, but applications replacing the assembly without recompilation may encounter binary incompatibility.
 
 ### 🧪 Tests
 
-* Expanded isolated coverage for authentication recovery, retries, cancellation, multipart uploads, JSON converters, API versions, service contracts, and Add Torrent compatibility.
-* The current suite contains 132 tests and does not require a live qBittorrent server.
+- Expanded isolated coverage for authentication recovery, retries, cancellation, multipart uploads, JSON converters, API versions, service contracts, and Add Torrent compatibility.
+- The current suite contains 132 tests and does not require a live qBittorrent server.
 
 ## 🚀 Release v1.5.1 — XML Documentation Support
 
@@ -131,11 +134,11 @@ This patch release adds XML documentation files to package builds and completes 
 
 ### ✨ Added
 
-* **NuGet IntelliSense Documentation**
+- **NuGet IntelliSense Documentation**
   - Enabled XML documentation generation for every supported target framework.
   - Package builds now produce documentation alongside the library assembly for IDE IntelliSense.
 
-* **Public API Documentation**
+- **Public API Documentation**
   - Added bilingual documentation for all `ApplicationPreferences` properties.
   - Documented known `ApiVersion` values, comparison operators, and public exception types.
 
@@ -143,7 +146,7 @@ This patch release adds XML documentation files to package builds and completes 
 
 ### 🐞 Fixed
 
-* **XML Documentation Diagnostics**
+- **XML Documentation Diagnostics**
   - Completed missing parameter documentation.
   - Disambiguated overloaded factory method references in documentation links.
   - Eliminated all XML documentation warnings from library builds.
@@ -164,11 +167,11 @@ This release makes the library compatible with NativeAOT and trimmed application
 
 ### ✨ Added
 
-* **Source-Generated JSON Contracts**
+- **Source-Generated JSON Contracts**
   - Added static `System.Text.Json` metadata for every request and response type used internally.
   - Preserved the existing null-value handling used for application preferences and cookies.
 
-* **NativeAOT Validation**
+- **NativeAOT Validation**
   - Added a self-contained smoke application that exercises authentication and representative service responses.
   - Added CI coverage that publishes and runs the smoke application as a native Linux executable.
 
@@ -176,7 +179,7 @@ This release makes the library compatible with NativeAOT and trimmed application
 
 ### 🔧 Changed
 
-* **AOT and Trimming Analysis**
+- **AOT and Trimming Analysis**
   - Enabled `IsAotCompatible` for all supported target frameworks.
   - Replaced reflection-based JSON calls with generated `JsonTypeInfo` contracts, eliminating AOT and trimming warnings from the library.
 
@@ -196,16 +199,16 @@ This release resolves cold-start connection failures by strengthening client ini
 
 ### ✨ Added
 
-* **Client Network Options**
+- **Client Network Options**
   - Added `QBittorrentClientOptions` and a corresponding `QBittorrentClient.Create` overload.
   - Added configuration for request retries, overall request timeout, TCP connection timeout, detailed diagnostics, and automatic IPv4 fallback.
   - Added `AddressFamilyPreference` with `System`, `PreferIPv4`, and `PreferIPv6` policies.
 
-* **Dual-Stack Connection Recovery**
+- **Dual-Stack Connection Recovery**
   - Added automatic fallback from the system connection policy to IPv4-first when connection or TLS establishment fails and DNS resolves both IPv4 and IPv6 addresses.
   - Preserved authentication cookies when replacing the internally managed HTTP handler during fallback.
 
-* **Zero-Dependency Diagnostics**
+- **Zero-Dependency Diagnostics**
   - Added `DiagnosticSink` for receiving real-time network diagnostics without introducing a logging dependency.
   - Added request, retry, DNS, connection, address-family, and timing context to detailed failure diagnostics.
   - Protected sensitive authentication and cookie headers from diagnostic output.
@@ -214,15 +217,15 @@ This release resolves cold-start connection failures by strengthening client ini
 
 ### 🔧 Changed
 
-* **Client Initialization**
+- **Client Initialization**
   - Client creation now authenticates before negotiating the qBittorrent Web API version.
   - Failed initialization now disposes internally created authentication and network resources.
 
-* **HTTP Client Ownership**
+- **HTTP Client Ownership**
   - Internally created clients use a dedicated cookie container and configurable connection handler.
   - Caller-provided `HttpClient` instances remain entirely caller-owned and are neither modified nor disposed by the library.
 
-* **Retry Behavior**
+- **Retry Behavior**
   - Requests are recreated for each retry attempt.
   - Transient HTTP responses respect `Retry-After` when supplied by the server.
   - Potentially side-effecting requests are not automatically replayed after ambiguous connection failures.
@@ -231,7 +234,7 @@ This release resolves cold-start connection failures by strengthening client ini
 
 ### 🐞 Fixed
 
-* **Cold-Start Connectivity**
+- **Cold-Start Connectivity**
   - Fixed initialization failures where the system selected an unusable address family for a dual-stack qBittorrent endpoint.
   - Fixed cold-start and restart scenarios in which API version negotiation ran before a valid authenticated session was established.
 
@@ -251,20 +254,20 @@ This patch release improves qBittorrent Web API authentication recovery, especia
 
 ### 🐞 Fixed
 
-* **Authentication Retry Flow**
+- **Authentication Retry Flow**
   - Requests that receive `401` or `403` now force a fresh login and retry once.
   - API version negotiation can now recover when `/api/v2/app/webapiVersion` initially returns `403`.
   - Authentication endpoints are excluded from auth retry to avoid recursive login attempts.
 
-* **Login Response Compatibility**
+- **Login Response Compatibility**
   - Empty login responses are now treated as successful, matching qBittorrent behavior handled by mature clients such as `qbittorrent-api`.
 
 ---
 
 ### 🧪 Tests
 
-* Added coverage for `403 -> login -> retry` behavior.
-* Added coverage for Web API version negotiation recovering from an initial `403`.
+- Added coverage for `403 -> login -> retry` behavior.
+- Added coverage for Web API version negotiation recovering from an initial `403`.
 
 ---
 
@@ -282,12 +285,12 @@ This release focuses on qBittorrent Web API coverage, nullable timestamp consist
 
 ### ✨ Added
 
-* **Application Process Info API**
+- **Application Process Info API**
   - Added `ProcessInfo` model for `/api/v2/app/processInfo`.
   - Added `ApplicationService.GetProcessInfo`.
   - Added `ApiVersion.V2_15_1` for newer qBittorrent Web API compatibility checks.
 
-* **Legal and Package Notices**
+- **Legal and Package Notices**
   - Added project copyright metadata to the NuGet package.
   - Added `NOTICE` for upstream acknowledgements and third-party license notices.
 
@@ -295,16 +298,16 @@ This release focuses on qBittorrent Web API coverage, nullable timestamp consist
 
 ### 🔧 Changed
 
-* **Nullable Time Value Consistency**
+- **Nullable Time Value Consistency**
   - Updated Unix timestamp-backed model properties to use `DateTimeOffset?`.
   - Applied the existing `UnixTimestampConverter` to the new `ProcessInfo.LaunchTime` property.
   - Aligned `TimeSpan`-backed duration model properties and converters around nullable `TimeSpan?` values.
 
-* **Project Metadata and Documentation**
+- **Project Metadata and Documentation**
   - Updated README license sections with copyright and notice references.
   - Refreshed package metadata and documentation links.
 
-* **Internal Cleanup**
+- **Internal Cleanup**
   - Modernized small pieces of code style and request handling in `NetService`.
   - Improved test code null handling and formatting consistency.
 
@@ -312,7 +315,7 @@ This release focuses on qBittorrent Web API coverage, nullable timestamp consist
 
 ### 🐞 Fixed
 
-* **TimeSpan Converter Type Mismatch**
+- **TimeSpan Converter Type Mismatch**
   - Fixed converter generic type mismatches that could affect nullable duration serialization and deserialization.
 
 ---
@@ -331,7 +334,7 @@ This release adds support for **qBittorrent v5.2.0**, including newly introduced
 
 ### ✨ Added
 
-* **Set Torrent Comment API**
+- **Set Torrent Comment API**
   - Added `SetTorrentComment` for setting comment on a single torrent
   - Added `SetTorrentsComment` for setting comment on multiple torrents
   - Supports qBittorrent Web API `torrents/setComment` endpoint (v2.12.1)
@@ -340,7 +343,7 @@ This release adds support for **qBittorrent v5.2.0**, including newly introduced
 
 ### 🔧 Changed
 
-* **API Version Support**
+- **API Version Support**
   - Updated internal API version mapping to support qBittorrent v5.2.0
 
 ---
@@ -360,16 +363,16 @@ This minor release focuses on **performance optimizations**, **flexibility enhan
 
 ### ✨ Added
 
-* **Parallel Request Execution**
+- **Parallel Request Execution**
   - Added `ExecuteParallelRequests` method to `NetService` for executing multiple requests concurrently
   - Significantly improves performance when fetching multiple pieces of data simultaneously
 
-* **Enhanced Client Configuration**
+- **Enhanced Client Configuration**
   - Added `maxRetries` parameter to `QBittorrentClient.Create` for customizing retry behavior
   - Added `timeout` parameter for setting custom request timeout
   - Added `enableDetailedLogging` parameter for verbose operation logging
 
-* **Detailed Logging**
+- **Detailed Logging**
   - Added `EnableDetailedLogging` property to `NetService`
   - Added detailed log output for request attempts, retries, and file uploads
 
@@ -377,15 +380,15 @@ This minor release focuses on **performance optimizations**, **flexibility enhan
 
 ### 🔧 Changed
 
-* **Unified Client Creation**
+- **Unified Client Creation**
   - Merged two `Create` methods in `QBittorrentClient` into a single method with optional parameters
   - Simplified API surface while maintaining backward compatibility
 
-* **NetService Refactoring**
+- **NetService Refactoring**
   - Updated `NetService` constructor to accept optional `HttpClient` and `timeout` parameters
   - Added `MaxRetries` property for centralized retry configuration
 
-* **TorrentService Parameter Alignment**
+- **TorrentService Parameter Alignment**
   - Updated parameter names in `TorrentService` to maintain consistency with naming conventions
   - Changed `Reverse` to `ReverseEnabled` for better clarity
 
@@ -393,15 +396,15 @@ This minor release focuses on **performance optimizations**, **flexibility enhan
 
 ### 🚀 Optimized
 
-* **Memory Usage**
+- **Memory Usage**
   - Improved file upload mechanism to use `FileStream` instead of `File.ReadAllBytes`
   - Reduces memory consumption when uploading large torrent files
 
-* **Retry Mechanism**
+- **Retry Mechanism**
   - Enhanced `ExecuteWithRetry` method to support asynchronous request factories
   - Improved retry logic with detailed delay calculations and logging
 
-* **Performance**
+- **Performance**
   - Added parallel request execution capability for faster data retrieval
   - Optimized internal request handling for better throughput
 
@@ -412,6 +415,7 @@ This minor release focuses on **performance optimizations**, **flexibility enhan
 This is a **minor release** with no breaking changes. All existing code will continue to work as before, while new features and optimizations are available for those who wish to use them.
 
 Key improvements include:
+
 - Better performance for multi-request scenarios
 - Reduced memory usage during file uploads
 - More flexible configuration options
@@ -427,56 +431,55 @@ This major milestone marks the **100% completion** of the qBittorrent Web API im
 
 ### ✨ Added
 
-* **Full API Coverage:** – Implemented all remaining core services:
-    * `ApplicationService` – System state and server controls.
-    * `LogService` – Server log and main log access.
-    * `TransferService` – Global transfer info and speed limits.
-    * `SyncService` – Main and torrent-specific synchronization.
-    * `RssService` – RSS feeds, articles, and automated rules.
-    * `SearchService` – Search jobs, plugin management, and results.
+- **Full API Coverage:** – Implemented all remaining core services:
+  - `ApplicationService` – System state and server controls.
+  - `LogService` – Server log and main log access.
+  - `TransferService` – Global transfer info and speed limits.
+  - `SyncService` – Main and torrent-specific synchronization.
+  - `RssService` – RSS feeds, articles, and automated rules.
+  - `SearchService` – Search jobs, plugin management, and results.
 
-
-* **Comprehensive Documentation:** Added XML documentation comments to all public classes, properties, and methods for enhanced IntelliSense support.
+- **Comprehensive Documentation:** Added XML documentation comments to all public classes, properties, and methods for enhanced IntelliSense support.
 
 ---
 
 ### 🔧 Changed (Breaking Changes)
 
-* **Unified Boolean Naming:** To eliminate ambiguity, most boolean properties have been renamed from `IsXXX` or `EnableXXX` to the `XXXEnabled` pattern.
-* **Standardized Property Suffixes:** Replaced inconsistent suffixes like `Total`, `Num`, or `List` with `Count` and other descriptive terms.
+- **Unified Boolean Naming:** To eliminate ambiguity, most boolean properties have been renamed from `IsXXX` or `EnableXXX` to the `XXXEnabled` pattern.
+- **Standardized Property Suffixes:** Replaced inconsistent suffixes like `Total`, `Num`, or `List` with `Count` and other descriptive terms.
 
 **Key Renaming Mapping:**
 
-| Old Name | New Name (v1.0.0) |
-| --- | --- |
-| `DiskCacheTtlSeconds` | `DiskCacheTtl` |
-| `dht` | `DistributedHashTableEnabled` |
-| `pex` | `PeerExchangeEnabled` |
-| `lsd` | `LocalServiceDiscoveryEnabled` |
-| `EnableCoalesceReadWrite` | `CoalesceReadWriteEnabled` |
-| `EnableEmbeddedTracker` | `EmbeddedTrackerEnabled` |
-| `IsSeed` / `IsPrivate` | `SeedEnabled` / `PrivateEnabled` |
-| `AutoTmm` / `ForceStart` | `AutoTmmEnabled` / `ForceStartEnabled` |
-| `SeqDl` / `SuperSeeding` | `SequentialDownloadEnabled` / `SuperSeedingEnabled` |
-| `IsQueueingEnabled` | `QueueingEnabled` |
-| `UseAltSpeedLimits` | `AltSpeedLimitsEnabled` |
-| `PeersTotal` / `NumPeers` | `PeersCount` |
-| `SeedsTotal` / `NumSeeds` | `SeedsCount` |
-| `NumLeeches` / `NumDownloaded` | `LeechesCount` / `DownloadedCount` |
-| `DhtNodes` | `DhtNodesCount` |
+| Old Name                       | New Name (v1.0.0)                                   |
+| ------------------------------ | --------------------------------------------------- |
+| `DiskCacheTtlSeconds`          | `DiskCacheTtl`                                      |
+| `dht`                          | `DistributedHashTableEnabled`                       |
+| `pex`                          | `PeerExchangeEnabled`                               |
+| `lsd`                          | `LocalServiceDiscoveryEnabled`                      |
+| `EnableCoalesceReadWrite`      | `CoalesceReadWriteEnabled`                          |
+| `EnableEmbeddedTracker`        | `EmbeddedTrackerEnabled`                            |
+| `IsSeed` / `IsPrivate`         | `SeedEnabled` / `PrivateEnabled`                    |
+| `AutoTmm` / `ForceStart`       | `AutoTmmEnabled` / `ForceStartEnabled`              |
+| `SeqDl` / `SuperSeeding`       | `SequentialDownloadEnabled` / `SuperSeedingEnabled` |
+| `IsQueueingEnabled`            | `QueueingEnabled`                                   |
+| `UseAltSpeedLimits`            | `AltSpeedLimitsEnabled`                             |
+| `PeersTotal` / `NumPeers`      | `PeersCount`                                        |
+| `SeedsTotal` / `NumSeeds`      | `SeedsCount`                                        |
+| `NumLeeches` / `NumDownloaded` | `LeechesCount` / `DownloadedCount`                  |
+| `DhtNodes`                     | `DhtNodesCount`                                     |
 
 ---
 
 ### 🧱 Completed Module
 
-* ✅ **100% API Implementation:** Every endpoint group defined in the official qBittorrent Web API is now fully supported.
+- ✅ **100% API Implementation:** Every endpoint group defined in the official qBittorrent Web API is now fully supported.
 
 ---
 
 ### 🧹 Improved
 
-* **Naming Consistency:** Performed a global sweep to align method signatures and property names with the new unified standard.
-* **Internal Refactoring:** Improved internal mapping logic and exception handling for better stability.
+- **Naming Consistency:** Performed a global sweep to align method signatures and property names with the new unified standard.
+- **Internal Refactoring:** Improved internal mapping logic and exception handling for better stability.
 
 ---
 
@@ -530,7 +533,7 @@ This release introduces the new **Application Preferences API**, adds a dedicate
   - `GetApplicationPreferences` – Retrieve all qBittorrent application settings.
   - `SetApplicationPreferences` – Update application preference settings.
 
-- Added root-level **CHANGELOG.md** file  
+- Added root-level **CHANGELOG.md** file
   - All releases are now properly documented in a unified changelog format.
 
 ---
@@ -549,80 +552,80 @@ No breaking changes are introduced, but users should update target frameworks ac
 
 ## 🚀 Release v0.0.9 — Torrent API Completion & Category Management
 
-**Release Date:** 2025-10-11  
+**Release Date:** 2025-10-11
 
 This release completes the **entire Torrent API module**, introduces full **category management support**, and expands **bandwidth, share, and automation controls** for torrents.  
-It also adds multi-target framework support (.NET 8 & 9) and fixes a critical tag deletion bug.  
+It also adds multi-target framework support (.NET 8 & 9) and fixes a critical tag deletion bug.
 
 ---
 
 ### ✨ **Added**
 
-* Added full **Category Management API**  
-  - `CreateCategory` – Create a new category.  
-  - `EditCategory` – Edit an existing category.  
-  - `DeleteCategory`, `DeleteCategories` – Remove one or more categories.  
+- Added full **Category Management API**
+  - `CreateCategory` – Create a new category.
+  - `EditCategory` – Edit an existing category.
+  - `DeleteCategory`, `DeleteCategories` – Remove one or more categories.
 
-* Added **Torrent Download Limit** controls  
-  - `GetTorrentDownloadLimit`, `GetTorrentsDownloadLimit`  
-  - `SetTorrentDownloadLimit`, `SetTorrentsDownloadLimit`, `SetAllTorrentsDownloadLimit`  
+- Added **Torrent Download Limit** controls
+  - `GetTorrentDownloadLimit`, `GetTorrentsDownloadLimit`
+  - `SetTorrentDownloadLimit`, `SetTorrentsDownloadLimit`, `SetAllTorrentsDownloadLimit`
 
-* Added **Torrent Upload Limit** controls  
-  - `GetTorrentUploadLimit`, `GetTorrentsUploadLimit`  
-  - `SetTorrentUploadLimit`, `SetTorrentsUploadLimit`, `SetAllTorrentsUploadLimit`  
+- Added **Torrent Upload Limit** controls
+  - `GetTorrentUploadLimit`, `GetTorrentsUploadLimit`
+  - `SetTorrentUploadLimit`, `SetTorrentsUploadLimit`, `SetAllTorrentsUploadLimit`
 
-* Added **Torrent Share Limit** management  
-  - `SetTorrentShareLimit`, `SetTorrentsShareLimit`, `SetAllTorrentsShareLimit`  
+- Added **Torrent Share Limit** management
+  - `SetTorrentShareLimit`, `SetTorrentsShareLimit`, `SetAllTorrentsShareLimit`
 
-* Added **Automatic Torrent Management** toggles  
-  - `SetTorrentAutoManagement`, `SetTorrentsAutoManagement`, `SetAllTorrentsAutoManagement`  
+- Added **Automatic Torrent Management** toggles
+  - `SetTorrentAutoManagement`, `SetTorrentsAutoManagement`, `SetAllTorrentsAutoManagement`
 
-* Added **Sequential Download** toggles  
-  - `ToggleTorrentSequentialDownload`, `ToggleTorrentsSequentialDownload`, `ToggleAllTorrentsSequentialDownload`  
+- Added **Sequential Download** toggles
+  - `ToggleTorrentSequentialDownload`, `ToggleTorrentsSequentialDownload`, `ToggleAllTorrentsSequentialDownload`
 
-* Added **First/Last Piece Priority** toggles  
-  - `ToggleTorrentFirstLastPiecePriority`, `ToggleTorrentsFirstLastPiecePriority`, `ToggleAllTorrentsFirstLastPiecePriority`  
+- Added **First/Last Piece Priority** toggles
+  - `ToggleTorrentFirstLastPiecePriority`, `ToggleTorrentsFirstLastPiecePriority`, `ToggleAllTorrentsFirstLastPiecePriority`
 
-* Added **Force Start** controls  
-  - `SetTorrentForceStart`, `SetTorrentsForceStart`, `SetAllTorrentsForceStart`  
+- Added **Force Start** controls
+  - `SetTorrentForceStart`, `SetTorrentsForceStart`, `SetAllTorrentsForceStart`
 
-* Added **Super Seeding** controls  
-  - `SetTorrentSuperSeeding`, `SetTorrentsSuperSeeding`, `SetAllTorrentsSuperSeeding`  
+- Added **Super Seeding** controls
+  - `SetTorrentSuperSeeding`, `SetTorrentsSuperSeeding`, `SetAllTorrentsSuperSeeding`
 
 ---
 
 ### 🧱 **Completed Module**
 
-* ✅ All APIs under the **TorrentService** are now fully implemented.  
+- ✅ All APIs under the **TorrentService** are now fully implemented.  
   This marks the completion of the entire `Torrents` endpoint group.
 
 ---
 
 ### 🔧 **Changed**
 
-* Updated target frameworks:  
-  → **Now supports both .NET 8.0 and .NET 9.0**.  
+- Updated target frameworks:  
+  → **Now supports both .NET 8.0 and .NET 9.0**.
 
 ---
 
 ### 🐞 **Fixed**
 
-* Fixed incorrect version bug in **DeleteTags** API.  
-* Reviewed and corrected **function signatures** and **XML documentation** for accuracy and consistency.  
+- Fixed incorrect version bug in **DeleteTags** API.
+- Reviewed and corrected **function signatures** and **XML documentation** for accuracy and consistency.
 
 ---
 
 ### 🧹 **Improved**
 
-* Unified code style, verified all function comments, and corrected mis-named or mis-mapped API calls.  
-* Enhanced developer readability and method naming consistency across single/multi/all-torrent operations.  
+- Unified code style, verified all function comments, and corrected mis-named or mis-mapped API calls.
+- Enhanced developer readability and method naming consistency across single/multi/all-torrent operations.
 
 ---
 
 ### 📦 **Notes**
 
 This release finalizes all torrent-related endpoints and improves reliability across management APIs.  
-If you’re upgrading from v0.0.8, no breaking changes are expected, but it’s recommended to re-check custom wrappers for renamed methods or documentation updates.  
+If you’re upgrading from v0.0.8, no breaking changes are expected, but it’s recommended to re-check custom wrappers for renamed methods or documentation updates.
 
 ## 🚀 Release v0.0.8 — qBittorrent .NET Client Tag Management & API Refinement
 
@@ -641,27 +644,27 @@ Thank you for supporting the project — enjoy the holidays and happy coding!
 
 ### ✨ **Added**
 
-* Added **CreateTag** and **CreateTags** functions for creating one or more tags.  
-* Added **DeleteTag** and **DeleteTags** functions for removing tags from qBittorrent.  
-* Added **RemoveTorrentTag**, **RemoveTorrentTags**, **RemoveTorrentsTag**, and **RemoveTorrentsTags** functions for detaching tags from torrents.  
-* Added **AddTorrentTag**, **AddTorrentTags**, **AddTorrentsTag**, and **AddTorrentsTags** functions for assigning tags to torrents.
+- Added **CreateTag** and **CreateTags** functions for creating one or more tags.
+- Added **DeleteTag** and **DeleteTags** functions for removing tags from qBittorrent.
+- Added **RemoveTorrentTag**, **RemoveTorrentTags**, **RemoveTorrentsTag**, and **RemoveTorrentsTags** functions for detaching tags from torrents.
+- Added **AddTorrentTag**, **AddTorrentTags**, **AddTorrentsTag**, and **AddTorrentsTags** functions for assigning tags to torrents.
 
 ---
 
 ### 🔧 **Changed**
 
-* `GetTorrentInfo` now retrieves **only a single** `TorrentInfo` object.  
-  > ⚠️ Note: the **parameter order** for `GetTorrentInfo` and `GetTorrentInfos` has changed.  
-* All pluralized parameter names (e.g. multiple `hashes`) now use plural form instead of “List” suffix for consistency.  
-* Updated function names to match singular/plural logic — e.g., `AddPeers` → `AddTorrentPeer` / `AddTorrentPeers` based on argument count.  
-* Corrected and standardized **ArgumentException** descriptions for better clarity.
+- `GetTorrentInfo` now retrieves **only a single** `TorrentInfo` object.
+  > ⚠️ Note: the **parameter order** for `GetTorrentInfo` and `GetTorrentInfos` has changed.
+- All pluralized parameter names (e.g. multiple `hashes`) now use plural form instead of “List” suffix for consistency.
+- Updated function names to match singular/plural logic — e.g., `AddPeers` → `AddTorrentPeer` / `AddTorrentPeers` based on argument count.
+- Corrected and standardized **ArgumentException** descriptions for better clarity.
 
 ---
 
 ### 🧹 **Improved**
 
-* Parameter naming and API design now follow a unified and predictable convention between single- and multi-torrent operations.  
-* Improved internal code readability and developer ergonomics.
+- Parameter naming and API design now follow a unified and predictable convention between single- and multi-torrent operations.
+- Improved internal code readability and developer ergonomics.
 
 ---
 
@@ -680,20 +683,20 @@ This release fixes core torrent control issues, adds new torrent management APIs
 
 ### 🐛 **Fixed**
 
-* Fixed a bug affecting **Resume Torrent** and **Pause Torrent** functions, ensuring they now work as expected.
+- Fixed a bug affecting **Resume Torrent** and **Pause Torrent** functions, ensuring they now work as expected.
 
 ---
 
 ### ✨ **Added**
 
-* Added **IncreaseTorrentPriority**, **DecreaseTorrentPriority**, **MaximalTorrentPriority**, and **MinimalTorrentPriority** functions for fine-grained torrent queue control.  
-* Added **SetTorrentCategory**, **GetAllCategories**, and **GetAllTags** functions for category and tag management.
+- Added **IncreaseTorrentPriority**, **DecreaseTorrentPriority**, **MaximalTorrentPriority**, and **MinimalTorrentPriority** functions for fine-grained torrent queue control.
+- Added **SetTorrentCategory**, **GetAllCategories**, and **GetAllTags** functions for category and tag management.
 
 ---
 
 ### 🔧 **Changed**
 
-* Reorganized the source code to follow the **same order as the official qBittorrent API documentation**, improving maintainability and readability.
+- Reorganized the source code to follow the **same order as the official qBittorrent API documentation**, improving maintainability and readability.
 
 ---
 
@@ -712,26 +715,26 @@ This release expands torrent management capabilities, refines API version handli
 
 ### ✨ **Added**
 
-* Added **API Implementation documentation** to track feature completion progress.  
-* Added support for **retrieving torrent web seeds**.  
-* Added the **Add Peers** API for manually adding peers to a torrent.  
-* Added **Get torrent pieces’ states** and **Get torrent pieces’ hashes** functions.
+- Added **API Implementation documentation** to track feature completion progress.
+- Added support for **retrieving torrent web seeds**.
+- Added the **Add Peers** API for manually adding peers to a torrent.
+- Added **Get torrent pieces’ states** and **Get torrent pieces’ hashes** functions.
 
 ---
 
 ### 🔧 **Changed**
 
-* Reworked the **API version system** — `ApiVersion` has been converted from a *class* to a *static struct* for improved efficiency and reduced allocation overhead.  
-* Renamed `EditTracker` → `EditTorrentTracker` for consistency.  
-* Renamed `RemoveTrackers` → `RemoveTorrentTrackers` for clarity.  
-* Renamed `GetTorrentContents` → `GetTorrentFiles` to better reflect qBittorrent’s API naming.
+- Reworked the **API version system** — `ApiVersion` has been converted from a _class_ to a _static struct_ for improved efficiency and reduced allocation overhead.
+- Renamed `EditTracker` → `EditTorrentTracker` for consistency.
+- Renamed `RemoveTrackers` → `RemoveTorrentTrackers` for clarity.
+- Renamed `GetTorrentContents` → `GetTorrentFiles` to better reflect qBittorrent’s API naming.
 
 ---
 
 ### 🧹 **Improved**
 
-* Reduced unnecessary `new` allocations for API version references.  
-* Improved internal consistency and readability in torrent-related service methods.
+- Reduced unnecessary `new` allocations for API version references.
+- Improved internal consistency and readability in torrent-related service methods.
 
 ---
 
@@ -750,24 +753,25 @@ This release adds tracker management and shutdown control features, improves cod
 
 ### ✨ **Added**
 
-* Added support for **editing** and **removing trackers**.
-* Added the ability to **shut down qBittorrent** remotely via the Web API.
+- Added support for **editing** and **removing trackers**.
+- Added the ability to **shut down qBittorrent** remotely via the Web API.
 
 ---
 
 ### 🔧 **Changed**
 
-* Removed the `Async` suffix from all function names for a cleaner API surface.
+- Removed the `Async` suffix from all function names for a cleaner API surface.
 
   > (All functions remain asynchronous internally.)
-* Standardized and improved **XML documentation comments** across all public methods.
+
+- Standardized and improved **XML documentation comments** across all public methods.
 
 ---
 
 ### 🧹 **Improved**
 
-* API calls with no return data now use **void-returning methods**, matching the qBittorrent API behavior.
-* General internal refactoring for better maintainability and clarity.
+- API calls with no return data now use **void-returning methods**, matching the qBittorrent API behavior.
+- General internal refactoring for better maintainability and clarity.
 
 ---
 

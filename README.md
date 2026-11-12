@@ -14,7 +14,7 @@ English | [简体中文](https://github.com/banned2054/Banned.Qbittorrent/blob/m
 - **Resilient Networking**: Supports retries, timeouts, diagnostics, and optional IPv4 fallback for dual-stack hosts.
 - **Async and Cancellable**: Public network operations use `Task` and accept `CancellationToken`.
 - **NativeAOT Ready**: Uses source-generated JSON metadata and is validated by a NativeAOT smoke application.
-- **Modern .NET Support**: Targets .NET 8, .NET 9, and .NET 10.
+- **Modern .NET Support**: Targets .NET 8, .NET 9, .NET 10, and .NET 11.
 - **Efficient Uploads**: Streams torrent files instead of loading complete files into memory.
 
 ## 📦 Installation
