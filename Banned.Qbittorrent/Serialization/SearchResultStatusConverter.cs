@@ -1,11 +1,12 @@
+using Banned.Qbittorrent.Models.Search;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Banned.Qbittorrent.Models.Search;
+using System.Text.Json.Serialization.Metadata;
 
 namespace Banned.Qbittorrent.Serialization;
 
 /// <summary>
-/// Supports both the string status returned by current qBittorrent servers and the legacy object shape.
+///     Supports both the string status returned by current qBittorrent servers and the legacy object shape.
 /// </summary>
 public sealed class SearchResultStatusConverter : JsonConverter<SearchStatus?>
 {
@@ -24,7 +25,7 @@ public sealed class SearchResultStatusConverter : JsonConverter<SearchStatus?>
         if (reader.TokenType == JsonTokenType.StartObject)
         {
             var typeInfo = QBittorrentJsonContext.Default.GetTypeInfo(typeof(SearchStatus))
-                           as System.Text.Json.Serialization.Metadata.JsonTypeInfo<SearchStatus>
+                               as JsonTypeInfo<SearchStatus>
                         ?? throw new InvalidOperationException("SearchStatus JSON metadata is unavailable.");
             return JsonSerializer.Deserialize(ref reader, typeInfo);
         }
@@ -42,7 +43,7 @@ public sealed class SearchResultStatusConverter : JsonConverter<SearchStatus?>
         }
 
         var typeInfo = QBittorrentJsonContext.Default.GetTypeInfo(typeof(SearchStatus))
-                       as System.Text.Json.Serialization.Metadata.JsonTypeInfo<SearchStatus>
+                           as JsonTypeInfo<SearchStatus>
                     ?? throw new InvalidOperationException("SearchStatus JSON metadata is unavailable.");
         JsonSerializer.Serialize(writer, value, typeInfo);
     }

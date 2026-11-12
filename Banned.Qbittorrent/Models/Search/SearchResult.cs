@@ -1,5 +1,5 @@
-using System.Text.Json.Serialization;
 using Banned.Qbittorrent.Serialization;
+using System.Text.Json.Serialization;
 
 namespace Banned.Qbittorrent.Models.Search;
 

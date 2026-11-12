@@ -1,23 +1,22 @@
-using System.Net;
 using Banned.Qbittorrent.Exceptions;
 using Banned.Qbittorrent.Models.Application;
 using Banned.Qbittorrent.Models.Enums;
-using Banned.Qbittorrent.Models.Search;
 using Banned.Qbittorrent.Services;
+using System.Net;
 using System.Reflection;
 using static NUnit.Framework.Assert;
 
 namespace Banned.Qbittorrent.Test;
 
 /// <summary>
-/// 覆盖 Web API v2.17.x 变更的契约测试。<br/>
-/// Contract tests for the changes introduced by Web API v2.17.x.
+///     覆盖 Web API v2.17.x 变更的契约测试。<br />
+///     Contract tests for the changes introduced by Web API v2.17.x.
 /// </summary>
 [TestFixture]
 public class WebApi217EndpointTests
 {
     private static readonly ApiVersion Supported  = new(2, 17);
-    private static readonly ApiVersion Previous  = new(2, 16, 1);
+    private static readonly ApiVersion Previous   = new(2, 16, 1);
     private static readonly ApiVersion Introduced = new(2, 16, 2);
 
     [Test]
@@ -63,7 +62,8 @@ public class WebApi217EndpointTests
         using (httpClient)
         {
             ThrowsAsync<QbittorrentNotSupportedException>(async () =>
-                await new TorrentService(netService, Previous).CancelTorrentMetadata("abc123"));
+                                                              await new TorrentService(netService, Previous)
+                                                                 .CancelTorrentMetadata("abc123"));
             That(handler.Requests, Is.Empty);
         }
     }
@@ -78,7 +78,9 @@ public class WebApi217EndpointTests
         using (httpClient)
         {
             var exception = ThrowsAsync<QbittorrentNotFoundException>(async () =>
-                await new TorrentService(netService, Supported).CancelTorrentMetadata("abc123"));
+                                                                          await new TorrentService(netService,
+                                                                                  Supported)
+                                                                             .CancelTorrentMetadata("abc123"));
             That(exception!.Message, Is.EqualTo("No matching fetchMetadata task for the given source."));
         }
     }
@@ -92,13 +94,13 @@ public class WebApi217EndpointTests
         using (httpClient)
         {
             await new TorrentService(netService, Introduced).CreateCategory("movies", "/downloads/movies",
-                                                                           ratioLimit : 1.5f,
-                                                                           seedingTimeLimit : 120,
-                                                                           inactiveSeedingTimeLimit : 60,
-                                                                           shareLimitAction :
-                                                                           EnumTorrentShareLimitAction.Stop,
-                                                                           shareLimitsMode :
-                                                                           EnumTorrentShareLimitsMode.MatchAll);
+                                                                            ratioLimit : 1.5f,
+                                                                            seedingTimeLimit : 120,
+                                                                            inactiveSeedingTimeLimit : 60,
+                                                                            shareLimitAction :
+                                                                            EnumTorrentShareLimitAction.Stop,
+                                                                            shareLimitsMode :
+                                                                            EnumTorrentShareLimitsMode.MatchAll);
 
             var form = DecodeForm(handler.Requests.Single());
             Multiple(() =>
@@ -142,8 +144,9 @@ public class WebApi217EndpointTests
         using (httpClient)
         {
             ThrowsAsync<QbittorrentNotSupportedException>(async () =>
-                await new TorrentService(netService, Previous).CreateCategory("movies", "/downloads/movies",
-                                                                              ratioLimit : 1.0f));
+                                                              await new TorrentService(netService, Previous)
+                                                                 .CreateCategory("movies", "/downloads/movies",
+                                                                      ratioLimit : 1.0f));
             That(handler.Requests, Is.Empty);
         }
 
@@ -153,13 +156,13 @@ public class WebApi217EndpointTests
         using (introducedHttpClient)
         {
             await new TorrentService(introducedNetService, Introduced).CreateCategory("movies", "/downloads/movies",
-                                                                                     ratioLimit : 1.0f);
+                ratioLimit : 1.0f);
             That(DecodeForm(introducedHandler.Requests.Single()), Does.Contain("ratioLimit=1"));
         }
     }
 
-    [TestCase(nameof(Banned.Qbittorrent.Services.TorrentService.CreateCategory))]
-    [TestCase(nameof(Banned.Qbittorrent.Services.TorrentService.EditCategory))]
+    [TestCase(nameof(TorrentService.CreateCategory))]
+    [TestCase(nameof(TorrentService.EditCategory))]
     public void CategoryShareLimits_RejectValuesBelowMinusTwo(string method)
     {
         var (netService, httpClient, handler) = CreateNetService(_ => StubHttpMessageHandler.JsonResponse(""),
@@ -167,8 +170,8 @@ public class WebApi217EndpointTests
         using (netService)
         using (httpClient)
         {
-            var torrent = new TorrentService(netService, Supported);
-            var isCreate = method == nameof(Banned.Qbittorrent.Services.TorrentService.CreateCategory);
+            var torrent  = new TorrentService(netService, Supported);
+            var isCreate = method == nameof(TorrentService.CreateCategory);
             Func<Task> seeding = isCreate
                 ? async () => await torrent.CreateCategory("movies", "/downloads/movies", seedingTimeLimit : -3)
                 : async () => await torrent.EditCategory("movies", seedingTimeLimit : -3);
@@ -229,15 +232,12 @@ public class WebApi217EndpointTests
         using (httpClient)
         {
             await new TorrentService(netService, Introduced).EditCategory("movies",
-                                                                         seedingTimeLimit : 90,
-                                                                         shareLimitsMode :
-                                                                         EnumTorrentShareLimitsMode.MatchAny);
+                                                                          seedingTimeLimit : 90,
+                                                                          shareLimitsMode :
+                                                                          EnumTorrentShareLimitsMode.MatchAny);
 
             var form = DecodeForm(handler.Requests.Single());
-            Multiple(() =>
-            {
-                That(form, Is.EqualTo("category=movies&seedingTimeLimit=90&shareLimitsMode=MatchAny"));
-            });
+            Multiple(() => { That(form, Is.EqualTo("category=movies&seedingTimeLimit=90&shareLimitsMode=MatchAny")); });
         }
     }
 
@@ -269,9 +269,11 @@ public class WebApi217EndpointTests
         using (httpClient)
         {
             ThrowsAsync<QbittorrentNotSupportedException>(async () =>
-                await new TorrentService(netService, Previous).EditCategory("movies"));
+                                                              await new TorrentService(netService, Previous)
+                                                                 .EditCategory("movies"));
             ThrowsAsync<QbittorrentNotSupportedException>(async () =>
-                await new TorrentService(netService, Previous).EditCategory("movies", null));
+                                                              await new TorrentService(netService, Previous)
+                                                                 .EditCategory("movies"));
             That(handler.Requests, Is.Empty);
         }
     }
@@ -439,7 +441,7 @@ public class WebApi217EndpointTests
         {
             await new ApplicationService(post.NetService).SetApplicationPreferences(new ApplicationPreferences
             {
-                ConfirmRemoveAllTags = true,
+                ConfirmRemoveAllTags                = true,
                 ConfirmRemoveTrackerFromAllTorrents = false
             });
 
@@ -454,7 +456,8 @@ public class WebApi217EndpointTests
     [Test]
     public async Task SyncMainData_DeserializesErrorAndKeepsMissingErrorNull()
     {
-        const string json = """{"rid":1,"torrents":{"abc":{"hash":"abc","error":"tracker failure"},"def":{"hash":"def"}}}""";
+        const string json =
+            """{"rid":1,"torrents":{"abc":{"hash":"abc","error":"tracker failure"},"def":{"hash":"def"}}}""";
         var (netService, httpClient, _) = CreateNetService(_ => StubHttpMessageHandler.JsonResponse(json));
         using (netService)
         using (httpClient)
@@ -472,19 +475,22 @@ public class WebApi217EndpointTests
     public async Task CategoryMethods_PreserveOriginalFiveParameterSignaturesAndCalls()
     {
         var createMethod = typeof(TorrentService).GetMethods(BindingFlags.Instance | BindingFlags.Public)
-            .Single(method => method.Name == nameof(TorrentService.CreateCategory) &&
-                              method.GetParameters().Length == 5);
+                                                 .Single(method =>
+                                                             method.Name == nameof(TorrentService.CreateCategory) &&
+                                                             method.GetParameters().Length == 5);
         var editMethod = typeof(TorrentService).GetMethods(BindingFlags.Instance | BindingFlags.Public)
-            .Single(method => method.Name == nameof(TorrentService.EditCategory) &&
-                              method.GetParameters().Length == 5);
+                                               .Single(method => method.Name == nameof(TorrentService.EditCategory) &&
+                                                                 method.GetParameters().Length == 5);
         That(createMethod.GetParameters()[4].ParameterType, Is.EqualTo(typeof(CancellationToken)));
         That(editMethod.GetParameters()[4].ParameterType, Is.EqualTo(typeof(CancellationToken)));
         var expandedCreateMethod = typeof(TorrentService).GetMethods(BindingFlags.Instance | BindingFlags.Public)
-            .Single(method => method.Name == nameof(TorrentService.CreateCategory) &&
-                              method.GetParameters().Length == 10);
+                                                         .Single(method => method.Name ==
+                                                                           nameof(TorrentService.CreateCategory) &&
+                                                                           method.GetParameters().Length == 10);
         var expandedEditMethod = typeof(TorrentService).GetMethods(BindingFlags.Instance | BindingFlags.Public)
-            .Single(method => method.Name == nameof(TorrentService.EditCategory) &&
-                              method.GetParameters().Length == 10);
+                                                       .Single(method => method.Name ==
+                                                                         nameof(TorrentService.EditCategory) &&
+                                                                         method.GetParameters().Length == 10);
         That(expandedCreateMethod.GetParameters()[4].IsOptional, Is.True);
         That(expandedEditMethod.GetParameters()[4].IsOptional, Is.True);
 
@@ -499,7 +505,8 @@ public class WebApi217EndpointTests
             using var canceledSource = new CancellationTokenSource();
             canceledSource.Cancel();
             ThrowsAsync<OperationCanceledException>(async () =>
-                await create("cancelled", "/downloads/cancelled", null, null, canceledSource.Token));
+                                                        await create("cancelled", "/downloads/cancelled", null, null,
+                                                                     canceledSource.Token));
             That(handler.Requests, Is.Empty);
 
             var cancellationToken = CancellationToken.None;
