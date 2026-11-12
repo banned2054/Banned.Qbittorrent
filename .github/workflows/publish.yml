@@ -15,7 +15,7 @@ jobs:
             - name: Set up .NET
               uses: actions/setup-dotnet@v6
               with:
-                  dotnet-version: "10.0.x" # Adjust as per your project needs
+                  dotnet-version: "11.0.x" # Adjust as per your project needs
 
             - name: Restore dependencies
               run: dotnet restore Banned.Qbittorrent/Banned.Qbittorrent.csproj
