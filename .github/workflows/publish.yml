@@ -7,6 +7,9 @@ on:
 jobs:
     build:
         runs-on: ubuntu-latest # Can be changed to windows-latest if needed
+        permissions:
+            contents: read
+            id-token: write
 
         steps:
             - name: Checkout repository
@@ -37,7 +40,17 @@ jobs:
                   VERSION=$(xmllint --xpath "string(//Project/PropertyGroup/Version)" Banned.Qbittorrent/Banned.Qbittorrent.csproj)
                   echo "version=$VERSION" >> $GITHUB_ENV
 
+            # Configure NUGET_USER as the NuGet.org username in repository variables.
+            # The NuGet.org trusted publishing policy must match this repository and publish.yml.
+            - name: Log in to NuGet with OIDC
+              uses: NuGet/login@v1
+              id: nuget_login
+              with:
+                  user: ${{ vars.NUGET_USER }}
+
             - name: Push NuGet package
+              env:
+                  NUGET_API_KEY: ${{ steps.nuget_login.outputs.NUGET_API_KEY }}
               run: |
                   NUPKG_FILE=$(find nupkg -name "Banned.Qbittorrent.$version.nupkg" -print -quit)
                   if [ -z "$NUPKG_FILE" ]; then
@@ -45,4 +58,4 @@ jobs:
                     exit 1
                   fi
                   echo "Pushing $NUPKG_FILE to NuGet..."
-                  dotnet nuget push "$NUPKG_FILE" --api-key ${{ secrets.NUGET_API_KEY }} --source "https://api.nuget.org/v3/index.json" --skip-duplicate
+                  dotnet nuget push "$NUPKG_FILE" --api-key "$NUGET_API_KEY" --source "https://api.nuget.org/v3/index.json" --skip-duplicate
