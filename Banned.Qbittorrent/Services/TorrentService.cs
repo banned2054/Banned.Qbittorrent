@@ -1141,7 +1141,7 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
         var parameters = new Dictionary<string, string>
         {
             { "hash", hash },
-            { "ids", StringUtils.Join('|', fileIndexes) },
+            { "id", StringUtils.Join('|', fileIndexes) },
             { "priority", ((int)priority).ToString() }
         };
 
