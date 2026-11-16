@@ -1114,6 +1114,11 @@ public class TorrentService(NetService netService, ApiVersion apiVersion, Applic
     ///     设置种子中多个文件的优先度。<br />
     ///     Set priorities for multiple files in a torrent.
     /// </summary>
+    /// <remarks>
+    ///     qBittorrent 4.1.5 之前的版本会逐文件发送请求；取消或失败时，部分文件可能已更新。<br />
+    ///     Servers before qBittorrent 4.1.5 are updated one file at a time; cancellation or failure may leave some files
+    ///     updated.
+    /// </remarks>
     /// <param name="hash">种子哈希值。<br />Torrent hash value.</param>
     /// <param name="fileIndexes">文件索引列表。<br />List of file indexes.</param>
     /// <param name="priority">文件优先度。<br />File priority.</param>
@@ -1135,6 +1140,18 @@ public class TorrentService(NetService netService, ApiVersion apiVersion, Applic
             { "id", StringUtils.Join('|', fileIndexes) },
             { "priority", ((int)priority).ToString() }
         };
+
+        if (apiVersion < ApiVersion.V2_2_0 && fileIndexes.Count > 1)
+        {
+            foreach (var fileIndex in fileIndexes)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                parameters["id"] = fileIndex.ToString(CultureInfo.InvariantCulture);
+                await netService.Post($"{BaseUrl}/filePrio", parameters, ct : cancellationToken);
+            }
+
+            return;
+        }
 
         await netService.Post($"{BaseUrl}/filePrio", parameters, ct : cancellationToken);
     }
