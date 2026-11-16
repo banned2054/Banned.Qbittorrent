@@ -9,8 +9,8 @@ using static NUnit.Framework.Assert;
 namespace Banned.Qbittorrent.Test;
 
 /// <summary>
-/// 覆盖 Web API v2.16.x 新增端点的契约测试。<br/>
-/// Contract tests for the endpoints added by Web API v2.16.x.
+///     覆盖 Web API v2.16.x 新增端点的契约测试。<br />
+///     Contract tests for the endpoints added by Web API v2.16.x.
 /// </summary>
 [TestFixture]
 public class WebApi216EndpointTests
@@ -188,7 +188,8 @@ public class WebApi216EndpointTests
         using (netService)
         using (httpClient)
         {
-            var path = await new TorrentService(netService, Supported).DownloadFile("abc123", 2);
+            var path =
+                await new TorrentService(netService, Supported, ApplicationVersion.V4_3_3).DownloadFile("abc123", 2);
 
             Multiple(() =>
             {
@@ -208,7 +209,8 @@ public class WebApi216EndpointTests
         using (netService)
         using (httpClient)
         {
-            await new TorrentService(netService, Supported).DownloadFile("abc123", "sub dir/movie.mkv");
+            await new TorrentService(netService, Supported, ApplicationVersion.V4_3_3)
+               .DownloadFile("abc123", "sub dir/movie.mkv");
 
             That(DecodeForm(handler.Requests.Single()), Is.EqualTo("hash=abc123&file=sub+dir/movie.mkv"));
         }
@@ -223,7 +225,9 @@ public class WebApi216EndpointTests
         using (httpClient)
         {
             ThrowsAsync<QbittorrentNotSupportedException>(async () => await new TorrentService(netService,
-                                                                   new ApiVersion(2, 15, 4)).DownloadFile("abc", 0));
+                                                                       new ApiVersion(2, 15, 4),
+                                                                       ApplicationVersion.V4_3_3)
+                                                             .DownloadFile("abc", 0));
             That(handler.Requests, Is.Empty);
         }
     }
@@ -236,11 +240,14 @@ public class WebApi216EndpointTests
         using (netService)
         using (httpClient)
         {
-            await new TorrentService(netService, Supported).AddTorrent(urls : ["magnet:?xt=urn:btih:abc"],
-                                                                       shareLimitAction :
-                                                                       EnumTorrentShareLimitAction.Stop,
-                                                                       shareLimitsMode :
-                                                                       EnumTorrentShareLimitsMode.MatchAny);
+            await new TorrentService(netService, Supported, ApplicationVersion.V4_3_3).AddTorrent(urls :
+                     [
+                         "magnet:?xt=urn:btih:abc"
+                     ],
+                     shareLimitAction :
+                     EnumTorrentShareLimitAction.Stop,
+                     shareLimitsMode :
+                     EnumTorrentShareLimitsMode.MatchAny);
 
             var form = DecodeForm(handler.Requests.Single());
             Multiple(() =>
@@ -267,7 +274,7 @@ public class WebApi216EndpointTests
         using (netService)
         using (httpClient)
         {
-            await new TorrentService(netService, Supported).SetTorrentShareLimit("abc",
+            await new TorrentService(netService, Supported, ApplicationVersion.V4_3_3).SetTorrentShareLimit("abc",
                      shareLimitAction : EnumTorrentShareLimitAction.RemoveWithContent,
                      shareLimitsMode : EnumTorrentShareLimitsMode.Default);
 
@@ -290,8 +297,10 @@ public class WebApi216EndpointTests
         using (netService)
         using (httpClient)
         {
-            ThrowsAsync<ArgumentException>(async () => await new TorrentService(netService, Supported)
-                                              .SetTorrentShareLimit("abc"));
+            ThrowsAsync<ArgumentException>(async () =>
+                                               await new TorrentService(netService, Supported,
+                                                                        ApplicationVersion.V4_3_3)
+                                                  .SetTorrentShareLimit("abc"));
             That(handler.Requests, Is.Empty);
         }
     }
@@ -304,7 +313,7 @@ public class WebApi216EndpointTests
         using (netService)
         using (httpClient)
         {
-            await new TorrentService(netService, Supported)
+            await new TorrentService(netService, Supported, ApplicationVersion.V4_3_3)
                .SetTorrentsShareLimit(["abc", "def"], shareLimitsMode : EnumTorrentShareLimitsMode.MatchAny);
 
             var form = DecodeForm(handler.Requests.Single());
@@ -324,7 +333,7 @@ public class WebApi216EndpointTests
         using (netService)
         using (httpClient)
         {
-            await new TorrentService(netService, Supported)
+            await new TorrentService(netService, Supported, ApplicationVersion.V4_3_3)
                .SetAllTorrentsShareLimit(shareLimitAction : EnumTorrentShareLimitAction.Stop,
                                          shareLimitsMode : EnumTorrentShareLimitsMode.MatchAll);
 

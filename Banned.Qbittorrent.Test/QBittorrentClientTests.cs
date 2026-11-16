@@ -1,4 +1,5 @@
 using Banned.Qbittorrent.Exceptions;
+using Banned.Qbittorrent.Models.Application;
 using System.Net;
 using static NUnit.Framework.Assert;
 
@@ -28,7 +29,6 @@ public class QBittorrentClientTests
             That(client.Search, Is.Not.Null);
             That(client.Torrent, Is.Not.Null);
             That(client.TorrentCreator, Is.Not.Null);
-            That(client.QbittorrentVersion, Is.EqualTo("5.1.2"));
             That(handler.Requests.Select(request => request.Uri.AbsolutePath), Is.EqualTo([
                 "/api/v2/auth/login",
                 "/api/v2/app/webapiVersion",
@@ -41,6 +41,37 @@ public class QBittorrentClientTests
         client.Dispose();
         using var response = await httpClient.GetAsync("http://localhost:8080/probe");
         That(await response.Content.ReadAsStringAsync(), Is.EqualTo("probe"));
+    }
+
+    [Test]
+    public async Task GetVersion_RequestsCurrentServerVersionAndPreservesOriginalText()
+    {
+        var serverVersion = "5.1.2";
+        var handler = new StubHttpMessageHandler(request => request.RequestUri!.AbsolutePath switch
+        {
+            "/api/v2/auth/login"        => Response(HttpStatusCode.OK, "Ok."),
+            "/api/v2/app/webapiVersion" => Response(HttpStatusCode.OK, "2.15.1"),
+            "/api/v2/app/version"       => Response(HttpStatusCode.OK, serverVersion),
+            _                           => Response(HttpStatusCode.NotFound, "unexpected")
+        });
+        using var httpClient = new HttpClient(handler);
+        using var client     = await QBittorrentClient.Create("http://localhost:8080", "user", "password", httpClient);
+        handler.Requests.Clear();
+
+        serverVersion = "v5.3.0beta1";
+        var first = await client.Application.GetVersion();
+        serverVersion = "V5.3.0-rc1";
+        var second = await client.Application.GetVersion();
+
+        Multiple(() =>
+        {
+            That(first.ToString(), Is.EqualTo("v5.3.0beta1"));
+            That(second.ToString(), Is.EqualTo("V5.3.0-rc1"));
+            That(first, Is.EqualTo(new ApplicationVersion(5, 3)));
+            That(second, Is.EqualTo(new ApplicationVersion(5, 3)));
+            That(handler.Requests, Has.Count.EqualTo(2));
+            That(handler.Requests.Select(request => request.Uri.AbsolutePath), Is.All.EqualTo("/api/v2/app/version"));
+        });
     }
 
     [Test]
@@ -63,7 +94,7 @@ public class QBittorrentClientTests
 
         Multiple(() =>
         {
-            That(version, Is.EqualTo("5.1.2"));
+            That(version, Is.EqualTo(new ApplicationVersion(5, 1, 2)));
             That(handler.Requests.Select(request => request.Uri.AbsolutePath), Is.EqualTo([
                 "/api/v2/auth/login",
                 "/api/v2/app/webapiVersion",
@@ -94,20 +125,22 @@ public class QBittorrentClientTests
 
     [TestCase("v4.3.2", false)]
     [TestCase("v4.3.3", true)]
-    public async Task RenameTorrentFile_UsesApplicationVersionSpecificParameters(string applicationVersion,
-                                                                                 bool   pathBased)
+    [TestCase("v4.3.4.1", true)]
+    [TestCase("5.4.0alpha1", true)]
+    public async Task RenameTorrentFile_UsesApplicationVersionSpecificParameters(
+        string applicationVersion, bool pathBased)
     {
-        var handler = CreateVersionedHandler(applicationVersion);
+        var       handler    = CreateVersionedHandler(applicationVersion);
         using var httpClient = new HttpClient(handler);
         using var client     = await QBittorrentClient.Create("http://localhost:8080", "user", "password", httpClient);
 
         await client.Torrent.RenameTorrentFile("abc", "old.txt", "new.txt");
 
-        var renameRequest = handler.Requests.Single(request => request.Uri.AbsolutePath == "/api/v2/torrents/renameFile");
-        var form          = Uri.UnescapeDataString(renameRequest.Body!);
+        var renameRequest =
+            handler.Requests.Single(request => request.Uri.AbsolutePath == "/api/v2/torrents/renameFile");
+        var form = Uri.UnescapeDataString(renameRequest.Body!);
         Multiple(() =>
         {
-            That(client.QbittorrentVersion, Is.EqualTo(applicationVersion));
             That(form, pathBased ? Does.Contain("oldPath=old.txt") : Does.Contain("id=0"));
             That(form, pathBased ? Does.Contain("newPath=new.txt") : Does.Contain("name=new.txt"));
             That(form, pathBased ? Does.Not.Contain("id=") : Does.Not.Contain("oldPath="));
@@ -118,16 +151,16 @@ public class QBittorrentClientTests
     [TestCase("v4.3.3", true)]
     public async Task RenameTorrentFolder_RequiresQbittorrent433(string applicationVersion, bool supported)
     {
-        var handler = CreateVersionedHandler(applicationVersion);
+        var       handler = CreateVersionedHandler(applicationVersion);
         using var httpClient = new HttpClient(handler);
-        using var client     = await QBittorrentClient.Create("http://localhost:8080", "user", "password", httpClient);
-        var requestCountBeforeRename = handler.Requests.Count;
+        using var client = await QBittorrentClient.Create("http://localhost:8080", "user", "password", httpClient);
+        var       requestCountBeforeRename = handler.Requests.Count;
 
         if (supported)
             await client.Torrent.RenameTorrentFolder("abc", "old", "new");
         else
             ThrowsAsync<NotSupportedException>(async () =>
-                await client.Torrent.RenameTorrentFolder("abc", "old", "new"));
+                                                   await client.Torrent.RenameTorrentFolder("abc", "old", "new"));
 
         That(handler.Requests.Count, Is.EqualTo(requestCountBeforeRename + (supported ? 1 : 0)));
     }
@@ -138,7 +171,7 @@ public class QBittorrentClientTests
             "/api/v2/auth/login"        => Response(HttpStatusCode.OK, "Ok."),
             "/api/v2/app/webapiVersion" => Response(HttpStatusCode.OK, "2.7.0"),
             "/api/v2/app/version"       => Response(HttpStatusCode.OK, applicationVersion),
-            "/api/v2/torrents/files"   => Response(HttpStatusCode.OK, "[{\"index\":0,\"name\":\"old.txt\"}]"),
+            "/api/v2/torrents/files"    => Response(HttpStatusCode.OK, "[{\"index\":0,\"name\":\"old.txt\"}]"),
             _                           => Response(HttpStatusCode.OK, "")
         });
 

@@ -36,7 +36,7 @@ public class PythonParityEndpointTests
         using (netService)
         using (httpClient)
         {
-            await new TorrentService(netService, ApiVersion.V2_16_2)
+            await new TorrentService(netService, ApiVersion.V2_16_2, ApplicationVersion.V4_3_3)
                .ReannounceTorrents(["abc", "def"], ["https://one", "https://two"]);
 
             That(handler.Requests.Single().Method, Is.EqualTo(HttpMethod.Post));
@@ -53,7 +53,7 @@ public class PythonParityEndpointTests
         using (netService)
         using (httpClient)
         {
-            var result = await new TorrentService(netService, ApiVersion.V2_16_2)
+            var result = await new TorrentService(netService, ApiVersion.V2_16_2, ApplicationVersion.V4_3_3)
                .GetTorrentPieceAvailability("abc");
 
             Multiple(() =>
@@ -74,7 +74,7 @@ public class PythonParityEndpointTests
         using (netService)
         using (httpClient)
         {
-            var service = new TorrentService(netService, ApiVersion.V2_16_2);
+            var service = new TorrentService(netService, ApiVersion.V2_16_2, ApplicationVersion.V4_3_3);
             var result  = await service.GetTorrentSslParameters("abc");
 
             await service.SetTorrentSslParameters("abc", "cert", "key", "dh");
@@ -103,7 +103,7 @@ public class PythonParityEndpointTests
         using (netService)
         using (httpClient)
         {
-            var service = new TorrentService(netService, ApiVersion.V2_16_2);
+            var service = new TorrentService(netService, ApiVersion.V2_16_2, ApplicationVersion.V4_3_3);
             var fetched = await service.FetchTorrentMetadata("magnet:?xt=urn:btih:abc", "aria2");
             var saved   = await service.SaveTorrentMetadata("magnet:?xt=urn:btih:abc");
 
@@ -178,7 +178,8 @@ public class PythonParityEndpointTests
         {
             ThrowsAsync<QbittorrentNotSupportedException>(async () =>
                                                               await new TorrentService(netService,
-                                                                           new ApiVersion(2, 15))
+                                                                           new ApiVersion(2, 15),
+                                                                           ApplicationVersion.V4_3_3)
                                                                  .GetTorrentPieceAvailability("abc"));
             That(handler.Requests, Is.Empty);
         }

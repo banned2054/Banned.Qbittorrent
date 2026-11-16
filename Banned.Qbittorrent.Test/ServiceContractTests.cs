@@ -10,6 +10,43 @@ namespace Banned.Qbittorrent.Test;
 [TestFixture]
 public class ServiceContractTests
 {
+    [TestCase("v4.3.3", 4, 3, 3, 0)]
+    [TestCase("5.4.0alpha1", 5, 4, 0, 0)]
+    [TestCase("4.3.4.1", 4, 3, 4, 1)]
+    [TestCase(" V5.3.0beta1\r\n", 5, 3, 0, 0)]
+    [TestCase("5.3.0-rc1", 5, 3, 0, 0)]
+    public async Task GetVersion_ParsesApplicationVersionResponse(
+        string response, int major, int minor, int patch, int revision)
+    {
+        var (netService, httpClient, handler) = CreateNetService(response);
+        using (netService)
+        using (httpClient)
+        {
+            var version = await new ApplicationService(netService).GetVersion();
+
+            Multiple(() =>
+            {
+                That(version, Is.EqualTo(new ApplicationVersion(major, minor, patch, revision)));
+                That(version.ToString(), Is.EqualTo(response));
+                That(handler.Requests, Has.Count.EqualTo(1));
+                That(handler.Requests[0].Method, Is.EqualTo(HttpMethod.Get));
+                That(handler.Requests[0].Uri.AbsolutePath, Is.EqualTo("/api/v2/app/version"));
+            });
+        }
+    }
+
+    [Test]
+    public void GetVersion_RejectsInvalidApplicationVersionResponse()
+    {
+        var (netService, httpClient, handler) = CreateNetService("invalid");
+        using (netService)
+        using (httpClient)
+        {
+            ThrowsAsync<FormatException>(async () => await new ApplicationService(netService).GetVersion());
+            That(handler.Requests, Has.Count.EqualTo(1));
+        }
+    }
+
     [Test]
     public async Task GetBuildInfo_DeserializesObjectResponse()
     {
@@ -88,7 +125,8 @@ public class ServiceContractTests
         using (netService)
         using (httpClient)
         {
-            var result     = await new TorrentService(netService, new ApiVersion(2, 15, 1)).GetAllCategories();
+            var result = await new TorrentService(netService, new ApiVersion(2, 15, 1), ApplicationVersion.V4_3_3)
+               .GetAllCategories();
             var categories = result!;
 
             Multiple(() =>
@@ -191,7 +229,7 @@ public class ServiceContractTests
         using (netService)
         using (httpClient)
         {
-            var service = new TorrentService(netService, new ApiVersion(2, 15, 1));
+            var service = new TorrentService(netService, new ApiVersion(2, 15, 1), ApplicationVersion.V4_3_3);
 
             var count = await service.GetTorrentCount();
             await service.AddTorrentWebSeeds("abc", ["https://example.com/seed"]);
@@ -234,8 +272,10 @@ public class ServiceContractTests
         using (netService)
         using (httpClient)
         {
-            ThrowsAsync<Banned.Qbittorrent.Exceptions.QbittorrentNotSupportedException>(async () =>
-                         await new TorrentService(netService, new ApiVersion(2, 9, 1)).GetTorrentCount());
+            ThrowsAsync<QbittorrentNotSupportedException>(async () =>
+                                                              await new TorrentService(netService,
+                                                                       new ApiVersion(2, 9, 1),
+                                                                       ApplicationVersion.V4_3_3).GetTorrentCount());
             That(handler.Requests, Is.Empty);
         }
     }
@@ -257,7 +297,7 @@ public class ServiceContractTests
         using (netService)
         using (httpClient)
         {
-            var service = new TorrentService(netService, apiVersion);
+            var service = new TorrentService(netService, apiVersion, ApplicationVersion.V4_3_3);
 
             await service.GetTorrentInfos(filter : filter);
             await service.GetTorrentInfos(new GetTorrentInfoListRequest { Filter = filter });
@@ -280,11 +320,12 @@ public class ServiceContractTests
         using (netService)
         using (httpClient)
         {
-            await new TorrentService(netService, ApiVersion.V2_7_0).AddTorrent(new AddTorrentRequest
-            {
-                Urls              = ["magnet:?xt=urn:btih:abc"],
-                RootFolderEnabled = enabled
-            });
+            await new TorrentService(netService, ApiVersion.V2_7_0, ApplicationVersion.V4_3_3)
+               .AddTorrent(new AddTorrentRequest
+                {
+                    Urls              = ["magnet:?xt=urn:btih:abc"],
+                    RootFolderEnabled = enabled
+                });
 
             var form = DecodeForm(handler.Requests.Single());
             Multiple(() =>
@@ -307,7 +348,7 @@ public class ServiceContractTests
         using (netService)
         using (httpClient)
         {
-            await new TorrentService(netService, apiVersion).AddTorrent(new AddTorrentRequest
+            await new TorrentService(netService, apiVersion, ApplicationVersion.V4_3_3).AddTorrent(new AddTorrentRequest
             {
                 Urls          = ["magnet:?xt=urn:btih:abc"],
                 ContentLayout = layout
@@ -330,7 +371,7 @@ public class ServiceContractTests
         using (netService)
         using (httpClient)
         {
-            await new TorrentService(netService, ApiVersion.V2_15_1)
+            await new TorrentService(netService, ApiVersion.V2_15_1, ApplicationVersion.V4_3_3)
                .AddTorrent(urls : ["magnet:?xt=urn:btih:abc"],
                            tags : "linux,iso",
                            stopped : true,
@@ -383,12 +424,13 @@ public class ServiceContractTests
         using (netService)
         using (httpClient)
         {
-            await new TorrentService(netService, ApiVersion.V2_8_4).AddTorrent(new AddTorrentRequest
-            {
-                Urls                   = ["magnet:?xt=urn:btih:abc"],
-                DownloadPath           = "/incomplete",
-                UseDownloadPathEnabled = useDownloadPath
-            });
+            await new TorrentService(netService, ApiVersion.V2_8_4, ApplicationVersion.V4_3_3)
+               .AddTorrent(new AddTorrentRequest
+                {
+                    Urls                   = ["magnet:?xt=urn:btih:abc"],
+                    DownloadPath           = "/incomplete",
+                    UseDownloadPathEnabled = useDownloadPath
+                });
 
             That(DecodeForm(handler.Requests.Single()), Does.Contain($"useDownloadPath={expected}"));
         }
@@ -428,7 +470,7 @@ public class ServiceContractTests
     [TestCase("forced")]
     public async Task AddTorrent_SendsExtendedParametersToOlderWebApiVersions(string parameter)
     {
-        var apiVersion = new ApiVersion(2, 0);
+        var apiVersion = new ApiVersion(2);
         var request    = CreateAddTorrentRequestWithParameter(parameter);
 
         var (netService, httpClient, handler) =
@@ -436,7 +478,7 @@ public class ServiceContractTests
         using (netService)
         using (httpClient)
         {
-            await new TorrentService(netService, apiVersion).AddTorrent(request);
+            await new TorrentService(netService, apiVersion, ApplicationVersion.V4_3_3).AddTorrent(request);
 
             Multiple(() =>
             {
@@ -460,11 +502,11 @@ public class ServiceContractTests
         using (netService)
         using (httpClient)
         {
-            var torrent  = new TorrentService(netService, apiVersion);
+            var torrent  = new TorrentService(netService, apiVersion, ApplicationVersion.V4_3_3);
             var transfer = new TransferService(netService);
             Func<Task> action = operation switch
             {
-                "setShareLimits" => async () => await torrent.SetTorrentShareLimit("abc", ratioLimit : 1),
+                "setShareLimits" => async () => await torrent.SetTorrentShareLimit("abc", 1),
                 "editTracker"    => async () => await torrent.EditTorrentTracker("abc", "old", "new"),
                 "renameFile"     => async () => await torrent.RenameTorrentFile("abc", 0, "new"),
                 "renameFolder"   => async () => await torrent.RenameTorrentFolder("abc", "old", "new"),

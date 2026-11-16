@@ -27,27 +27,27 @@ public class CancellationTokenTests
     public void PublicAsyncNetworkMethods_PreserveCancellationTokenConventions()
     {
         var offenders = PublicNetworkTypes
-                       .SelectMany(type => type.GetMethods(BindingFlags.Public |
+                       .SelectMany(type => type.GetMethods(BindingFlags.Public   |
                                                            BindingFlags.Instance |
-                                                           BindingFlags.Static |
+                                                           BindingFlags.Static   |
                                                            BindingFlags.DeclaredOnly))
                        .Where(method => typeof(Task).IsAssignableFrom(method.ReturnType))
                        .Where(method =>
-                       {
-                           var parameters = method.GetParameters();
-                           // Category overloads retain the original token position for caller compatibility.
-                           if (method.DeclaringType == typeof(TorrentService) &&
-                               method.Name is nameof(TorrentService.CreateCategory) or
-                                              nameof(TorrentService.EditCategory))
-                               return parameters.Length is not (5 or 10) ||
-                                      parameters[4].ParameterType != typeof(CancellationToken) ||
-                                      (parameters.Length == 10 &&
-                                       parameters.Skip(4).Any(parameter => !parameter.IsOptional));
+                        {
+                            var parameters = method.GetParameters();
+                            // Category overloads retain the original token position for caller compatibility.
+                            if (method.DeclaringType == typeof(TorrentService) &&
+                                method.Name is nameof(TorrentService.CreateCategory) or
+                                               nameof(TorrentService.EditCategory))
+                                return parameters.Length is not (5 or 10)                       ||
+                                       parameters[4].ParameterType != typeof(CancellationToken) ||
+                                       (parameters.Length == 10 &&
+                                        parameters.Skip(4).Any(parameter => !parameter.IsOptional));
 
-                           return parameters.Length == 0 ||
-                                  parameters[^1].ParameterType != typeof(CancellationToken) ||
-                                  !parameters[^1].IsOptional;
-                       })
+                            return parameters.Length            == 0                         ||
+                                   parameters[^1].ParameterType != typeof(CancellationToken) ||
+                                   !parameters[^1].IsOptional;
+                        })
                        .Select(method => $"{method.DeclaringType!.Name}.{method.Name}")
                        .Order()
                        .ToArray();
@@ -59,7 +59,7 @@ public class CancellationTokenTests
     [Test]
     public async Task ServiceMethod_PassesCallerTokenToHttpHandler()
     {
-        var handler = new CancellationObservingHandler();
+        var       handler    = new CancellationObservingHandler();
         using var httpClient = new HttpClient(handler);
         using var netService = new NetService("http://localhost:8080", httpClient);
         netService.SetApiVersion(ApiVersion.V2_15_1);
@@ -75,7 +75,7 @@ public class CancellationTokenTests
     [Test]
     public void ConvenienceMethod_PropagatesCanceledTokenWithoutSendingRequest()
     {
-        var handler = new StubHttpMessageHandler(_ => StubHttpMessageHandler.JsonResponse(string.Empty));
+        var       handler    = new StubHttpMessageHandler(_ => StubHttpMessageHandler.JsonResponse(string.Empty));
         using var httpClient = new HttpClient(handler);
         using var netService = new NetService("http://localhost:8080", httpClient);
         netService.SetApiVersion(ApiVersion.V2_15_1);
@@ -83,8 +83,9 @@ public class CancellationTokenTests
         cancellation.Cancel();
 
         ThrowsAsync<OperationCanceledException>(async () =>
-            await new TorrentService(netService, ApiVersion.V2_15_1)
-               .PauseTorrents(["abc"], cancellation.Token));
+                                                    await new TorrentService(netService, ApiVersion.V2_15_1,
+                                                                             ApplicationVersion.V4_3_3)
+                                                       .PauseTorrents(["abc"], cancellation.Token));
 
         That(handler.Requests, Is.Empty);
     }
@@ -92,18 +93,18 @@ public class CancellationTokenTests
     [Test]
     public void ClientCreate_HonorsCancellationBeforeLoginRequest()
     {
-        var handler = new StubHttpMessageHandler(_ => StubHttpMessageHandler.JsonResponse("Ok."));
-        using var httpClient = new HttpClient(handler);
+        var       handler      = new StubHttpMessageHandler(_ => StubHttpMessageHandler.JsonResponse("Ok."));
+        using var httpClient   = new HttpClient(handler);
         using var cancellation = new CancellationTokenSource();
         cancellation.Cancel();
 
         ThrowsAsync<TaskCanceledException>(async () =>
-            await QBittorrentClient.Create(
-                "http://localhost:8080",
-                "user",
-                "password",
-                httpClient : httpClient,
-                cancellationToken : cancellation.Token));
+                                               await QBittorrentClient.Create(
+                                                                              "http://localhost:8080",
+                                                                              "user",
+                                                                              "password",
+                                                                              httpClient,
+                                                                              cancellationToken : cancellation.Token));
 
         That(handler.Requests, Is.Empty);
     }
@@ -115,7 +116,7 @@ public class CancellationTokenTests
 
         protected override async Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request,
-            CancellationToken cancellationToken)
+            CancellationToken  cancellationToken)
         {
             RequestStarted.TrySetResult();
             await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);

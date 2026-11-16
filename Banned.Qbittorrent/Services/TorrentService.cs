@@ -14,18 +14,9 @@ namespace Banned.Qbittorrent.Services;
 ///     提供与 qBittorrent 种子相关的服务<br />
 ///     Provides services related to qBittorrent torrents
 /// </summary>
-public class TorrentService(NetService netService, ApiVersion apiVersion)
+public class TorrentService(NetService netService, ApiVersion apiVersion, ApplicationVersion applicationVersion)
 {
-    private const           string   BaseUrl                = "/api/v2/torrents";
-    private static readonly Version  PathBasedRenameVersion = new(4, 3, 3);
-    private readonly        Version? _applicationVersion;
-
-    internal TorrentService(NetService netService, ApiVersion apiVersion, Version applicationVersion) :
-        this(netService, apiVersion) => _applicationVersion = applicationVersion;
-
-    private bool UsesPathBasedRename => _applicationVersion is not null
-        ? _applicationVersion >= PathBasedRenameVersion
-        : apiVersion          >= ApiVersion.V2_7_0;
+    private const string BaseUrl = "/api/v2/torrents";
 
     /// <summary>
     ///     获取单个种子信息列表。<br />
@@ -2360,7 +2351,7 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
 
         hash = StringUtils.NormalizeHash(hash);
         netService.EnsureApiVersionSupported($"{BaseUrl}/renameFile", new ApiVersionRange(ApiVersion.V2_4_0));
-        if (!UsesPathBasedRename)
+        if (applicationVersion < ApplicationVersion.V4_3_3)
         {
             var fileList = await GetTorrentFiles(hash, cancellationToken : cancellationToken);
             if (fileList == null || fileList.Count == 0) return;
@@ -2398,7 +2389,7 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
 
         hash = StringUtils.NormalizeHash(hash);
         netService.EnsureApiVersionSupported($"{BaseUrl}/renameFile", new ApiVersionRange(ApiVersion.V2_4_0));
-        if (UsesPathBasedRename)
+        if (applicationVersion >= ApplicationVersion.V4_3_3)
         {
             var fileList = await GetTorrentFiles(hash, cancellationToken : cancellationToken);
             if (fileList is { Count: > 0 })
@@ -2436,10 +2427,9 @@ public class TorrentService(NetService netService, ApiVersion apiVersion)
 
         hash = StringUtils.NormalizeHash(hash);
         netService.EnsureApiVersionSupported($"{BaseUrl}/renameFolder", new ApiVersionRange(ApiVersion.V2_7_0));
-        if (_applicationVersion is not null && _applicationVersion < PathBasedRenameVersion)
+        if (applicationVersion < ApplicationVersion.V4_3_3)
             throw new
-                NotSupportedException(
-                                      $"The endpoint '{BaseUrl}/renameFolder' requires qBittorrent >= {PathBasedRenameVersion}, but server is {_applicationVersion}.");
+                NotSupportedException($"The endpoint '{BaseUrl}/renameFolder' requires qBittorrent >= {ApplicationVersion.V4_3_3}, but server is {applicationVersion}.");
 
         var parameters = new Dictionary<string, string>
         {

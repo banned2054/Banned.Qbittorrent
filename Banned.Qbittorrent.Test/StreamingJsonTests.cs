@@ -29,7 +29,7 @@ public class StreamingJsonTests
         using var netService = new NetService("http://localhost:8080", httpClient);
         var       apiVersion = ApiVersion.Parse("2.1.1");
         netService.SetApiVersion(apiVersion);
-        var torrent = new TorrentService(netService, apiVersion);
+        var torrent = new TorrentService(netService, apiVersion, ApplicationVersion.V4_3_3);
 
         var result = useRequestObject
             ? await torrent.GetTorrentInfos(new GetTorrentInfoListRequest())
@@ -140,7 +140,7 @@ public class StreamingJsonTests
         using var netService = new NetService("http://localhost:8080", httpClient);
         using var buffered   = JsonDocument.Parse(await netService.Post("/api/v2/torrents/info"));
 
-        var result = await new TorrentService(netService, default).GetTorrentInfos();
+        var result = await new TorrentService(netService, default, ApplicationVersion.V4_3_3).GetTorrentInfos();
 
         That(result.Single().Name, Is.EqualTo(buffered.RootElement[0].GetProperty("name").GetString()));
     }
@@ -178,7 +178,7 @@ public class StreamingJsonTests
         using var netService = new NetService("http://localhost:8080", httpClient);
         using var buffered   = JsonDocument.Parse(await netService.Post("/api/v2/torrents/info"));
 
-        var result = await new TorrentService(netService, default).GetTorrentInfos();
+        var result = await new TorrentService(netService, default, ApplicationVersion.V4_3_3).GetTorrentInfos();
 
         That(result.Single().Name, Is.EqualTo(buffered.RootElement[0].GetProperty("name").GetString()));
     }
@@ -296,9 +296,11 @@ public class StreamingJsonTests
                                                     CancellationToken cancellationToken = default) =>
         endpoint switch
         {
-            0 => await new TorrentService(netService, default).GetTorrentInfos(cancellationToken : cancellationToken),
-            1 => await new TorrentService(netService, default).GetTorrentInfos(new GetTorrentInfoListRequest(),
-                                                                               cancellationToken),
+            0 => await new TorrentService(netService, default, ApplicationVersion.V4_3_3)
+               .GetTorrentInfos(cancellationToken : cancellationToken),
+            1 => await new TorrentService(netService, default, ApplicationVersion.V4_3_3)
+               .GetTorrentInfos(new GetTorrentInfoListRequest(),
+                                cancellationToken),
             2 => await new SyncService(netService).GetMainData(cancellationToken : cancellationToken),
             3 => await new SyncService(netService).GetPeerData(cancellationToken : cancellationToken),
             _ => throw new ArgumentOutOfRangeException(nameof(endpoint))

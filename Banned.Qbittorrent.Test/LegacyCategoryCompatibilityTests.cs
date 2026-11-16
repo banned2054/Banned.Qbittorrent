@@ -12,12 +12,12 @@ public class LegacyCategoryCompatibilityTests
     [TestCase("2.16.1")]
     public async Task OriginalCategoryCalls_KeepLegacyFormsOnOlderServers(string version)
     {
-        var apiVersion = ApiVersion.Parse(version);
-        var handler = new StubHttpMessageHandler(_ => StubHttpMessageHandler.JsonResponse(""));
+        var       apiVersion = ApiVersion.Parse(version);
+        var       handler    = new StubHttpMessageHandler(_ => StubHttpMessageHandler.JsonResponse(""));
         using var httpClient = new HttpClient(handler);
         using var netService = new NetService("http://localhost:8080", httpClient);
         netService.SetApiVersion(apiVersion);
-        var torrent = new TorrentService(netService, apiVersion);
+        var       torrent      = new TorrentService(netService, apiVersion, ApplicationVersion.V4_3_3);
         using var cancellation = new CancellationTokenSource();
 
         await torrent.CreateCategory("movies", "", null, false, cancellation.Token);
@@ -43,10 +43,10 @@ public class LegacyCategoryCompatibilityTests
     [Test]
     public async Task OlderSearchResults_AllowMissingEngineFullName()
     {
-        const string json = """{"status":"Running","results":[{"engineName":"example"}],"total":1}""";
-        var handler = new StubHttpMessageHandler(_ => StubHttpMessageHandler.JsonResponse(json));
-        using var httpClient = new HttpClient(handler);
-        using var netService = new NetService("http://localhost:8080", httpClient);
+        const string json       = """{"status":"Running","results":[{"engineName":"example"}],"total":1}""";
+        var          handler    = new StubHttpMessageHandler(_ => StubHttpMessageHandler.JsonResponse(json));
+        using var    httpClient = new HttpClient(handler);
+        using var    netService = new NetService("http://localhost:8080", httpClient);
         netService.SetApiVersion(new ApiVersion(2, 8, 3));
 
         var result = await new SearchService(netService).GetSearchResults(1);
