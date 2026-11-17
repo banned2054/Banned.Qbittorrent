@@ -6,6 +6,7 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## 📘 Versions
 
+- [v2.0.0](#-release-v200--application-version-type--file-priority-fixes)
 - [v1.8.0](#-release-v180--web-api-updates-and-backward-compatibility)
 - [v1.7.0](#-release-v170--upstream-api-parity-and-qbittorrent-530-support)
 - [v1.6.0](#-release-v160--api-coverage--version-compatibility)
@@ -24,6 +25,43 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 - [v0.0.7](#-release-v007--qbittorrent-net-client-refinement)
 - [v0.0.6](#-release-v006--qbittorrent-net-client-enhancement)
 - [v0.0.5](#-release-v005--qbittorrent-net-client-update)
+
+## 🚀 Release v2.0.0 — Application Version Type & File Priority Fixes
+
+**Release Date:** 2026-11-17
+
+This major release converts the qBittorrent application version from a plain string into a dedicated value type. Querying the server version, constructing `TorrentService` directly, and reading the cached version from the client all change shape. It also fixes setting file priorities, which previously sent a rejected request parameter, and adds support for servers that predate batched file priority updates.
+
+### ✨ Added
+
+- Added `ApplicationVersion` in `Banned.Qbittorrent.Models.Application`, a `readonly struct` carrying `Major`, `Minor`, `Patch`, and `Revision`.
+- Added `ApplicationVersion.Parse` and `ApplicationVersion.TryParse`. Both accept a `v`/`V` prefix, leading zeros, a fourth numeric component, and prerelease or release-candidate suffixes (`5.4.0alpha1`, `5.0.0-rc1`); at least a major and minor component are required.
+- Added `ApplicationVersion.V4_3_3` as a shared compatibility constant and a boundary used by the rename operations.
+- Added numeric comparison and equality (`<`, `>`, `<=`, `>=`, `==`, `!=`, `IComparable<T>`, `IEquatable<T>`). `ToString` returns the server's original text when the value came from `Parse`, so version strings round-trip losslessly, and a normalized `Major.Minor.Patch[.Revision]` text when constructed from numbers.
+
+### 🔧 Changed (Breaking Changes)
+
+- `ApplicationService.GetVersion` now returns `Task<ApplicationVersion>` instead of `Task<string>`. The server response is parsed, so an unparsable version now raises `FormatException` from `GetVersion` instead of being returned as text. Call `.ToString()` on the result to recover the original server string.
+- The public `TorrentService(NetService, ApiVersion)` constructor is replaced by `TorrentService(NetService, ApiVersion, ApplicationVersion)`. Consumers constructing the service directly must now supply an application version; the internal `Version`-based overload has been removed.
+- `QBittorrentClient.QbittorrentVersion` has been removed. Read the version from the server with `client.Application.GetVersion()`; `QBittorrentClient.Create` no longer caches it on the client.
+
+### 🐞 Fixed
+
+- Fixed setting file priorities with `torrents/filePrio`, which sent the rejected parameter `ids` instead of `id` and failed with `HTTP 400`. Both `Torrent.SetFilePriority` and `Torrent.SetFilesPriority` now send `id`.
+- Fixed file priority updates on servers below Web API v2.2.0, which do not accept a `|`-separated file list. `Torrent.SetFilesPriority` now sends one request per file on those servers and keeps the single batched request on v2.2.0 and later. Remaining requests stop on the first error or cancellation, and since earlier requests have already been applied, a failure can leave the torrent with a partially updated selection. This is documented on the method.
+- File indexes continue to be validated up front, so the per-file loop never starts with an invalid index in the list.
+
+### ⚠️ Compatibility
+
+- The rename operations (`RenameTorrentFile` with a path or an index, and `RenameTorrentFolder`) previously chose between path-based and index-based requests by parsing the version string into `System.Version`, and fell back to the Web API version when the application version was unavailable. They now compare against `ApplicationVersion.V4_3_3` directly, so prerelease server versions and four-component versions are ordered numerically instead of by string, and no fallback is needed.
+- `ApplicationVersion` equality and ordering intentionally ignore the prerelease suffix and the original text; `5.4.0alpha1`, `v5.4.0`, and `new ApplicationVersion(5, 4)` compare equal.
+- Everything else in the 1.8.0 surface is unchanged: method names, request forms, cancellation, HTTP exception mapping, authentication recovery, retry policies, and response models. The new .NET 11 target and the streamed torrent/sync JSON deserialization shipped in 1.8.0 and are not part of this release.
+
+### 🧪 Tests
+
+- Added 24 `ApplicationVersion` cases covering parsing, rejection of malformed input, numeric ordering, prerelease suffixes, four-component versions, hash codes, and text preservation.
+- Added 18 file priority cases covering the Web API v2.2.0 boundary through both `QBittorrentClient` and direct `TorrentService` construction, the singular `id` parameter, index validation before requests, error propagation, and cancellation.
+- The suite now contains 276 tests, all passing on each of .NET 8, 9, 10, and 11. Version-query and rename tests were updated to the new return type, and the NativeAOT smoke application still runs against simulated responses.
 
 ## 🚀 Release v1.8.0 — Web API Updates and Backward Compatibility
 
